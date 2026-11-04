@@ -1,5 +1,6 @@
 /* ---------- Хүн бүрт тохирсон дууны санал (LLM) ----------
    Хэрэглэгчийн сонсдог уран бүтээлчид, хобби, 👍/👎, тухайн mood-оос хамаарч өөр өөр дуу гарна. */
+import { GENRE_EN, type Genre } from './mn-songs';
 import type { MoodId } from './types';
 
 /** song: үгтэй дуу, ambient: тайвшруулах/төвлөрүүлэх ая (инструменталь, байгалийн дуу, lo-fi, морин хуур) */
@@ -12,6 +13,8 @@ export type Taste = {
   /** Өнөөдрийн бүртгэлээс: юутай холбоотой (таг), эрчим. Тэмдэглэлийн текстийг явуулахгүй. */
   today?: { tags: string[]; intensity: number } | null;
   hobbies: string[];
+  /** Хэрэглэгчийн сонгосон дууны төрлүүд */
+  genres?: Genre[];
   /** Хэрэглэгчийн сангаас (YouTube/Spotify) хамгийн их давтагдсан уран бүтээлчид */
   artists: string[];
   liked: string[];
@@ -42,6 +45,7 @@ export function suggestPrompt(t: Taste) {
   const lines = [
     `The listener is ${MOOD_EN[t.mood]}. Suggest ${t.count} real, existing songs that would genuinely help or fit them right now.`,
     t.artists.length ? `Artists they already listen to: ${t.artists.join(', ')}. Mostly suggest songs in a similar style (by these or similar artists), plus 1-2 discoveries.` : 'Their taste is unknown: suggest well-known, widely loved songs with variety.',
+    t.genres?.length ? `Genres they chose: ${t.genres.map(g => GENRE_EN[g]).join(', ')}. Every song must belong to one of these genres, spread across them.` : '',
     t.hobbies.length ? `Their hobbies: ${t.hobbies.join(', ')}.` : '',
     t.today?.tags.length ? `Today their mood is related to: ${t.today.tags.join(', ')} (intensity ${t.today.intensity}/5).` : '',
     t.liked.length ? `Songs they liked: ${t.liked.join('; ')}.` : '',

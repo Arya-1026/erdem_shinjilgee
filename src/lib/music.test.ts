@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FEATURED, interleave, MN_SONGS, pickMongolian } from './mn-songs';
+import { FEATURED, interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './mn-songs';
 import { parseVideoClassification, videoClassifyPrompt } from './mood-classify';
 import { parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
 import { parseIsoDuration, pickThumb, songKey, splitTitle } from './youtube-parse';
@@ -77,6 +77,8 @@ describe('Монгол дуу', () => {
       expect(MN_SONGS.filter(s => s.moods.includes(m)).length).toBeGreaterThanOrEqual(6);
       expect(MN_SONGS.slice(0, FEATURED).filter(s => s.moods.includes(m)).length).toBeGreaterThanOrEqual(2);
     }
+    for (const g of ['Поп', 'Рок', 'Хип хоп, рэп', 'R&B', 'Ардын дуу', 'Метал', 'Инди', 'Жазз', 'Сонгодог хөгжим'] as const)
+      expect(MN_SONGS.slice(0, FEATURED).some(s => s.genres.includes(g)), g).toBe(true);
     expect(new Set(MN_SONGS.map(s => s.id)).size).toBe(MN_SONGS.length);
   });
   it('👎 дарсныг хасаж, сүүлд гарсныг хойш тавина', () => {
@@ -85,6 +87,27 @@ describe('Монгол дуу', () => {
     expect(out).not.toContain(sad[0]);
     expect(out.at(-1)).toBe(sad[1]);
     expect(pickMongolian('sad', new Set(), new Set(), 3)).toHaveLength(3);
+  });
+  it('төрөл бүрт монгол дуу санал болгоно', () => {
+    for (const g of SONG_GENRES) for (const m of moods) {
+      const out = pickMongolian(m, new Set(), new Set(), 3, [g]);
+      expect(out, `${g} ${m}`).toHaveLength(3);
+      expect(out[0].reason, `${g} ${m}`).toContain('Таны сонгосон төрөл');
+    }
+  });
+  it('сонгосон төрөл mood-оос урьтална', () => {
+    const rap = new Set(MN_SONGS.filter(s => s.genres.includes('Хип хоп, рэп')).map(s => s.id));
+    for (const m of moods) expect(pickMongolian(m, new Set(), new Set(), 3, ['Хип хоп, рэп']).every(r => rap.has(r.video_id)), m).toBe(true);
+  });
+  it('төрөлгүй үед mood-оор сонгоно, хоббиос төрлийг ялгана', () => {
+    const sad = new Set(MN_SONGS.filter(s => s.moods.includes('sad')).map(s => s.id));
+    expect(pickMongolian('sad', new Set(), new Set(), 100).every(r => sad.has(r.video_id))).toBe(true);
+    expect(pickGenres(['Йог', 'Рок', 'Гитар', 'Поп'])).toEqual(['Поп', 'Рок']);
+  });
+  it('LLM-д төрлийг англиар дамжуулна', () => {
+    const base = { mood: 'sad', hobbies: [], artists: [], liked: [], disliked: [], exclude: [], count: 5 } as const;
+    expect(suggestPrompt({ ...base, hobbies: [...base.hobbies], artists: [], liked: [], disliked: [], exclude: [], genres: ['Хип хоп, рэп', 'K-pop'] })[1].content).toContain('hip-hop / rap, K-pop');
+    expect(suggestPrompt({ ...base, hobbies: [], artists: [], liked: [], disliked: [], exclude: [] })[1].content).not.toContain('Genres they chose');
   });
   it('ээлжлэн холино', () => {
     expect(interleave([1, 2, 3], [9])).toEqual([1, 9, 2, 3]);

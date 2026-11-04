@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MN_IDS } from '@/lib/mn-songs';
+import { MN_IDS, MN_SONGS } from '@/lib/mn-songs';
 import type { SongRec } from '@/lib/types';
 import { songRecs } from './music-recs';
 import { findSong } from './youtube';
@@ -18,11 +18,11 @@ vi.mock('./youtube', () => ({
 const foreign = (i: number): SongRec => ({ video_id: `en${i}`, title: `Song ${i}`, artist: `Artist ${i}`, thumbnail: null, duration_s: 200, reason: '' });
 
 /** song_recs-ийн хариуг өгөөд бусад хүснэгтэд хоосон буцаах хуурамч Supabase */
-function fakeDb(existing: (SongRec & { created_at: string })[]) {
+function fakeDb(existing: (SongRec & { created_at: string })[], hobbies: string[] = []) {
   const inserted: SongRec[][] = [];
   const from = (table: string) => {
     const q = {
-      then: (ok: (v: unknown) => void) => ok({ data: table === 'song_recs' ? existing : table === 'profiles' ? { hobbies: [] } : table === 'mood_entries' ? null : [] }),
+      then: (ok: (v: unknown) => void) => ok({ data: table === 'song_recs' ? existing : table === 'profiles' ? { hobbies } : table === 'mood_entries' ? null : [] }),
       insert: (rows: SongRec[]) => { inserted.push(rows); return q; },
     } as Record<string, unknown>;
     for (const m of ['select', 'eq', 'order', 'limit', 'like', 'single', 'maybeSingle', 'delete']) q[m] = () => q;
@@ -44,6 +44,14 @@ describe('songRecs', () => {
     const { recs } = await songRecs(fakeDb([]).db, 'u', 'sad', false);
     expect(recs).toHaveLength(6);
     expect(recs.map(r => MN_IDS.has(r.video_id))).toEqual([true, false, true, false, true, false]);
+  });
+
+  it('сонгосон төрлөөр монгол дуу сонгоно', async () => {
+    const { recs } = await songRecs(fakeDb([], ['Йог', 'Метал']).db, 'u', 'angry', false);
+    const metal = new Set(MN_SONGS.filter(s => s.genres.includes('Метал')).map(s => s.id));
+    const mn = recs.filter(r => MN_IDS.has(r.video_id));
+    expect(mn).toHaveLength(3);
+    expect(mn.every(r => metal.has(r.video_id))).toBe(true);
   });
 
   it('монгол дуугүй хуучин жагсаалтыг 7 хоног хүлээлгүй шинэчилнэ', async () => {

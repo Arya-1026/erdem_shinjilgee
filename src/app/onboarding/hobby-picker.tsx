@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { PalettePicker } from '@/components/palette-picker';
 import { Chip } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
-import { CAT_ICON, HOBBIES } from '@/lib/data';
+import { CAT_ICON, GENRE_CAT, HOBBIES } from '@/lib/data';
+import { pickGenres } from '@/lib/mn-songs';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
 import { demoEntries } from '@/lib/seed';
 import { createClient } from '@/lib/supabase/client';
@@ -38,6 +39,8 @@ export function HobbyPicker({ initial, initialTheme, editing, canSeed }: { initi
     if (!user) return router.replace('/login');
     const { error } = await supabase.from('profiles').update(first ? { hobbies: [...sel], theme } : { hobbies: [...sel] }).eq('id', user.id);
     if (!error && first && canSeed && seed) await supabase.from('mood_entries').insert(demoEntries());
+    // Төрөл өөрчлөгдвөл хадгалсан дууны саналыг устгаж шинээр үүсгүүлнэ
+    if (!error && pickGenres([...sel]).join() !== pickGenres(initial).join()) await supabase.from('song_recs').delete().eq('user_id', user.id).eq('kind', 'song');
     setBusy(false);
     if (error) return toast.error('Хадгалж чадсангүй: ' + error.message);
     if (editing) toast('Хобби шинэчлэгдлээ');
@@ -75,6 +78,7 @@ export function HobbyPicker({ initial, initialTheme, editing, canSeed }: { initi
         return (
           <section key={cat} className="mb-5">
             <h3 className="mb-2 font-semibold">{CAT_ICON[cat]} {cat}{n > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{n}</span>}</h3>
+            {cat === GENRE_CAT && <p className="mb-2 text-sm text-muted-foreground">Сонгосон төрлөөр тань монгол болон олон улсын дуу санал болгоно.</p>}
             <div className="flex flex-wrap gap-2">{items.map(h => <Chip key={h} on={sel.has(h)} onClick={() => toggle(h)}>{h}</Chip>)}</div>
           </section>
         );

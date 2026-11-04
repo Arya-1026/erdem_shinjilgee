@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { pickGenres } from '@/lib/mn-songs';
 import type { MusicKind } from '@/lib/music-suggest';
 import { cn } from '@/lib/utils';
 import type { Mood, SongRec } from '@/lib/types';
@@ -54,6 +56,7 @@ export function ForYou({ mood }: { mood: Mood }) {
 
   const visible = (recs ?? []).filter(r => feedback['yt:' + r.video_id] !== -1);
   const tracks = visible.map(r => ytTrack(r, mood.id));
+  const genres = pickGenres(profile.hobbies);
   const basis = profile.youtube_connected || profile.spotify_connected
     ? 'Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан'
     : 'Таны хобби, үнэлгээнд тулгуурласан. YouTube-ээ холбовол илүү оновчтой болно';
@@ -71,6 +74,12 @@ export function ForYou({ mood }: { mood: Mood }) {
       </div>
       <Segmented full label="Төрөл" className="mt-3" value={kind} onChange={setKind}
         options={[['song', '🎵 Дуу'], ['ambient', '🎼 Тайвшруулах ая']]} />
+      {kind === 'song' && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {genres.length ? `Төрөл: ${genres.join(', ')}. ` : 'Дуртай төрлөө сонговол монгол, олон улсын дууг түүгээр нь санал болгоно. '}
+          <Link href="/onboarding?edit=1" className="font-semibold text-primary">{genres.length ? 'Өөрчлөх' : 'Төрөл сонгох'}</Link>
+        </p>
+      )}
       {kind === 'ambient' && <p className="mt-2 text-xs text-muted-foreground">Үггүй хөгжим, байгалийн дуу, морин хуурын ая: амьсгалаа тайвшруулах, төвлөрөхөд тусална.</p>}
       {recs === null || (loading && !visible.length) ? (
         <p className="py-6 text-center text-sm text-muted-foreground">🎧 AI танд тохирохыг YouTube-ээс сонгож байна…</p>

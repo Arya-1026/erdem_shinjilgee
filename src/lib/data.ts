@@ -1,6 +1,6 @@
 /* ---------- Лавлах өгөгдөл (кодтой хамт хувилбарлагдана) ---------- */
 import { EXERCISE_MOVES } from './exercise-moves';
-import { FEATURED, MN_SONGS } from './mn-songs';
+import { FEATURED, MN_SONGS, SONG_GENRES } from './mn-songs';
 import type { Mood, MoodId, Rec } from './types';
 
 // Өнгө нь design system-ийн emotion-* token (light). Дээрх текст үргэлж on-emotion (#2B2724).
@@ -20,11 +20,15 @@ export const TAGS = ['Ажил', 'Хичээл', 'Гэр бүл', 'Найз нө
 export const WD = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
 export const WD_SHORT = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'];
 
+/** Сонгосон төрлөөр монгол, олон улсын дуу санал болгоно (music-recs.ts) */
+export const GENRE_CAT = 'Дууны төрөл';
+
 export const HOBBIES: Record<string, string[]> = {
   'Спорт': ['Фитнесс', 'Гүйлт', 'Сагсан бөмбөг', 'Хөл бөмбөг', 'Волейбол', 'Бөх, жүдо', 'Бокс', 'Усан сэлэлт', 'Дугуй унах', 'Ширээний теннис', 'Цанаар гулгах', 'Тэшүүр'],
   'Бясалгал, эрүүл мэнд': ['Йог', 'Бясалгал', 'Амьсгалын дасгал', 'Сунгалт', 'Эрүүл хооллолт', 'Тэмдэглэл хөтлөх'],
   'Урлаг': ['Зураг', 'Гэрэл зураг', 'Бүжиг', 'Дизайн', 'Уран бичлэг', 'Монгол бичиг', 'Видео бичлэг', 'Театр'],
-  'Хөгжим': ['Дуу сонсох', 'Хөгжим тоглох', 'Дуулах', 'Гитар', 'Төгөлдөр хуур', 'Морин хуур', 'Хип хоп, рэп', 'Рок', 'K-pop', 'Ардын дуу', 'Сонгодог хөгжим', 'Lo-fi', 'Хөгжим зохиох'],
+  'Хөгжим': ['Дуу сонсох', 'Хөгжим тоглох', 'Дуулах', 'Гитар', 'Төгөлдөр хуур', 'Морин хуур', 'Хөгжим зохиох'],
+  [GENRE_CAT]: SONG_GENRES,
   'Уншлага, суралцах': ['Уран зохиол', 'Өөрийгөө хөгжүүлэх', 'Сэтгэл судлал', 'Түүх', 'Шинжлэх ухаан', 'Гадаад хэл', 'Подкаст', 'Шүлэг'],
   'Кино, цуврал': ['Кино', 'Анимэ', 'Цуврал', 'K-драма', 'Баримтат кино', 'Инээдмийн шоу', 'Аймшгийн кино'],
   'Байгаль, аялал': ['Аялал', 'Явган аялал', 'Загас барих', 'Майхан', 'Морь унах', 'Цэцэрлэгжүүлэлт', 'Од ажиглах'],
@@ -36,7 +40,7 @@ export const HOBBIES: Record<string, string[]> = {
   'Загвар, гоо сайхан': ['Хувцас загвар', 'Будалт', 'Үс засалт', 'Арьс арчилгаа'],
 };
 export const CAT_ICON: Record<string, string> = {
-  'Спорт': '🏃', 'Бясалгал, эрүүл мэнд': '🧘', 'Урлаг': '🎨', 'Хөгжим': '🎵', 'Уншлага, суралцах': '📚', 'Кино, цуврал': '🎬',
+  'Спорт': '🏃', 'Бясалгал, эрүүл мэнд': '🧘', 'Урлаг': '🎨', 'Хөгжим': '🎵', [GENRE_CAT]: '🎧', 'Уншлага, суралцах': '📚', 'Кино, цуврал': '🎬',
   'Байгаль, аялал': '🏔️', 'Технологи, тоглоом': '💻', 'Хоол': '🍳', 'Гар урлал': '🧶', 'Амьтан': '🐾', 'Нийгэм, харилцаа': '🤝', 'Загвар, гоо сайхан': '💄',
 };
 
@@ -54,15 +58,15 @@ export const RECS: Rec[] = [
   { id: 'e9', type: 'exercise', title: 'Ачааллаа задлах', sub: '10 мин · Хичээл, ажил давхцахад', moods: ['anxious', 'tired', 'neutral', 'sad'], hobby: ['Програмчлал', 'Өөрийгөө хөгжүүлэх', 'Тэмдэглэл хөтлөх'], steps: ['Толгойд байгаа бүх ажлаа цаасан дээр 3 минут бич (жагсаалт, эмх цэгцгүй байж болно)', 'Энэ 7 хоногт заавал хийх 3-ыг тойруул, бусдыг нь «дараа»', 'Хугацааг нь хойшлуулж болох нэгийг сонгоод багш/даргаасаа асуух мессеж бич', 'Хамгийн жижиг эхний алхмыг 25 минут хий, дараа нь 5 минут амар'] },
   { id: 'e10', type: 'exercise', title: 'Хайртай хүнтэйгээ тайван ярилцах', sub: '5 мин бэлтгэл · Харилцаа хүндэрсэн үед', moods: ['sad', 'angry', 'anxious'], hobby: ['Найзуудтайгаа уулзах', 'Гэр бүлтэйгээ', 'Сэтгэл судлал'], steps: ['Яг юу таныг гомдоосныг нэг өгүүлбэрээр бич', '«Чи үргэлж…» биш «Би … үед … мэдэрсэн» гэж эхэл', 'Түүнээс юу хүсэж байгаагаа тодорхой хэл (жишээ нь: «7 хоногт нэг орой хамт байя»)', 'Хоёулаа тайван үед ярих цаг товло, мессежээр маргалдахаас зайлсхий', 'Түүний талаас сонсож, «Би чамайг ойлгох гэж байна» гэж хэл'] },
   // Монгол дуунууд эхэндээ: оноо тэнцэх үед эрэмбэ хадгалагдана
-  ...MN_SONGS.slice(0, FEATURED).map((s, i): Rec => ({ id: `mn${i + 1}`, type: 'song', title: s.title, sub: s.artist, moods: s.moods, videoId: s.id, dur: s.dur })),
+  ...MN_SONGS.slice(0, FEATURED).map((s, i): Rec => ({ id: `mn${i + 1}`, type: 'song', title: s.title, sub: s.artist, moods: s.moods, hobby: s.genres, videoId: s.id, dur: s.dur })),
   { id: 's1', type: 'song', title: 'Weightless', sub: 'Marconi Union', moods: ['anxious', 'angry'], hobby: ['Дуу сонсох', 'Lo-fi', 'Бясалгал'] },
   { id: 's2', type: 'song', title: 'Clair de Lune', sub: 'Claude Debussy', moods: ['anxious', 'tired', 'calm'], hobby: ['Хөгжим тоглох', 'Төгөлдөр хуур', 'Сонгодог хөгжим'] },
   { id: 's3', type: 'song', title: 'Fix You', sub: 'Coldplay', moods: ['sad'], hobby: ['Рок', 'Гитар'] },
-  { id: 's4', type: 'song', title: 'Here Comes the Sun', sub: 'The Beatles', moods: ['sad', 'neutral', 'tired'] },
-  { id: 's5', type: 'song', title: 'Happy', sub: 'Pharrell Williams', moods: ['happy', 'neutral'], hobby: ['Бүжиг'] },
+  { id: 's4', type: 'song', title: 'Here Comes the Sun', sub: 'The Beatles', moods: ['sad', 'neutral', 'tired'], hobby: ['Рок', 'Поп'] },
+  { id: 's5', type: 'song', title: 'Happy', sub: 'Pharrell Williams', moods: ['happy', 'neutral'], hobby: ['Бүжиг', 'Поп', 'R&B'] },
   { id: 's6', type: 'song', title: "Don't Stop Me Now", sub: 'Queen', moods: ['happy'], hobby: ['Дуулах', 'Рок'] },
   { id: 's7', type: 'song', title: 'Three Little Birds', sub: 'Bob Marley', moods: ['anxious', 'sad', 'neutral'] },
-  { id: 's8', type: 'song', title: 'Lovely Day', sub: 'Bill Withers', moods: ['calm', 'happy', 'tired'] },
+  { id: 's8', type: 'song', title: 'Lovely Day', sub: 'Bill Withers', moods: ['calm', 'happy', 'tired'], hobby: ['R&B', 'Жазз'] },
   { id: 'm1', type: 'movie', poster: WIKI + '0/0a/Inside_Out_%282015_film%29_poster.jpg', title: 'Inside Out (2015)', sub: 'Сэтгэл хөдлөлөө ойлгох тухай', moods: ['sad', 'angry', 'anxious', 'neutral'], hobby: ['Кино'], desc: '11 настай Райлигийн толгой доторх Баяр, Гуниг, Уур, Айдас, Жигшил гэсэн сэтгэл хөдлөлүүдийн түүх. Гуниг ч гэсэн хэрэгтэй мэдрэмж гэдгийг ойлгуулдаг.' },
   { id: 'm2', type: 'movie', poster: WIKI + '3/39/Soul_%282020_film%29_poster.jpg', title: 'Soul (2020)', sub: 'Амьдралын утга учир', moods: ['sad', 'neutral', 'tired'], hobby: ['Хөгжим тоглох'], desc: 'Жазз хөгжимчин Жо Гарднер амьдралын утга учир, өдөр тутмын жижиг мөчүүдийн үнэ цэнийг ойлгох түүх.' },
   { id: 'm3', type: 'movie', poster: WIKI + 'b/b6/Paddington_2_poster.jpg', title: 'Paddington 2 (2017)', sub: 'Дулаахан инээдмийн кино', moods: ['sad', 'tired', 'anxious'], desc: 'Паддингтон баавгай авга эгчдээ бэлэг авах гэж байгаад буруутгагдах ч эелдэг сайхан сэтгэлээрээ бүгдийг өөрчилдөг дулаахан кино.' },

@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { RECS } from '@/lib/data';
-import { interleave, MN_IDS, pickMongolian } from '@/lib/mn-songs';
+import { interleave, MN_IDS, pickGenres, pickMongolian } from '@/lib/mn-songs';
 import { AMBIENT_FALLBACK, parseSuggestions, suggestPrompt, topArtists, type MusicKind, type Suggestion } from '@/lib/music-suggest';
 import type { MoodId, SongRec } from '@/lib/types';
 import { llmChat, llmConfigured } from './llm';
@@ -47,10 +47,11 @@ export async function songRecs(supabase: SupabaseClient, userId: string, mood: M
   const disliked = new Set(vote(-1));
   const known = new Set([...library.map(t => t.id), ...(existing ?? []).map(r => r.video_id)].filter(Boolean));
 
+  const hobbies: string[] = profile.data?.hobbies ?? [], genres = pickGenres(hobbies);
   const taste = {
-    mood, kind, count: COUNT + 4,
+    mood, kind, count: COUNT + 4, genres,
     today: todayEntry.data ? { tags: todayEntry.data.tags as string[], intensity: todayEntry.data.intensity as number } : null,
-    hobbies: profile.data?.hobbies ?? [],
+    hobbies,
     // Тухайн mood-д тохирох уран бүтээлчдийг эхэнд нь
     artists: topArtists([...library.filter(t => t.moods.includes(mood)), ...library].map(t => t.artist)),
     liked: vote(1).map(label).filter((x): x is string => Boolean(x)).slice(0, 10),
@@ -67,7 +68,7 @@ export async function songRecs(supabase: SupabaseClient, userId: string, mood: M
     : RECS.filter(r => r.type === 'song' && !r.videoId && r.moods.includes(mood)).map(r => ({ title: r.title, artist: r.sub, why: '' }));
 
   // Дууны тал хувь нь монгол (шалгасан жагсаалтаас), үлдсэнийг нь AI-ийн саналаас
-  const mongolian = kind === 'song' ? pickMongolian(mood, new Set([...disliked, ...library.flatMap(t => t.id ?? [])]), new Set((existing ?? []).map(r => r.video_id)), COUNT) : [];
+  const mongolian = kind === 'song' ? pickMongolian(mood, new Set([...disliked, ...library.flatMap(t => t.id ?? [])]), new Set((existing ?? []).map(r => r.video_id)), COUNT, genres) : [];
   const room = COUNT - Math.min(mongolian.length, COUNT / 2);
 
   const found: SongRec[] = [];
