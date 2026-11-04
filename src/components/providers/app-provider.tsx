@@ -9,7 +9,7 @@ import { hhmm, today } from '@/lib/date';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
 import { createClient } from '@/lib/supabase/client';
 import type { AppData } from '@/lib/server/dal';
-import type { Booking, Entry, EntryDraft, Mood, MoodId, Profile } from '@/lib/types';
+import type { Booking, Entry, EntryDraft, LikedSong, Mood, MoodId, Profile, Todo } from '@/lib/types';
 
 // Нээгдэх цонхнууд (хуучин showModal-ын оронд)
 export type DialogState =
@@ -18,6 +18,7 @@ export type DialogState =
   | { kind: 'breath' }
   | { kind: 'movie'; recId: string; mood: MoodId }
   | { kind: 'book'; expertId: string }
+  | { kind: 'wipe' }
   | null;
 
 type AppCtx = AppData & {
@@ -36,6 +37,9 @@ type AppCtx = AppData & {
   addBooking: (b: { expertId: string; date: string; slot: string; kind: 'video' | 'chat'; share: boolean }) => Promise<boolean | 'taken'>;
   cancelBooking: (id: string) => Promise<void>;
   bumpExercises: () => void;
+  /** 👍: дууг «Таалагдсан дуунууд»-д хадгална, дахин дарвал хасна */
+  toggleLike: (s: LikedSong) => void;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
   /** Хөгжмийн эх үүсвэр (YouTube, Spotify): холбох (OAuth руу шилжинэ), синк хийх, салгах */
   musicConnect: (p: MusicProvider) => void;
   musicSync: (p: MusicProvider) => Promise<void>;
@@ -73,7 +77,8 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [dialog, openDialog] = useState<DialogState>(null);
   const [spotify, setSpotify] = useState(initial.spotify);
   const [youtube, setYoutube] = useState(initial.youtube);
-  const [recTracks, setRecTracks] = useState(initial.recTracks);
+  const [likedSongs, setLiked] = useState(initial.likedSongs);
+  const [todos, setTodos] = useState(initial.todos);
   const [musicSyncing, setSyncing] = useState<MusicProvider | null>(null);
   const [libraryVersion, setLibraryVersion] = useState(0);
 
@@ -93,12 +98,8 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
       const j = await res.json().catch(() => ({ error: 'sync-failed' }));
       if (!res.ok) throw new Error(j.error);
       if (p === 'spotify') {
-        const [{ data: st }, { data: rt }] = await Promise.all([
-          supabase.rpc('spotify_status'),
-          supabase.from('rec_tracks').select('rec_id,track_id,name,artists,uri,duration_ms,image'),
-        ]);
+        const { data: st } = await supabase.rpc('spotify_status');
         setSpotify((st as AppData['spotify'][])?.[0] ?? null);
-        setRecTracks(Object.fromEntries((rt ?? []).map(({ rec_id, ...r }) => [rec_id, r])));
         setProfile(x => ({ ...x, spotify_connected: true }));
         toast.success(`${j.tracks} дуу ${j.playlists} playlist-ээс бэлэн боллоо 🎧`, { id: t });
       } else {
@@ -178,14 +179,24 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     void supabase.rpc('increment_exercises').then(({ error }) => fail('Дасгал бүртгэгдсэнгүй')(error));
   }, [supabase]);
 
+  const toggleLike = useCallback((s: LikedSong) => {
+    const has = likedSongs.some(x => x.video_id === s.video_id);
+    const id = 'yt:' + s.video_id;
+    setLiked(l => (has ? l.filter(x => x.video_id !== s.video_id) : [s, ...l]));
+    setFeedback(id, has ? 0 : 1);
+    const { video_id, title, artist, thumbnail, duration_s } = s;
+    void (has ? supabase.from('liked_songs').delete().eq('video_id', video_id) : supabase.from('liked_songs').insert({ video_id, title, artist, thumbnail, duration_s }))
+      .then(({ error }) => fail('Дуу хадгалагдсангүй')(error));
+  }, [likedSongs, setFeedback, supabase]);
+
   const value = useMemo<AppCtx>(() => ({
     supabase, profile, entries, feedback, watchlist, bookings,
-    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, spotify, youtube, recTracks,
+    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, spotify, youtube, likedSongs, todos, setTodos, toggleLike,
     activeMood: liveMood ? moodById(liveMood) : lastMood(entries), setLiveMood,
     tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion,
     dialog, openDialog,
-  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, youtube, recTracks,
+  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, youtube, likedSongs, todos, toggleLike,
     liveMood, tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog]);
 

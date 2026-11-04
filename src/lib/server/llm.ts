@@ -63,3 +63,8 @@ export async function llmReply(messages: Msg[]) {
   const opts: Opts = { temperature: 0.8, maxTokens: 1400, timeoutMs: 30_000, reasoning: 'medium' };
   return (await callProvider(groq, big, messages, opts)) ?? llmChat(messages, opts);
 }
+
+/** Монгол хэлээр бичих шаардлагатай ажил: том загвар → бүтэхгүй бол ердийн загвар */
+export async function llmSmart(messages: Msg[], opts: Opts = {}) {
+  return (await callProvider(PROVIDERS[0], process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b', messages, opts)) ?? llmChat(messages, opts);
+}

@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
+import { MoodImages } from '@/components/mood-images';
 import { PalettePicker } from '@/components/palette-picker';
 import { useApp } from '@/components/providers/app-provider';
 import { usePlayer } from '@/components/providers/player-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
-import { currentSubscription, pushSupported, subscribePush, unsubscribePush } from '@/lib/push-client';
+import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
 import { cn } from '@/lib/utils';
 
@@ -43,26 +44,20 @@ export default function ProfilePage() {
     router.replace('/login'); router.refresh();
   }
 
-  async function wipe() {
-    if (!confirm('Бүх өгөгдөл бүрмөсөн устгагдана. Итгэлтэй байна уу?')) return;
-    const res = await fetch('/api/account', { method: 'DELETE' });
-    if (!res.ok) return toast.error('Устгаж чадсангүй');
-    player.stop();
-    await supabase.auth.signOut();
-    toast('Өгөгдөл устгагдлаа');
-    router.replace('/login'); router.refresh();
-  }
-
   async function togglePush(on: boolean) {
     if (!on) { await unsubscribePush(supabase); setPushOn(false); return void toast('Энэ төхөөрөмжид мэдэгдэл унтарлаа'); }
     const r = await subscribePush(supabase);
     setPushOn(r === 'ok');
+    if (r === 'ok') void showLocal('Сэтгэл 🌙', 'Мэдэгдэл идэвхжлээ. Цаг болоход сануулна.', 'test');
     toast(r === 'ok' ? 'Мэдэгдэл идэвхжлээ 🔔' : r === 'denied' ? 'Браузерын тохиргооноос мэдэгдлийг зөвшөөрнө үү' : r === 'unsupported' ? 'Энэ браузер push мэдэгдэл дэмжихгүй. iPhone дээр эхлээд «Нүүр дэлгэцэнд нэмэх» хэрэгтэй.' : 'Идэвхжүүлж чадсангүй');
   }
 
   async function testPush() {
     const res = await fetch('/api/push/test', { method: 'POST' });
-    toast(res.ok ? 'Туршилтын мэдэгдэл илгээлээ' : 'Сервер дээр push тохируулагдаагүй байна (VAPID түлхүүр)');
+    const j: { sent?: number } = await res.json().catch(() => ({}));
+    if (!res.ok) return void toast.error('Сервер дээр push тохируулагдаагүй байна (VAPID түлхүүр)');
+    if (j.sent) return void toast('Мэдэгдэл илгээлээ. Ирэхгүй бол Windows-ын Notifications, Focus Assist-ийг шалгана уу.');
+    toast.error('Энэ төхөөрөмж бүртгэгдээгүй байна. Push-ийг унтрааж дахин асаана уу.');
   }
 
   return (
@@ -77,9 +72,10 @@ export default function ProfilePage() {
             <div key={l} className="rounded-2xl border bg-card p-3.5"><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v}</b></div>
           ))}
         </div>
+        {u.fav_artists.length > 0 && <p className="mb-2 text-sm"><b>Дуртай дуучид:</b> {u.fav_artists.join(', ')}</p>}
         <h3 className="mb-2 font-semibold">Миний хобби</h3>
         <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-white">{h}</span>)}</div>
-        <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4')}>✏️ Хобби засах</Link>
+        <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>✏️ Хобби, нас, дуучин засах</Link>
       </section>
 
       <section className="card-x">
@@ -89,6 +85,7 @@ export default function ProfilePage() {
           <div className="mb-2.5 text-sm text-muted-foreground">Товч, цэс, графикийн үндсэн өнгө</div>
           <PalettePicker compact value={isPaletteId(u.theme) ? u.theme : DEFAULT_PALETTE} onChange={v => void updateProfile({ theme: v })} />
         </div>
+        <MoodImages />
         <Setting title="Өдөр тутмын сануулга" sub="Энэ цагт бүртгээгүй бол имэйл, push-ээр сануулна">
           <Switch checked={u.reminder_enabled} onCheckedChange={v => updateProfile({ reminder_enabled: v })} aria-label="Сануулга" />
         </Setting>
@@ -100,7 +97,7 @@ export default function ProfilePage() {
         <Setting title="Push мэдэгдэл" sub={!mounted ? '' : !pushSupported() ? 'Энэ браузер дэмжихгүй' : pushOn ? <>Энэ төхөөрөмж дээр идэвхтэй · <button className="text-primary" onClick={testPush}>Туршиж үзэх</button></> : 'Энэ төхөөрөмж дээр'}>
           {mounted && pushSupported() && pushOn !== null && <Switch checked={pushOn} onCheckedChange={v => void togglePush(v)} aria-label="Push мэдэгдэл" />}
         </Setting>
-        <Setting title="Харанхуй горим">
+        <Setting title="Харанхуй горим" sub="Гэрэлтэй горимд таны сонгосон өнгө хадгалагдана">
           {mounted && <Switch checked={resolvedTheme === 'dark'} onCheckedChange={v => setTheme(v ? 'dark' : 'light')} aria-label="Харанхуй горим" />}
         </Setting>
         <Setting title="2D дүр ашиглах" sub="Emoji-ийн оронд">
@@ -130,7 +127,7 @@ export default function ProfilePage() {
         <div className="mt-2 flex max-w-[420px] flex-col gap-2.5">
           <Button variant="outline" size="xl" onClick={exportData}>⬇ Өгөгдлөө татах (JSON)</Button>
           <Button variant="outline" size="xl" onClick={logout}>↩ Гарах</Button>
-          <Button variant="destructive" size="xl" onClick={wipe}>🗑 Бүртгэл, бүх өгөгдлөө устгах</Button>
+          <Button variant="destructive" size="xl" onClick={() => app.openDialog({ kind: 'wipe' })}>🗑 Бүртгэл, бүх өгөгдлөө устгах</Button>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">⚠️ Энэхүү апп нь мэргэжлийн оношилгоо, эмчилгээг орлохгүй. Яаралтай тусламж хэрэгтэй бол 103 руу залгана уу.</p>
       </section>
@@ -141,7 +138,7 @@ export default function ProfilePage() {
 function Setting({ title, sub, children }: { title: string; sub?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex min-h-14 items-center justify-between gap-3 border-b py-3 last:border-0">
-      <div><b>{title}</b>{sub && <div className="text-sm text-muted-foreground">{sub}</div>}</div>
+      <div className="min-w-0"><b>{title}</b>{sub && <div className="text-sm text-muted-foreground">{sub}</div>}</div>
       {children}
     </div>
   );

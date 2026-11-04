@@ -1,5 +1,4 @@
 import 'server-only';
-import { RECS } from '@/lib/data';
 import { classifyPrompt, heuristicMoods, parseClassification } from '@/lib/mood-classify';
 import { playlistEntryTrack, toTrack, type SpotifyTrack } from '@/lib/spotify-parse';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -157,7 +156,6 @@ export async function syncLibrary(userId: string) {
     if (error) throw error;
   }
   await db.from('spotify_connections').update({ synced_at: new Date().toISOString() }).eq('user_id', userId);
-  await resolveRecSongs(token).catch(e => console.error('[spotify] rec songs', e));
   return { tracks: list.length, playlists: playlists.length };
 }
 
@@ -186,18 +184,4 @@ async function classify(list: SpotifyTrack[]) {
   const llmRows = rows.filter(r => r.source === 'llm');
   if (llmRows.length) await db.from('track_moods').upsert(llmRows);
   return result;
-}
-
-/** Апп-ын зөвлөмжийн дуунуудыг (s1..s8) Spotify дээрээс хайж, жинхэнэ дуугаар тоглуулах боломж олгоно */
-async function resolveRecSongs(token: string) {
-  const db = createServiceClient();
-  const songs = RECS.filter(r => r.type === 'song');
-  const { data: have } = await db.from('rec_tracks').select('rec_id');
-  const known = new Set(have?.map(r => r.rec_id));
-  for (const r of songs.filter(s => !known.has(s.id))) {
-    const q = new URLSearchParams({ q: `track:${r.title} artist:${r.sub}`, type: 'track', limit: '1' });
-    const res = await api<{ tracks: { items: unknown[] } }>(token, `/search?${q}`);
-    const t = toTrack(res.tracks.items[0]);
-    if (t) await db.from('rec_tracks').upsert({ rec_id: r.id, track_id: t.id, uri: t.uri, name: t.name, artists: t.artists, image: t.image, duration_ms: t.duration_ms });
-  }
 }

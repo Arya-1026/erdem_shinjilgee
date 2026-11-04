@@ -23,11 +23,10 @@ describe('3D дасгал', () => {
     expect(mixPose(a, b, 1).root).toEqual(b.root);
   });
   it('заавар давталт дотроо солигдоно', () => {
-    const m = EXERCISE_MOVES.e1[0] as Move;
-    expect(cueAt(m, 1)).toBe('Амьсгал ав');
-    expect(cueAt(m, 5)).toBe('Барь');
-    expect(cueAt(m, 12)).toBe('Гарга');
-    expect(cueAt(m, 19 + 1)).toBe('Амьсгал ав');
+    const m = EXERCISE_MOVES.e6[0] as Move;
+    expect(cueAt(m, 1)).toBe('Чангал');
+    expect(cueAt(m, 6)).toBe('Сулла, амьсгаа гарга');
+    expect(cueAt(m, 15 + 1)).toBe('Чангал');
   });
   it('картан дээрх минут бодит хугацаатай таарна', () => {
     for (const r of RECS.filter(x => x.moves)) {

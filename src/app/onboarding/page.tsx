@@ -21,5 +21,5 @@ async function Onboarding({ searchParams }: { searchParams: PageProps<'/onboardi
   }
   const [{ edit }, profile, { supabase }] = res;
   const { count } = await supabase.from('mood_entries').select('id', { count: 'exact', head: true });
-  return <HobbyPicker initial={profile.hobbies} initialTheme={profile.theme} editing={edit === '1'} canSeed={!count} />;
+  return <HobbyPicker initial={profile.hobbies} initialTheme={profile.theme} initialBirthYear={profile.birth_year} initialArtists={profile.fav_artists} editing={edit === '1'} canSeed={!count} />;
 }

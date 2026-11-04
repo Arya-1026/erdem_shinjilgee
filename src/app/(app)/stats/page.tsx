@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { DailyChart, MoodCalendar, WeekdayChart, type DayPoint } from '@/components/charts';
 import { MoodFace } from '@/components/mood-face';
@@ -12,7 +13,9 @@ import { addDays, today, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
 
 export default function StatsPage() {
-  const { profile, entries } = useApp();
+  const { profile, entries, todos } = useApp();
+  const planned: Record<string, number> = {};
+  for (const t of todos) if (t.planned_date && !t.done) planned[t.planned_date] = (planned[t.planned_date] ?? 0) + 1;
   const [range, setRange] = useState<7 | 30>(7);
   const [now] = useState(() => new Date());
 
@@ -89,8 +92,11 @@ export default function StatsPage() {
         </section>
 
         <section className="card-x desk:col-span-2">
-          <h3 className="mb-2 font-semibold">{now.getFullYear()} оны {now.getMonth() + 1}-р сар</h3>
-          <MoodCalendar year={now.getFullYear()} month={now.getMonth()} today={today()} avgOf={d => dayAvg(entries, d)} />
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-semibold">{now.getFullYear()} оны {now.getMonth() + 1}-р сар</h3>
+            <Link href="/todo" className="text-sm font-semibold text-primary">🗓️ Ажил төлөвлөх →</Link>
+          </div>
+          <MoodCalendar year={now.getFullYear()} month={now.getMonth()} today={today()} avgOf={d => dayAvg(entries, d)} counts={planned} />
         </section>
       </div>
     </>

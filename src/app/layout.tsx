@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <script dangerouslySetInnerHTML={{ __html: paletteScript }} />
       </head>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
           {/* Дээд талд: доод хэсэгт байрлах YouTube тоглуулагчийг дарахгүйн тулд */}
           <Toaster position="top-center" />

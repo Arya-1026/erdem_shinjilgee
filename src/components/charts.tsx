@@ -54,7 +54,7 @@ export function WeekdayChart({ stats }: { stats: { w: number; avg: number | null
 }
 
 /* Сарын heatmap: diverging шкал (1 муу → 3 дунд → 5 сайн), өнгө + тоо + tooltip */
-export function MoodCalendar({ year, month, today, avgOf }: { year: number; month: number; today: string; avgOf: (date: string) => number | null }) {
+export function MoodCalendar({ year, month, today, avgOf, counts, selected, onPick }: { year: number; month: number; today: string; avgOf: (date: string) => number | null; counts?: Record<string, number>; selected?: string; onPick?: (date: string) => void }) {
   const dim = new Date(year, month + 1, 0).getDate(), off = (new Date(year, month, 1).getDay() + 6) % 7;
   const ds = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   return (
@@ -66,10 +66,11 @@ export function MoodCalendar({ year, month, today, avgOf }: { year: number; mont
           const date = ds(i + 1), v = avgOf(date);
           const tip = v == null ? `${date}: бүртгэлгүй` : `${date}: ${scoreLabel(v)}`;
           return (
-            <div key={date} title={tip} aria-label={tip} role="gridcell"
-              className={cn('grid aspect-square place-items-center rounded-[10px] text-[.8rem]', v == null ? 'bg-background' : `lvl-${scoreLevel(v)}`,
-                date === today && 'outline-2 outline-offset-1 outline-primary')}>
-              {i + 1}
+            <div key={date} title={tip} role="gridcell" aria-selected={selected === date}
+              className={cn('relative grid aspect-square place-items-center rounded-[10px] text-[.8rem]', v == null ? 'bg-background' : `lvl-${scoreLevel(v)}`,
+                date === today && 'outline-2 outline-offset-1 outline-primary', selected === date && 'ring-2 ring-foreground')}>
+              {onPick ? <button className="size-full rounded-[10px]" aria-label={`${tip}${counts?.[date] ? `, ${counts[date]} ажил` : ''}`} onClick={() => onPick(date)}>{i + 1}</button> : i + 1}
+              {!!counts?.[date] && <span className="pointer-events-none absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-primary text-[.6rem] font-bold text-primary-foreground">{counts[date]}</span>}
             </div>
           );
         })}

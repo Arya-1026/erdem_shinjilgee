@@ -4,12 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { moodById } from '@/lib/data';
 import { SPOTIFY_TRACK_COLS, YOUTUBE_TRACK_COLS } from '@/lib/db';
-import { ytThumb } from '@/lib/mn-songs';
-import { scoredRecs } from '@/lib/recs';
 import type { MusicKind } from '@/lib/music-suggest';
-import type { Mood, MoodId, SongRec, SpotifyTrackRow, YouTubeTrackRow } from '@/lib/types';
+import type { MoodId, SongRec, SpotifyTrackRow, YouTubeTrackRow } from '@/lib/types';
 import { useApp } from './providers/app-provider';
-import { mkTrack, spTrack, usePlayer, ytTrack, type Track } from './providers/player-provider';
+import { spTrack, usePlayer, ytTrack, type Track } from './providers/player-provider';
 
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
@@ -73,27 +71,17 @@ export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
 
 // Зөвлөмж, хэрэглэгчийн сангаас дараалал үүсгэж тоглуулах үйлдлүүд
 export function usePlay() {
-  const { supabase, profile, feedback, recTracks, music } = useApp();
+  const { supabase, profile, music, likedSongs } = useApp();
   const player = usePlayer();
 
-  // Апп-ын ерөнхий зөвлөмжийн дуу: Spotify холбосон бол жинхэнэ дуу, үгүй бол демо аялгуу
-  const songsFor = (m: Mood) => scoredRecs(m, profile.hobbies, feedback).filter(r => r.type === 'song').map(r => {
-    if (r.videoId) return { ...ytTrack({ video_id: r.videoId, title: r.title, artist: r.sub, thumbnail: ytThumb(r.videoId), duration_s: r.dur ?? 0 }, r.moods[0]), id: r.id };
-    const sp = profile.spotify_connected ? recTracks[r.id] : undefined;
-    return sp ? spTrack(sp, r.moods[0], r.id) : mkTrack(r.id, r.title, r.sub, r.moods[0]);
-  });
   const toggleOr = (id: string, start: () => void) => (player.nowId === id ? player.toggle() : start());
 
   return {
-    /** Апп-ын ерөнхий зөвлөмжийн дуу. Тоглож байгаа бол pause/resume */
-    rec(id: string, mood: Mood) {
-      toggleOr(id, () => { const q = songsFor(mood); player.play(q, q.findIndex(t => t.id === id)); });
-    },
     /** Жагсаалтаас (хэрэглэгчийн сан, AI-ийн санал) дараалал үүсгэж i-р дууг тоглуулна */
     list(tracks: Track[], i: number) {
       toggleOr(tracks[i]?.id, () => player.play(tracks, i));
     },
-    /** Тухайн mood-ийн playlist: хэрэглэгчийн өөрийн сан + түүнд зориулсан AI-ийн санал → (байхгүй бол) ерөнхий дуу */
+    /** Тухайн mood-ийн playlist: хэрэглэгчийн өөрийн сан + түүнд зориулсан AI-ийн санал → (байхгүй бол) таалагдсан дуунууд */
     async mood(moodId: MoodId) {
       const m = moodById(moodId);
       const [yt, sp, recs] = await Promise.all([
@@ -109,10 +97,10 @@ export function usePlay() {
       // Өөрийн сан, AI-ийн санал хоёрыг ээлжлэн холино
       const mixed: Track[] = [];
       for (let i = 0; i < Math.max(own.length, forYou.length); i++) { if (own[i]) mixed.push(own[i]); if (forYou[i]) mixed.push(forYou[i]); }
-      const q = mixed.length ? mixed : songsFor(m);
+      const q = mixed.length ? mixed : likedSongs.map(r => ytTrack(r, moodId));
       if (!q.length) return void toast('Энэ мэдрэмжид тохирох дуу олдсонгүй');
       player.play(q, 0);
-      toast(mixed.length ? `«${m.label}» үед танд зориулсан ${mixed.length} дуу 🎧` : `«${m.label}» playlist тоглож байна 🎧`);
+      toast(`«${m.label}» үед танд зориулсан ${q.length} дуу 🎧`);
     },
   };
 }

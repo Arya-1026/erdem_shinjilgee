@@ -55,7 +55,7 @@ export default function HomePage() {
                 <div key={e.id} className="flex items-center gap-3 border-b py-2.5 last:border-0">
                   <MoodFace m={m} className="size-9 text-[1.6rem]" />
                   <div className="min-w-0 flex-1">
-                    <b>{m.label}</b> <span className="text-sm text-muted-foreground">· {e.entry_time} · эрчим {e.intensity}/5</span>
+                    <b>{m.label}</b> <span className="text-sm text-muted-foreground">· {e.entry_time} · эрч хүч {e.intensity}/5</span>
                     {e.tags.length > 0 && <div className="text-sm text-muted-foreground">{e.tags.join(', ')}</div>}
                     {e.note && <div className="text-sm">{e.note}</div>}
                   </div>
@@ -111,7 +111,7 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
       <MoodCarousel index={moodIdx} onChange={onChange} />
       <p key={m.id} className="fade-up mb-3.5 min-h-[1.5em] text-center font-semibold">{MOOD_CAP[m.id]}</p>
 
-      <Range id="int" label={<>Эрчим: <b>{intensity}</b> / 5</>} min={1} max={5} value={intensity} onChange={setIntensity} />
+      <Range id="int" label={<>Эрч хүч: <b>{intensity}</b> / 5</>} min={1} max={5} value={intensity} onChange={setIntensity} />
       <div className="mb-3.5">
         <div className="mb-1.5 text-sm font-semibold">Юутай холбоотой вэ?</div>
         <div className="flex flex-wrap gap-2">
@@ -138,7 +138,7 @@ function Range({ id, label, value, onChange, ...p }: { id: string; label: React.
   );
 }
 
-const ROWS: [RecType, string][] = [['song', '🎵 Сонсох'], ['exercise', '🧘 Хийх'], ['movie', '🎬 Үзэх']];
+const ROWS: [RecType, string][] = [['exercise', '🧘 Хийх'], ['movie', '🎬 Үзэх']];
 
 // «Танд зориулав»: carousel дээр сонгосон mood-оор шууд шинэчлэгдэнэ
 function HomeRecs({ m }: { m: Mood }) {
@@ -152,14 +152,14 @@ function HomeRecs({ m }: { m: Mood }) {
         <Link href="/recs" className="text-sm font-semibold text-primary">Бүгд →</Link>
       </div>
       <Button size="xl" className="mt-2.5 w-full text-[#2B2724]" style={{ background: m.color }} onClick={() => play.mood(m.id)}>▶ «{m.label}» playlist тоглуулах</Button>
+      {/* Дуу: зөвхөн AI тухайн хүнд сонгосон дуунууд + тайвшруулах ая */}
+      {music.discovery && (
+        <>
+          <ForYouRow title="🎵 Сонсох" m={m} kind="song" />
+          <ForYouRow title="🎼 Тайвшрах ая" m={m} kind="ambient" />
+        </>
+      )}
       {ROWS.map(([type, title]) => {
-        // Дуу: YouTube хайлт тохируулсан бол AI тухайн хүнд сонгосон дуунууд + тайвшруулах ая
-        if (type === 'song' && music.discovery) return (
-          <div key={type}>
-            <ForYouRow title={title} m={m} kind="song" />
-            <ForYouRow title="🎼 Тайвшрах ая" m={m} kind="ambient" />
-          </div>
-        );
         const list = recs.filter(r => r.type === type);
         return list.length > 0 && (
           <div key={type}>

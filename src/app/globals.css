@@ -136,6 +136,9 @@
   --div-5: #D9B65A; --div-5-ink: #1A1816;
 }
 
+/* Гэрэлтэй горимын дэвсгэр хэрэглэгчийн сонгосон өнгөөр зөөлөн будагдана */
+html:not(.dark) { --background: color-mix(in srgb, var(--secondary) 32%, #FBF9F6); }
+
 /* ---------- Хэрэглэгчийн сонгох өнгөний палитр (<html data-palette="...">) ---------- */
 [data-palette="water"] { --primary: #36689E; --primary-2: #9DB4D9; --secondary: #DDE7F3; --secondary-foreground: #36689E; --accent: #DDE7F3; --ring: #36689E; --primary-foreground: #FFFFFF; }
 .dark[data-palette="water"] { --primary: #8FB4E3; --primary-2: #B9CDEB; --secondary: #1E2C3D; --secondary-foreground: #8FB4E3; --accent: #1E2C3D; --ring: #8FB4E3; --primary-foreground: #0F1A26; }
@@ -171,6 +174,7 @@ body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 
   .app-main { padding: 16px 32px 32px; }
   body.has-player .app-main { padding-bottom: 100px; }
 }
+.card-x.grad-dawn { background: linear-gradient(135deg, var(--emotion-joy), var(--emotion-love)); }
 .card-x { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -240,11 +244,21 @@ body.has-player .fp { padding-bottom: 110px; }
    «Хураах» дарвал 64px mini bar болж, видео түр зогсоно (харагдахгүй видеог тоглуулахыг дүрэм хориглодог). */
 :root { --yt-h: 200px; }
 .yt-dock { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); height: var(--yt-h); }
+.yt-dock { flex-wrap: wrap; align-content: flex-start; height: calc(var(--yt-h) + 24px); }
+/* Чирэх бариул: видео дээр давхарлахгүйн тулд дээд талд тусдаа мөр */
+.yt-grip { flex: 0 0 100%; height: 24px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.yt-grip:active { cursor: grabbing; }
+.yt-grip i { display: block; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.45); }
+.yt-dock > :last-child { height: var(--yt-h); }
+.yt-dock.yt-small > :last-child { height: auto; flex: 0 0 100%; }
 .yt-dock.yt-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
 .yt-frame { width: var(--yt-h); height: var(--yt-h); flex: none; background: #000; }
 .yt-frame iframe { display: block; width: 100%; height: 100%; }
 @media (min-width: 900px) { .yt-dock { left: auto; right: 16px; bottom: 16px; width: 440px; } }
-body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 28px); }
+/* Хураасан: дуу үргэлжилнэ, тоглуулагч буланд YouTube-ийн зөвшөөрөх хамгийн бага хэмжээгээр харагдана */
+.yt-dock.yt-small { left: auto; right: 8px; width: var(--yt-h); height: auto; flex-direction: column; }
+@media (min-width: 900px) { .yt-dock.yt-small { right: 16px; width: var(--yt-h); } }
+body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 48px); }
 body.has-yt .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - var(--yt-h) - 64px); }
 body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
 @media (min-width: 900px) {
@@ -270,6 +284,26 @@ body.has-player .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-foreground); animation: bounce 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
 @keyframes bounce { 0%, 60%, 100% { opacity: .3; transform: none; } 30% { opacity: 1; transform: translateY(-4px); } }
+
+/* ---------- Амьсгалын дасгал: цагираг тухайн үе шатын хугацаагаар тойрно ---------- */
+.breath-wrap { position: relative; width: min(250px, 72vw); aspect-ratio: 1; margin: 18px auto; display: grid; place-items: center; }
+.breath-ring { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
+.breath-track { fill: none; stroke: var(--secondary); stroke-width: 5; }
+.breath-spin { transform-origin: 60px 60px; animation: breath-spin linear forwards; }
+.breath-arc { fill: none; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 100; animation: breath-arc linear forwards; transform-origin: 60px 60px; }
+.breath-dot { fill: var(--primary); }
+.breath { width: 76%; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(160deg, var(--emotion-calm), var(--emotion-sad)); /* «Тайван ус» */
+  display: grid; place-items: center; text-align: center; color: var(--on-emotion); font-weight: 800; font-size: 1.05rem; transform: scale(.62); transition: transform 4s ease-in-out; }
+/* Нуман шугам нэг цэгээс эхэлж, цэг дагаж ургана: бүлэг эргэх тул нумыг эсрэг эргүүлж суурийг нь тогтооно */
+@keyframes breath-spin { to { transform: rotate(360deg); } }
+@keyframes breath-arc { from { stroke-dashoffset: 100; transform: rotate(0deg); } to { stroke-dashoffset: 0; transform: rotate(-360deg); } }
+
+/* ---------- Дасгалын алхам ---------- */
+.step-card { animation: step-in .4s ease-out; }
+.step-icon { animation: step-pop .5s ease-out, step-float 3s ease-in-out .5s infinite; box-shadow: 0 0 0 10px color-mix(in srgb, var(--primary) 14%, transparent); }
+@keyframes step-in { from { opacity: 0; transform: translateX(24px); } }
+@keyframes step-pop { from { transform: scale(.6); } }
+@keyframes step-float { 50% { transform: translateY(-7px); } }
 
 /* ---------- Тайлангийн heatmap ---------- */
 .lvl-1 { background: var(--div-1); color: var(--div-1-ink); } .lvl-2 { background: var(--div-2); color: var(--div-2-ink); }

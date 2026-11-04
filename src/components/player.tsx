@@ -20,12 +20,13 @@ function Cover({ t, className }: { t: Track; className?: string }) {
 }
 
 function useLike() {
-  const { feedback, setFeedback } = useApp();
-  const { nowId } = usePlayer();
-  const liked = nowId ? feedback[nowId] === 1 : false;
+  const { feedback, setFeedback, likedSongs, toggleLike } = useApp();
+  const { nowId, current: t } = usePlayer();
+  const liked = t?.videoId ? likedSongs.some(s => s.video_id === t.videoId) : nowId ? feedback[nowId] === 1 : false;
   const toggle = () => {
-    if (!nowId) return;
-    setFeedback(nowId, liked ? 0 : 1);
+    if (!nowId || !t) return;
+    if (t.videoId) toggleLike({ video_id: t.videoId, title: t.title, artist: t.artist, thumbnail: t.image ?? null, duration_s: Math.round(t.dur) });
+    else setFeedback(nowId, liked ? 0 : 1);
     toast(liked ? 'Хасагдлаа' : 'Таалагдсан дуунд нэмэгдлээ 💚');
   };
   return { liked, toggle };
@@ -39,8 +40,7 @@ export function MiniPlayer() {
   const t = p.current; if (!t || p.usesEmbed) return null; // embed үед Spotify-ийн өөрийн тоглуулагч харагдана
   const m = moodById(t.mood);
   return (
-    // YouTube-ийг хураасан бол дарахад тоглуулагч дахин дэлгэгдэнэ
-    <div role="region" aria-label="Тоглуулагч" onClick={() => (t.source === 'youtube' ? p.setYtMin(false) : p.setFull(true))}
+    <div role="region" aria-label="Тоглуулагч" onClick={() => p.setFull(true)}
       className="mini fixed inset-x-2 z-35 flex h-16 cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl p-2 text-white shadow-[0_10px_30px_rgba(0,0,0,.3)]"
       style={{ '--pc': m.color } as React.CSSProperties}>
       <Cover t={t} className="mini-cover size-12 rounded-[10px] text-2xl" />

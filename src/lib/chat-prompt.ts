@@ -33,7 +33,7 @@ const MODE_HINT: Record<ChatMode, string> = {
   listen: 'Горим «Сонсох»: зөвлөгөө бага (дээд тал нь 1). Мэдрэмжийг нь өөрийн үгээр тусгаж хэлээд, гүнзгий ойлгох асуулт асуу.',
 };
 
-const fmt = (e: Entry) => `${e.entry_date}: ${moodById(e.mood).label} (эрчим ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep}ц` : ''}${e.tags.length ? `, ${e.tags.join('/')}` : ''})`;
+const fmt = (e: Entry) => `${e.entry_date}: ${moodById(e.mood).label} (эрч хүч ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep}ц` : ''}${e.tags.length ? `, ${e.tags.join('/')}` : ''})`;
 
 export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string }) {
   const recent = p.entries.slice(-7).map(fmt).join('\n');

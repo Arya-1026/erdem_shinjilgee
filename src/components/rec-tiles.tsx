@@ -1,48 +1,31 @@
 'use client';
 
 import { moodById, REC_ICON } from '@/lib/data';
-import { ytThumb } from '@/lib/mn-songs';
-import { cn } from '@/lib/utils';
 import type { Mood, ScoredRec } from '@/lib/types';
-import { Eq } from './player';
 import { Poster } from './poster';
 import { useApp } from './providers/app-provider';
-import { usePlayer } from './providers/player-provider';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { usePlay } from './use-play';
+import { cn } from '@/lib/utils';
 
-// Зөвлөмж дээр дарахад: дуу → тоглуулна, кино → дэлгэрэнгүй, дасгал → алхмууд
+// Зөвлөмж дээр дарахад: кино → дэлгэрэнгүй, дасгал → алхмууд
 export function useRecAction() {
   const { openDialog } = useApp();
-  const play = usePlay();
   return (r: ScoredRec, m: Mood) => {
-    if (r.type === 'song') return play.rec(r.id, m);
     if (r.type === 'movie') return openDialog({ kind: 'movie', recId: r.id, mood: m.id });
     openDialog(r.action === 'breath' ? { kind: 'breath' } : { kind: 'exercise', recId: r.id });
   };
 }
 
-// eslint-disable-next-line @next/next/no-img-element -- YouTube CDN-ийн зураг
-const YtCover = ({ id }: { id: string }) => <img src={ytThumb(id)} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />;
-
 /* Нүүрний хажуу тийш гүйлгэдэг жижиг tile */
 export function RecTile({ r, m }: { r: ScoredRec; m: Mood }) {
-  const { nowId, playing } = usePlayer();
   const act = useRecAction();
-  const now = nowId === r.id;
   return (
-    <button onClick={() => act(r, m)} className={cn('htile flex w-[132px] flex-none snap-start flex-col self-start text-left', now && 'now')}>
+    <button onClick={() => act(r, m)} className="htile flex w-[132px] flex-none snap-start flex-col self-start text-left">
       <div className={cn('tile-cover relative mb-1.5 grid w-[132px] place-items-center overflow-hidden rounded-2xl text-[2.4rem]', r.type === 'movie' ? 'h-[192px]' : 'h-[132px]')} style={{ '--tc': moodById(r.moods[0]).color } as React.CSSProperties}>
-        {r.type === 'movie' ? <Poster src={r.poster} title={r.title} className="size-full" />
-          : r.videoId ? <YtCover id={r.videoId} /> : REC_ICON[r.type]}
-        {r.type === 'song' && (
-          <span className="pl absolute right-2 bottom-2 grid size-[34px] place-items-center rounded-full bg-spotify text-sm text-white shadow-[0_4px_12px_rgba(0,0,0,.3)]">
-            {now && playing ? <Eq /> : '▶'}
-          </span>
-        )}
+        {r.type === 'movie' ? <Poster src={r.poster} title={r.title} className="size-full" /> : REC_ICON[r.type]}
       </div>
-      <b className={cn('line-clamp-2 text-sm leading-tight', now && 'text-spotify')}>{r.title}</b>
+      <b className="line-clamp-2 text-sm leading-tight">{r.title}</b>
       <span className="block truncate text-xs text-muted-foreground">{r.sub}</span>
     </button>
   );
@@ -50,15 +33,13 @@ export function RecTile({ r, m }: { r: ScoredRec; m: Mood }) {
 
 /* Зөвлөмж хуудасны карт: үйлдэл + 👍/👎 */
 export function RecCard({ r, m, onFeedback }: { r: ScoredRec; m: Mood; onFeedback: (id: string, v: number) => void }) {
-  const { nowId, playing } = usePlayer();
   const act = useRecAction();
-  const now = nowId === r.id;
   return (
     <article className="card-x flex flex-col gap-2.5">
       <div className="flex items-start gap-3">
         {r.type === 'movie'
           ? <Poster src={r.poster} title={r.title} className="h-[96px] w-16 flex-none rounded-lg bg-secondary text-xl" />
-          : <div className="relative grid size-11 flex-none place-items-center overflow-hidden rounded-xl bg-secondary text-xl">{r.videoId ? <YtCover id={r.videoId} /> : REC_ICON[r.type]}</div>}
+          : <div className="grid size-11 flex-none place-items-center rounded-xl bg-secondary text-xl">{REC_ICON[r.type]}</div>}
         <div className="min-w-0">
           <b>{r.title}</b>
           <div className="text-sm text-muted-foreground">{r.sub}</div>
@@ -68,7 +49,6 @@ export function RecCard({ r, m, onFeedback }: { r: ScoredRec; m: Mood; onFeedbac
       </div>
       <div className="mt-auto flex items-center gap-2">
         {r.type === 'exercise' && <Button size="xl" className="h-[42px] flex-1" onClick={() => act(r, m)}>▶ Эхлэх</Button>}
-        {r.type === 'song' && <Button size="xl" className="h-[42px] flex-1 bg-spotify hover:bg-spotify/85" onClick={() => act(r, m)}>{now && playing ? <><Eq /> Тоглож байна</> : '▶ Тоглуулах'}</Button>}
         {r.type === 'movie' && <Button size="xl" variant="secondary" className="h-[42px] flex-1" onClick={() => act(r, m)}>Дэлгэрэнгүй</Button>}
         <button className={cn('size-[42px] flex-none rounded-[10px] border-[1.5px]', r.fb === 1 && 'border-primary bg-secondary')} aria-label="Таалагдсан" aria-pressed={r.fb === 1} onClick={() => onFeedback(r.id, 1)}>👍</button>
         <button className="size-[42px] flex-none rounded-[10px] border-[1.5px]" aria-label="Таалагдаагүй" onClick={() => onFeedback(r.id, -1)}>👎</button>

@@ -1,6 +1,6 @@
 /* ---------- Лавлах өгөгдөл (кодтой хамт хувилбарлагдана) ---------- */
 import { EXERCISE_MOVES } from './exercise-moves';
-import { FEATURED, MN_SONGS, SONG_GENRES } from './mn-songs';
+import { SONG_GENRES } from './mn-songs';
 import type { Mood, MoodId, Rec } from './types';
 
 // Өнгө нь design system-ийн emotion-* token (light). Дээрх текст үргэлж on-emotion (#2B2724).
@@ -47,7 +47,7 @@ export const CAT_ICON: Record<string, string> = {
 const WIKI = 'https://upload.wikimedia.org/wikipedia/en/';
 
 export const RECS: Rec[] = [
-  { id: 'e1', type: 'exercise', title: '4-7-8 амьсгалын дасгал', sub: '2 мин · Түгшүүр, уурыг бууруулна', moods: ['anxious', 'angry', 'sad'], hobby: ['Бясалгал', 'Амьсгалын дасгал', 'Йог'], action: 'breath', moves: EXERCISE_MOVES.e1 },
+  { id: 'e1', type: 'exercise', title: '4-7-8 амьсгалын дасгал', sub: '2 мин · Түгшүүр, уурыг бууруулна', moods: ['anxious', 'angry', 'sad'], hobby: ['Бясалгал', 'Амьсгалын дасгал', 'Йог'], action: 'breath' },
   { id: 'e2', type: 'exercise', title: '5-4-3-2-1 газардуулах арга', sub: '3 мин · Одоо цагт эргэн ирэх', moods: ['anxious'], hobby: ['Бясалгал', 'Сэтгэл судлал'], steps: ['Эргэн тойрондоо харагдах 5 зүйлийг нэрлэ', 'Хүрч болох 4 зүйлд хүр', 'Сонсогдож буй 3 дууг ажигла', 'Үнэртэж буй 2 зүйлийг мэдэр', 'Амтлах 1 зүйлийг ажигла'] },
   { id: 'e3', type: 'exercise', moves: EXERCISE_MOVES.e3, title: '10 минутын алхалт', sub: 'Гадаа, цэвэр агаарт', moods: ['sad', 'tired', 'neutral', 'angry'], hobby: ['Гүйлт', 'Явган аялал', 'Аялал', 'Нохой', 'Дугуй унах', 'Майхан', 'Цэцэрлэгжүүлэлт'], steps: ['Утсаа чимээгүй горимд тавь', 'Гадаа гараад 10 минут тайван алх', 'Эргэн тойрныхоо өнгө, дууг ажигла'] },
   { id: 'e4', type: 'exercise', moves: EXERCISE_MOVES.e4, title: 'Иогийн сунгалт', sub: '7 мин · Хүзүү, нуруу суллах', moods: ['tired', 'anxious', 'calm'], hobby: ['Йог', 'Фитнесс', 'Сунгалт', 'Бүжиг'], steps: ['Хүзүүгээ зүүн, баруун тийш 5 удаа хазайлга', 'Мөрөө 10 удаа эргүүл', 'Муур-үнээ байрлалаар 8 удаа', 'Хүүхдийн байрлалд 1 минут амар'] },
@@ -57,16 +57,6 @@ export const RECS: Rec[] = [
   { id: 'e8', type: 'exercise', title: 'Мэдрэмжээ зураглах', sub: '15 мин · Өнгө, хэлбэрээр илэрхийл', moods: ['sad', 'angry', 'anxious'], hobby: ['Зураг', 'Гэрэл зураг', 'Дизайн', 'Уран бичлэг', 'Шавар урлал', 'Оёдол', 'Сүлжмэл'], steps: ['Цаас, өнгийн харандаа бэлд', 'Одоогийн мэдрэмжээ өнгө, хэлбэрээр зур (гоё байх албагүй)', 'Дуусаад зурсан зүйлээ нэг үгээр нэрлэ'] },
   { id: 'e9', type: 'exercise', title: 'Ачааллаа задлах', sub: '10 мин · Хичээл, ажил давхцахад', moods: ['anxious', 'tired', 'neutral', 'sad'], hobby: ['Програмчлал', 'Өөрийгөө хөгжүүлэх', 'Тэмдэглэл хөтлөх'], steps: ['Толгойд байгаа бүх ажлаа цаасан дээр 3 минут бич (жагсаалт, эмх цэгцгүй байж болно)', 'Энэ 7 хоногт заавал хийх 3-ыг тойруул, бусдыг нь «дараа»', 'Хугацааг нь хойшлуулж болох нэгийг сонгоод багш/даргаасаа асуух мессеж бич', 'Хамгийн жижиг эхний алхмыг 25 минут хий, дараа нь 5 минут амар'] },
   { id: 'e10', type: 'exercise', title: 'Хайртай хүнтэйгээ тайван ярилцах', sub: '5 мин бэлтгэл · Харилцаа хүндэрсэн үед', moods: ['sad', 'angry', 'anxious'], hobby: ['Найзуудтайгаа уулзах', 'Гэр бүлтэйгээ', 'Сэтгэл судлал'], steps: ['Яг юу таныг гомдоосныг нэг өгүүлбэрээр бич', '«Чи үргэлж…» биш «Би … үед … мэдэрсэн» гэж эхэл', 'Түүнээс юу хүсэж байгаагаа тодорхой хэл (жишээ нь: «7 хоногт нэг орой хамт байя»)', 'Хоёулаа тайван үед ярих цаг товло, мессежээр маргалдахаас зайлсхий', 'Түүний талаас сонсож, «Би чамайг ойлгох гэж байна» гэж хэл'] },
-  // Монгол дуунууд эхэндээ: оноо тэнцэх үед эрэмбэ хадгалагдана
-  ...MN_SONGS.slice(0, FEATURED).map((s, i): Rec => ({ id: `mn${i + 1}`, type: 'song', title: s.title, sub: s.artist, moods: s.moods, hobby: s.genres, videoId: s.id, dur: s.dur })),
-  { id: 's1', type: 'song', title: 'Weightless', sub: 'Marconi Union', moods: ['anxious', 'angry'], hobby: ['Дуу сонсох', 'Lo-fi', 'Бясалгал'] },
-  { id: 's2', type: 'song', title: 'Clair de Lune', sub: 'Claude Debussy', moods: ['anxious', 'tired', 'calm'], hobby: ['Хөгжим тоглох', 'Төгөлдөр хуур', 'Сонгодог хөгжим'] },
-  { id: 's3', type: 'song', title: 'Fix You', sub: 'Coldplay', moods: ['sad'], hobby: ['Рок', 'Гитар'] },
-  { id: 's4', type: 'song', title: 'Here Comes the Sun', sub: 'The Beatles', moods: ['sad', 'neutral', 'tired'], hobby: ['Рок', 'Поп'] },
-  { id: 's5', type: 'song', title: 'Happy', sub: 'Pharrell Williams', moods: ['happy', 'neutral'], hobby: ['Бүжиг', 'Поп', 'R&B'] },
-  { id: 's6', type: 'song', title: "Don't Stop Me Now", sub: 'Queen', moods: ['happy'], hobby: ['Дуулах', 'Рок'] },
-  { id: 's7', type: 'song', title: 'Three Little Birds', sub: 'Bob Marley', moods: ['anxious', 'sad', 'neutral'] },
-  { id: 's8', type: 'song', title: 'Lovely Day', sub: 'Bill Withers', moods: ['calm', 'happy', 'tired'], hobby: ['R&B', 'Жазз'] },
   { id: 'm1', type: 'movie', poster: WIKI + '0/0a/Inside_Out_%282015_film%29_poster.jpg', title: 'Inside Out (2015)', sub: 'Сэтгэл хөдлөлөө ойлгох тухай', moods: ['sad', 'angry', 'anxious', 'neutral'], hobby: ['Кино'], desc: '11 настай Райлигийн толгой доторх Баяр, Гуниг, Уур, Айдас, Жигшил гэсэн сэтгэл хөдлөлүүдийн түүх. Гуниг ч гэсэн хэрэгтэй мэдрэмж гэдгийг ойлгуулдаг.' },
   { id: 'm2', type: 'movie', poster: WIKI + '3/39/Soul_%282020_film%29_poster.jpg', title: 'Soul (2020)', sub: 'Амьдралын утга учир', moods: ['sad', 'neutral', 'tired'], hobby: ['Хөгжим тоглох'], desc: 'Жазз хөгжимчин Жо Гарднер амьдралын утга учир, өдөр тутмын жижиг мөчүүдийн үнэ цэнийг ойлгох түүх.' },
   { id: 'm3', type: 'movie', poster: WIKI + 'b/b6/Paddington_2_poster.jpg', title: 'Paddington 2 (2017)', sub: 'Дулаахан инээдмийн кино', moods: ['sad', 'tired', 'anxious'], desc: 'Паддингтон баавгай авга эгчдээ бэлэг авах гэж байгаад буруутгагдах ч эелдэг сайхан сэтгэлээрээ бүгдийг өөрчилдөг дулаахан кино.' },
@@ -94,4 +84,4 @@ export const MOOD_CAP: Record<MoodId, string> = {
 };
 
 export const QUICK = ['Стресстэй байна 😣', 'Хичээл, ажил давхцаад байна 📚', 'Харилцаа хүндэрсэн 💔', 'Нойр хүрэхгүй байна 🌙', 'Ганцаардаж байна', 'Урам хэрэгтэй байна 💪'];
-export const REC_ICON = { exercise: '🧘', song: '🎵', movie: '🎬' } as const;
+export const REC_ICON = { exercise: '🧘', movie: '🎬' } as const;

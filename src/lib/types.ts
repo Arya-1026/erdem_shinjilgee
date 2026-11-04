@@ -4,7 +4,7 @@ import type { PaletteId } from './palettes';
 
 export type MoodId = 'happy' | 'calm' | 'neutral' | 'tired' | 'anxious' | 'sad' | 'angry';
 export type ChatMode = 'calm' | 'motivate' | 'listen';
-export type RecType = 'exercise' | 'song' | 'movie';
+export type RecType = 'exercise' | 'movie';
 
 export type Mood = { id: MoodId; label: string; emoji: string; color: string; score: number };
 
@@ -20,9 +20,6 @@ export type Rec = {
   action?: 'breath';
   /** Киноны постер */
   poster?: string;
-  /** Дууг шууд тоглуулах YouTube бичлэг */
-  videoId?: string;
-  dur?: number;
   /** 3D загварыг дагаж хийх алхмууд */
   moves?: Move[];
 };
@@ -54,6 +51,10 @@ export type Profile = {
   spotify_connected: boolean;
   youtube_connected: boolean;
   exercises_done: number;
+  birth_year: number | null;
+  fav_artists: string[];
+  /** Хэрэглэгчийн өөрийн оруулсан mood-ийн зураг (data URL) */
+  mood_images: Partial<Record<MoodId, string>>;
 };
 
 export type Entry = {
@@ -91,3 +92,20 @@ export type SongRec = YouTubeTrackRow & { reason: string };
 export type SpotifyTrackRow = { track_id: string; name: string; artists: string; uri: string; duration_ms: number; image: string | null };
 
 export type ChatMessage = { id: number | string; role: 'user' | 'assistant'; content: string; crisis: boolean };
+
+export type LikedSong = YouTubeTrackRow;
+
+export type Todo = {
+  id: string;
+  title: string;
+  category: string;
+  /** 1 хөнгөн, 2 дунд, 3 хүнд */
+  effort: number;
+  minutes: number;
+  due_date: string | null;
+  planned_date: string | null;
+  /** Яагаад энэ өдөрт хуваарилсан тайлбар */
+  reason: string;
+  done: boolean;
+  done_at: string | null;
+};

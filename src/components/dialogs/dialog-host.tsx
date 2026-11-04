@@ -1,13 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SupportBody } from '@/components/daily-support';
 import { ExerciseCoach } from '@/components/exercise/coach';
+import { StepCoach } from '@/components/exercise/steps';
 import { MoodFace } from '@/components/mood-face';
 import { Poster } from '@/components/poster';
 import { useApp, type DialogState } from '@/components/providers/app-provider';
+import { usePlayer } from '@/components/providers/player-provider';
 import { Segmented } from '@/components/segmented';
 import { usePlay } from '@/components/use-play';
 import { Button } from '@/components/ui/button';
@@ -30,7 +32,8 @@ export function DialogHost() {
       <DialogContent className={SHEET}>
         {d?.kind === 'saved' && <Saved mood={d.mood} />}
         {d?.kind === 'exercise' && <Exercise recId={d.recId} />}
-        {d?.kind === 'breath' && <Exercise recId="e1" />}
+        {d?.kind === 'breath' && <Breath />}
+        {d?.kind === 'wipe' && <Wipe />}
         {d?.kind === 'movie' && <Movie recId={d.recId} moodId={d.mood} />}
         {d?.kind === 'book' && <Book key={d.expertId} expertId={d.expertId} />}
       </DialogContent>
@@ -75,13 +78,98 @@ function Exercise({ recId }: { recId: string }) {
     <>
       <Title>{r.title}</Title>
       <DialogDescription>{r.sub}</DialogDescription>
-      {r.moves ? <ExerciseCoach moves={r.moves} onFinish={finish} /> : (
-        <>
-          <ol className="mt-2 list-decimal pl-5">{r.steps?.map(s => <li key={s} className="mb-2">{s}</li>)}</ol>
-          <Button size="xl" className="mt-4 w-full" onClick={finish}>✓ Дууслаа</Button>
-        </>
-      )}
+      {r.moves ? <ExerciseCoach moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
     </>
+  );
+}
+
+const PHASES: [string, number, number][] = [['Амьсгал ав', 4, 1], ['Барь', 7, 1], ['Гарга', 8, 0.62]];
+const CYCLES = 4;
+
+/* Хуучин тойрог: дотор нь тэлж агшина, гадна нь цагираг тухайн үе шатын хугацаагаар тойрч дуусна */
+function Breath() {
+  const { bumpExercises } = useApp();
+  const [state, setState] = useState<{ label: string; sec: number; scale: number; cycle: number; step: number } | null>(null);
+  const [left, setLeft] = useState(0);
+  const [done, setDone] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined), tick = useRef<ReturnType<typeof setInterval>>(undefined);
+  useEffect(() => () => { clearTimeout(timer.current); clearInterval(tick.current); }, []);
+
+  function start() {
+    let cycle = 0, i = 0, n = 0;
+    const step = () => {
+      clearInterval(tick.current);
+      if (i === PHASES.length) { i = 0; cycle++; }
+      if (cycle === CYCLES) { setDone(true); setState(null); bumpExercises(); return; }
+      const [label, sec, scale] = PHASES[i++];
+      setState({ label, sec, scale, cycle, step: ++n });
+      setLeft(sec);
+      tick.current = setInterval(() => setLeft(x => Math.max(1, x - 1)), 1000);
+      timer.current = setTimeout(step, sec * 1000);
+    };
+    step();
+  }
+
+  return (
+    <>
+      <Title>4-7-8 амьсгал</Title>
+      <DialogDescription>Тав тухтай суугаад цагирагийг дагаарай: 4 сек амьсгал авч, 7 сек барьж, 8 сек гаргана.</DialogDescription>
+      <div className="breath-wrap">
+        <svg viewBox="0 0 120 120" className="breath-ring" aria-hidden="true">
+          <circle cx="60" cy="60" r="55" className="breath-track" />
+          {state && (
+            <g key={state.step} className="breath-spin" style={{ animationDuration: `${state.sec}s` }}>
+              <circle cx="60" cy="60" r="55" pathLength={100} className="breath-arc" style={{ animationDuration: `${state.sec}s` }} />
+              <circle cx="115" cy="60" r="4" className="breath-dot" />
+            </g>
+          )}
+        </svg>
+        <div className="breath" style={state ? { transitionDuration: `${state.sec}s`, transform: `scale(${state.scale})` } : undefined}>
+          <span>{done ? 'Сайн байна 🌿' : state?.label ?? 'Бэлэн үү?'}{state && <b className="block text-2xl tabular-nums">{left}</b>}</span>
+        </div>
+      </div>
+      <p className="text-center text-muted-foreground" aria-live="polite">{done ? 'Дасгал дууслаа' : state ? `${state.cycle + 1} / ${CYCLES} давталт` : `${CYCLES} давталт`}</p>
+      {!state && !done && <Button size="xl" className="mt-2 w-full" onClick={start}>Эхлэх</Button>}
+    </>
+  );
+}
+
+/* Бүртгэл устгах: нууц үгээр баталгаажуулна. Google-ээр орсон бол нууц үггүй тул имэйлээ бичнэ. */
+function Wipe() {
+  const { supabase, profile, openDialog } = useApp();
+  const { stop } = usePlayer();
+  const router = useRouter();
+  const [secret, setSecret] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => { if (alive) setHasPassword(Boolean(data.user?.identities?.some(i => i.provider === 'email'))); });
+    return () => { alive = false; };
+  }, [supabase]);
+
+  async function confirm(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const res = await fetch('/api/account', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(hasPassword ? { password: secret } : { email: secret }) });
+    if (!res.ok) { setBusy(false); return void toast.error(res.status === 403 ? (hasPassword ? 'Нууц үг буруу байна' : 'Имэйл таарахгүй байна') : 'Устгаж чадсангүй'); }
+    stop();
+    await supabase.auth.signOut();
+    openDialog(null);
+    toast('Өгөгдөл устгагдлаа');
+    router.replace('/login'); router.refresh();
+  }
+
+  return (
+    <form onSubmit={e => void confirm(e)}>
+      <Title>Бүртгэл, бүх өгөгдлөө устгах</Title>
+      <DialogDescription>Бүх бүртгэл, чат, төлөвлөгөө бүрмөсөн устгагдана. Буцаах боломжгүй.</DialogDescription>
+      <label htmlFor="wipe-secret" className="mt-3 mb-1.5 block text-sm font-semibold">{hasPassword === false ? `Баталгаажуулахын тулд имэйлээ бичнэ үү (${profile.email})` : 'Нууц үгээ оруулна уу'}</label>
+      <input id="wipe-secret" type={hasPassword === false ? 'email' : 'password'} autoComplete={hasPassword === false ? 'off' : 'current-password'} value={secret} onChange={e => setSecret(e.target.value)} required
+        className="min-h-12 w-full rounded-xl border-[1.5px] bg-background px-3.5 focus:border-primary focus:outline-none" />
+      <Button type="submit" size="xl" variant="destructive" className="mt-3 w-full" disabled={busy || !secret || hasPassword === null}>{busy ? 'Устгаж байна…' : '🗑 Бүрмөсөн устгах'}</Button>
+      <Button type="button" size="xl" variant="outline" className="mt-2 w-full" onClick={() => openDialog(null)}>Болих</Button>
+    </form>
   );
 }
 

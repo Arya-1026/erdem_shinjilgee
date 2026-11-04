@@ -39,3 +39,12 @@ export async function unsubscribePush(supabase: SupabaseClient) {
   await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
   await sub.unsubscribe();
 }
+
+/** Энэ төхөөрөмж дээр шууд мэдэгдэл харуулна (сервергүй). Зөвшөөрөл байхгүй бол юу ч хийхгүй. */
+export async function showLocal(title: string, body: string, tag: string) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const reg = await navigator.serviceWorker?.getRegistration('/');
+  const opts = { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', data: { url: '/home' } };
+  if (reg) await reg.showNotification(title, opts);
+  else new Notification(title, opts);
+}

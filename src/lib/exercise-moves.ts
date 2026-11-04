@@ -14,7 +14,7 @@ type Scalar = (typeof SCALARS)[number];
 export type Pose = Record<Joint, V3> & Record<Scalar, number>;
 
 export type Region = 'legs' | 'core' | 'arms' | 'shoulders' | 'head';
-export type View = 'front' | 'angle' | 'side' | 'floor' | 'seated';
+export type View = 'front' | 'angle' | 'side' | 'floor';
 
 const ZERO: V3 = [0, 0, 0];
 const clamp = (t: number) => Math.min(1, Math.max(0, t));
@@ -45,9 +45,6 @@ export function mixPose(a: Pose, b: Pose, t: number): Pose {
 }
 
 const STAND = { ...both('shL', [0, 0, 7]), ...both('elL', [-10, 0, 0]) };
-/** Өвдөг сөхрөн өсгий дээрээ суух */
-const KNEEL = { ...both('hipL', [-86, 0, 0]), ...both('knL', [166, 0, 0]), ...both('anL', [62, 0, 0]), ...both('shL', [-6, 0, 5]), ...both('elL', [-38, 0, 0]), dz: -0.22 };
-
 /* Түлхэлт, планк: хөлийн хуруу, гар газарт бэхлэгдсэн тул биеийн налуу, гарын нугаралтыг геометрээр тооцно */
 const ARM_A = 0.29, ARM_B = 0.27, BODY = 1.38;
 function plankAt(h: number): Partial<Pose> {
@@ -70,11 +67,6 @@ const tense = (active: Partial<Pose>, relaxed: Partial<Pose> = STAND) => (p: num
 
 export const ANIMS = {
   idle: (p: number) => pose({ ...STAND, breath: wave(p) }),
-  // Амьсгал 4-7-8: нэг давталт 19 секунд
-  breath478: (p: number) => {
-    const b = seg(p, 0, 4 / 19) * (1 - seg(p, 11 / 19, 1));
-    return pose({ ...KNEEL, breath: b, shrug: b * 0.35, chest: [-3 * b, 0, 0], neck: [6 - 8 * b, 0, 0] });
-  },
   walk: (p: number) => {
     const s = Math.sin(2 * Math.PI * p), c = Math.cos(2 * Math.PI * p);
     const knee = (x: number) => 8 + 58 * Math.max(0, x);
@@ -170,7 +162,6 @@ const squeeze = (label: string, anim: AnimId): Move => ({ label, anim, period: 1
 
 /** Биеэр хийдэг дасгалуудын алхмууд. Шинээр нэмбэл RECS дахь sub-ийн минутыг totalSeconds-тэй тааруулна. */
 export const EXERCISE_MOVES = {
-  e1: [{ label: 'Тав тухтай суугаад амьсгалаа дага', anim: 'breath478', period: 19, reps: 4, view: 'seated', cues: [[0, 'Амьсгал ав'], [4 / 19, 'Барь'], [11 / 19, 'Гарга']] }],
   e3: [
     { label: 'Утсаа чимээгүй горимд тавь', anim: 'idle', period: 5, reps: 2, hold: true },
     { label: 'Гадаа гараад тайван алх', anim: 'walk', period: 1.2, reps: 250, hold: true, view: 'angle' },

@@ -27,8 +27,14 @@ export function FaceSVG({ m }: { m: Mood }) {
   );
 }
 
-// Профайлын тохиргооноос хамаарч emoji эсвэл 2D дүр харуулна. Хэмжээг className-ээр (size-*, text-*) өгнө.
+// Хэрэглэгчийн өөрийн зураг → байхгүй бол профайлын тохиргоогоор emoji эсвэл 2D дүр харуулна. Хэмжээг className-ээр (size-*, text-*) өгнө.
 export function MoodFace({ m, className }: { m: Mood; className?: string }) {
   const { profile } = useApp();
-  return <span className={cn('face', className)} aria-hidden="true">{profile.art_mode === 'art' ? <FaceSVG m={m} /> : m.emoji}</span>;
+  const src = profile.mood_images?.[m.id];
+  return (
+    <span className={cn('face', className)} aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element -- хэрэглэгчийн оруулсан data URL */}
+      {src ? <img src={src} alt="" className="size-full rounded-full object-cover" /> : profile.art_mode === 'art' ? <FaceSVG m={m} /> : m.emoji}
+    </span>
+  );
 }

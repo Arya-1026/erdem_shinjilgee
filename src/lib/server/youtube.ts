@@ -233,3 +233,44 @@ export async function findSong(artist: string, title: string, userToken?: string
   await db.from('song_cache').upsert({ query_key: key, found: Boolean(found), ...(found ?? {}), cached_at: new Date().toISOString() });
   return found;
 }
+
+/**
+ * Уран бүтээлчийн дуунууд. Нэг хайлтаар 15 бичлэг авч бүх хэрэглэгчид 30 хоног cache-лнэ (song_cache: artist:нэр:дугаар).
+ * budget: энэ хүсэлтэд шинээр хайж болох тоо. Нэр нь гарчиг, сувагт байхгүй бичлэгийг хасна.
+ */
+export async function artistVideos(artist: string, aka: string[], userToken: string | null, budget: { left: number }, mongolian = true): Promise<FoundSong[]> {
+  const prefix = `artist:${songKey(artist, '')}:`;
+  const db = createServiceClient();
+  const { data: hit } = await db.from('song_cache').select('*').like('query_key', `${prefix}%`);
+  if (hit?.length && Date.now() - new Date(hit[0].cached_at).getTime() < 30 * 864e5)
+    return hit.filter(h => h.found).map(h => ({ video_id: h.video_id, title: h.title, channel: h.channel, thumbnail: h.thumbnail, duration_s: h.duration_s }));
+  if (budget.left <= 0) return [];
+
+  const auth: Auth | null = process.env.YOUTUBE_API_KEY ? { key: process.env.YOUTUBE_API_KEY } : userToken ? { token: userToken } : null;
+  if (!auth) return [];
+  budget.left--;
+  const q = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', maxResults: '15', q: mongolian ? `${artist} дуу` : `${artist} official` });
+  if (mongolian) { q.set('regionCode', 'MN'); q.set('relevanceLanguage', 'mn'); } else q.set('videoCategoryId', '10');
+  let res: Page<{ id: { videoId: string } }>;
+  try {
+    res = await yt(`/search?${q}`, auth);
+  } catch (e) {
+    if (e instanceof YouTubeError && e.status === 403 && /quota/i.test(e.reason ?? e.message)) throw new QuotaExceeded();
+    throw e;
+  }
+  const names = [artist, ...aka].map(n => n.toLowerCase());
+  const videos = (await videoDetails((res.items ?? []).map(i => i.id.videoId), auth)).filter(playable)
+    .filter(v => names.some(n => `${v.snippet.title} ${v.snippet.channelTitle}`.toLowerCase().includes(n)));
+  const found = videos.map(v => ({ video_id: v.id, title: v.snippet.title, channel: v.snippet.channelTitle, thumbnail: pickThumb(v.snippet.thumbnails), duration_s: parseIsoDuration(v.contentDetails?.duration) }));
+  const cached_at = new Date().toISOString();
+  // Олдоогүй ч тэмдэглэнэ: дахин хайж квот үрэхгүй
+  if (found.length) await db.from('song_cache').upsert(found.map((f, i) => ({ query_key: prefix + i, found: true, ...f, cached_at })));
+  else await db.from('song_cache').upsert({ query_key: prefix + 0, found: false, cached_at });
+  return found;
+}
+
+/** Бичлэгүүдийг дуу мөн эсэх, уран бүтээлч, нэр, mood-оор ангилна (LLM, video_info cache) */
+export async function labelSongs(list: FoundSong[]) {
+  const videos: Video[] = list.map(v => ({ id: v.video_id, snippet: { title: v.title, channelTitle: v.channel, categoryId: '10' } }));
+  return classifyVideos(videos);
+}

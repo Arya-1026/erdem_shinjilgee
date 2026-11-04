@@ -14,7 +14,7 @@ export function classifyPrompt(tracks: TrackInfo[]) {
       content:
         'You label songs for a mood-support app. For each song, choose 1-3 moods of a LISTENER for whom the song is a good fit: ' +
         'happy (upbeat, joyful), calm (relaxed, peaceful), neutral (everyday, easy listening), tired (low energy, needs gentle lift), ' +
-        'anxious (needs soothing, slow, reassuring), sad (comforting, melancholic or hopeful), angry (cathartic, intense, energetic release). ' +
+        'anxious (needs soothing, slow, reassuring), sad (comforting, melancholic or hopeful), angry (steady, warm, grounding, helps release tension; never metal, hard rock or aggressive songs). ' +
         'Use your knowledge of the actual song if you know it; otherwise infer from title and artist. ' +
         'Reply with JSON only, no prose: {"r":[{"i":0,"m":["sad","calm"]}, ...]} covering every index.',
     },
@@ -51,7 +51,7 @@ export function videoClassifyPrompt(videos: VideoInfo[]) {
         'You label YouTube videos for a mood-support music app. For each video decide if it is a song/music track ' +
         '(not a vlog, podcast, tutorial, game, news, compilation over 20 minutes). If music, extract the clean artist and song name ' +
         '(drop "Official Video", "Lyrics", etc.) and choose 1-3 LISTENER moods it fits: ' +
-        'happy, calm, neutral, tired, anxious, sad, angry (same meaning as: upbeat; relaxed; everyday; low-energy lift; soothing; comforting; cathartic). ' +
+        'happy, calm, neutral, tired, anxious, sad, angry (same meaning as: upbeat; relaxed; everyday; low-energy lift; soothing; comforting; steady and grounding, never metal, hard rock or aggressive songs). ' +
         'Reply with JSON only: {"r":[{"i":0,"music":true,"a":"Artist","s":"Song","m":["sad"]},{"i":1,"music":false}]} covering every index.',
     },
     { role: 'user' as const, content: videos.map((v, i) => `${i}. ${v.title} | channel: ${v.channel}${v.music_category ? ' | category: Music' : ''}`).join('\n') },

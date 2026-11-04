@@ -7,15 +7,14 @@ import { MoodFace } from '@/components/mood-face';
 import { useApp } from '@/components/providers/app-provider';
 import { RecCard } from '@/components/rec-tiles';
 import { Chip } from '@/components/segmented';
-import { ForYou, MusicLibrary } from '@/components/music';
-import { Button } from '@/components/ui/button';
-import { usePlay } from '@/components/use-play';
+import { ForYou, LikedSongs, MusicLibrary } from '@/components/music';
 import { MOODS } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
 import { cn } from '@/lib/utils';
 import type { RecType } from '@/lib/types';
 
-const TABS: ['all' | RecType, string][] = [['all', 'Бүгд'], ['exercise', '🧘 Дасгал'], ['song', '🎵 Дуу'], ['movie', '🎬 Кино']];
+type Tab = 'all' | RecType | 'song';
+const TABS: [Tab, string][] = [['all', 'Бүгд'], ['exercise', '🧘 Дасгал'], ['song', '🎵 Дуу'], ['movie', '🎬 Кино']];
 
 // /api/{youtube,spotify}/login, callback-аас буцаж ирэх үеийн мэдэгдэл
 const CONNECT_MSG = (name: string, env: string, users: string): Record<string, string> => ({
@@ -33,10 +32,9 @@ const MSG = {
 
 export default function RecsPage() {
   const { profile, feedback, activeMood: cm, setLiveMood, setFeedback, musicSync, music } = useApp();
-  const [tab, setTab] = useState<'all' | RecType>('all');
-  const list = scoredRecs(cm, profile.hobbies, feedback).filter(r => tab === 'all' || r.type === tab);
+  const [tab, setTab] = useState<Tab>('all');
+  const list = scoredRecs(cm, profile.hobbies, feedback).filter(x => tab === 'all' || x.type === tab);
   const params = useSearchParams(), router = useRouter(), path = usePathname();
-  const play = usePlay();
 
   useEffect(() => {
     const p = params.has('youtube') ? 'youtube' : params.has('spotify') ? 'spotify' : null;
@@ -77,24 +75,22 @@ export default function RecsPage() {
       <div className="mb-3.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(([k, l]) => <Chip key={k} on={tab === k} onClick={() => setTab(k)}>{l}</Chip>)}
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
-        {list.length ? list.map(r => <RecCard key={r.id} r={r} m={cm} onFeedback={onFeedback} />) : <p className="text-muted-foreground">Энэ төрөлд зөвлөмж олдсонгүй.</p>}
-      </div>
-
-      <h2 className="mt-5 mb-2 text-[1.15rem] font-bold">🎧 Миний playlist</h2>
-      {music.discovery && <ForYou mood={cm} />}
-      {(music.youtube || music.spotify) && (
-        <div className="mt-3 flex flex-col gap-3">
-          <MusicLibrary provider="youtube" mood={cm} />
-          <MusicLibrary provider="spotify" mood={cm} />
+      {tab !== 'song' && (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
+          {list.length ? list.map(x => <RecCard key={x.id} r={x} m={cm} onFeedback={onFeedback} />) : <p className="text-muted-foreground">Энэ төрөлд зөвлөмж олдсонгүй.</p>}
         </div>
       )}
-      {!music.discovery && !music.youtube && !music.spotify && (
-        <section className="card-x">
-          <p className="mb-2 text-sm">«{cm.label}» мэдрэмжид тохирох дуунуудыг дараалуулан тоглуулна. YouTube эсвэл Spotify тохируулбал таны өөрийн дуунаас сонгож өгнө.</p>
-          <Button size="xl" className="bg-spotify hover:bg-spotify/85" onClick={() => void play.mood(cm.id)}>▶ «{cm.label}» playlist тоглуулах</Button>
-          <p className="mt-2 text-xs text-muted-foreground">Одоогоор хөгжмийн эх үүсвэр тохируулаагүй тул mood-ийн аялгууг браузер дээр үүсгэж тоглуулна (README → YouTube).</p>
-        </section>
+
+      {(tab === 'all' || tab === 'song') && (
+        <>
+          <h2 className="mt-5 mb-2 text-[1.15rem] font-bold">🎧 Танд зориулсан дуу</h2>
+          {music.discovery ? <ForYou mood={cm} /> : <p className="card-x text-sm text-muted-foreground">Дуу санал болгохын тулд .env.local-д YOUTUBE_API_KEY тохируулна уу (README → YouTube).</p>}
+          <div className="mt-3 flex flex-col gap-3">
+            <LikedSongs mood={cm} />
+            <MusicLibrary provider="youtube" mood={cm} />
+            <MusicLibrary provider="spotify" mood={cm} />
+          </div>
+        </>
       )}
     </>
   );

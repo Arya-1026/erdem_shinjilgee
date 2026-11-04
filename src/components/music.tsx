@@ -48,7 +48,7 @@ function SongRow({ t, onPlay, extra }: { t: Track; onPlay: () => void; extra?: R
 
 /* ---------- Тухайн хүнд зориулсан дуунууд (AI + YouTube) ---------- */
 export function ForYou({ mood }: { mood: Mood }) {
-  const { music, profile, feedback, setFeedback } = useApp();
+  const { music, profile, feedback, setFeedback, likedSongs, toggleLike } = useApp();
   const [kind, setKind] = useState<MusicKind>('song');
   const { recs, loading, reason, refresh } = useSongRecs(mood.id, kind);
   const play = usePlay();
@@ -56,14 +56,18 @@ export function ForYou({ mood }: { mood: Mood }) {
 
   const visible = (recs ?? []).filter(r => feedback['yt:' + r.video_id] !== -1);
   const tracks = visible.map(r => ytTrack(r, mood.id));
-  const genres = pickGenres(profile.hobbies);
+  const taste = [...profile.fav_artists.slice(0, 3), ...pickGenres(profile.hobbies).slice(0, 3)];
   const basis = profile.youtube_connected || profile.spotify_connected
     ? 'Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан'
     : 'Таны хобби, үнэлгээнд тулгуурласан. YouTube-ээ холбовол илүү оновчтой болно';
-  const vote = (r: SongRec, v: 1 | -1) => {
-    const id = 'yt:' + r.video_id;
-    setFeedback(id, feedback[id] === v ? 0 : v);
-    toast(v === 1 ? 'Баярлалаа! Ийм төрлийн дууг илүү санал болгоно 👍' : 'Ойлголоо, дараагийн удаа ийм дуу санал болгохгүй');
+  const isLiked = (r: SongRec) => likedSongs.some(x => x.video_id === r.video_id);
+  const like = (r: SongRec) => {
+    toast(isLiked(r) ? 'Таалагдсан дуунаас хасагдлаа' : 'Таалагдсан дуунд хадгалагдлаа 💚');
+    toggleLike({ video_id: r.video_id, title: r.title, artist: r.artist, thumbnail: r.thumbnail, duration_s: r.duration_s });
+  };
+  const dislike = (r: SongRec) => {
+    setFeedback('yt:' + r.video_id, -1);
+    toast('Ойлголоо, дараагийн удаа ийм дуу санал болгохгүй');
   };
 
   return (
@@ -76,8 +80,8 @@ export function ForYou({ mood }: { mood: Mood }) {
         options={[['song', '🎵 Дуу'], ['ambient', '🎼 Тайвшруулах ая']]} />
       {kind === 'song' && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {genres.length ? `Төрөл: ${genres.join(', ')}. ` : 'Дуртай төрлөө сонговол монгол, олон улсын дууг түүгээр нь санал болгоно. '}
-          <Link href="/onboarding?edit=1" className="font-semibold text-primary">{genres.length ? 'Өөрчлөх' : 'Төрөл сонгох'}</Link>
+          {taste.length ? `${taste.join(', ')}. ` : 'Насаа, дуртай дуучин, төрлөө сонговол монгол, олон улсын дууг түүгээр нь санал болгоно. '}
+          <Link href="/onboarding?edit=1" className="font-semibold text-primary">{taste.length ? 'Өөрчлөх' : 'Сонгох'}</Link>
         </p>
       )}
       {kind === 'ambient' && <p className="mt-2 text-xs text-muted-foreground">Үггүй хөгжим, байгалийн дуу, морин хуурын ая: амьсгалаа тайвшруулах, төвлөрөхөд тусална.</p>}
@@ -94,13 +98,32 @@ export function ForYou({ mood }: { mood: Mood }) {
             <SongRow key={r.video_id} t={tracks[i]} onPlay={() => play.list(tracks, i)} extra={<>
               {r.reason && <span className="block text-xs text-muted-foreground italic">💡 {r.reason}</span>}
               <span className="mt-1 flex gap-1">
-                <button className={cn('rounded-md border px-2 text-xs', feedback['yt:' + r.video_id] === 1 && 'border-primary bg-secondary')} aria-label="Таалагдсан" onClick={() => vote(r, 1)}>👍</button>
-                <button className="rounded-md border px-2 text-xs" aria-label="Таалагдаагүй" onClick={() => vote(r, -1)}>👎</button>
+                <button className={cn('rounded-md border px-2 text-xs', isLiked(r) && 'border-primary bg-secondary')} aria-label="Таалагдсан" aria-pressed={isLiked(r)} onClick={() => like(r)}>👍</button>
+                <button className="rounded-md border px-2 text-xs" aria-label="Таалагдаагүй" onClick={() => dislike(r)}>👎</button>
               </span>
             </>} />
           ))}
         </>
       )}
+    </section>
+  );
+}
+
+/* ---------- 👍 дарж хадгалсан дуунууд ---------- */
+export function LikedSongs({ mood }: { mood: Mood }) {
+  const { likedSongs, toggleLike } = useApp();
+  const play = usePlay();
+  if (!likedSongs.length) return null;
+  const tracks = likedSongs.map(s => ytTrack(s, mood.id));
+  return (
+    <section className="card-x">
+      <b>💚 Таалагдсан дуунууд</b>
+      <div className="text-xs text-muted-foreground">{likedSongs.length} дуу хадгалагдсан</div>
+      {tracks.map((t, i) => (
+        <SongRow key={t.id} t={t} onPlay={() => play.list(tracks, i)} extra={
+          <button className="mt-1 rounded-md border px-2 text-xs" aria-label={`${t.title} хасах`} onClick={() => toggleLike(likedSongs[i])}>Хасах</button>
+        } />
+      ))}
     </section>
   );
 }

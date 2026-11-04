@@ -7,6 +7,7 @@ import { embed, embedPlay, initSdk, PremiumRequired, sdk, sdkPlay, type SpState 
 import { cn } from '@/lib/utils';
 import { yt, YT_STATE, ytPlay } from '@/lib/youtube-playback';
 import type { MoodId } from '@/lib/types';
+import { useDrag } from '../use-drag';
 import { useApp } from './app-provider';
 
 /* =========================================================
@@ -79,7 +80,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const [full, setFull] = useState(false);
   const [ytMin, setYtMinState] = useState(false);
-  const ytMinRef = useRef(false);
   const [spMode, setSpMode] = useState<SpMode>(() => (typeof localStorage !== 'undefined' && localStorage.getItem(MODE_KEY) === 'embed' ? 'embed' : 'sdk'));
 
   const live = useRef({ queue, idx, playing, spMode });
@@ -87,6 +87,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const synth = useRef({ pos: 0, t0: 0 });
   const sp = useRef<SpState & { at: number }>({ position: 0, duration: 0, paused: true, at: 0 });
   const startedAt = useRef(0);
+  const ytErrors = useRef(0);
   const embedWrap = useRef<HTMLDivElement>(null), embedHost = useRef<HTMLDivElement | null>(null);
   const ytWrap = useRef<HTMLDivElement>(null), ytHost = useRef<HTMLDivElement | null>(null);
 
@@ -145,7 +146,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } else {
       stopMusic();
       if (t.source === 'spotify') playSpotify(t, at);
-      else { ytMinRef.current = false; setYtMinState(false); }
       if (t.source === 'youtube') void ytPlay(hostIn(ytWrap, ytHost), t.videoId!, at, ytHandlers).catch(() => toast.error('YouTube тоглуулагч ачаалагдсангүй'));
     }
     live.current = { ...live.current, queue: q, idx: i, playing: true };
@@ -164,7 +164,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     if (t.source === 'synth') return startAt(live.current.queue, live.current.idx, synth.current.pos);
     startedAt.current = performance.now();
-    if (t.source === 'youtube') { ytMinRef.current = false; setYtMinState(false); yt.resume(); }
+    if (t.source === 'youtube') yt.resume();
     else { sp.current = { ...sp.current, paused: false, at: performance.now() }; if (live.current.spMode === 'sdk') sdk.resume(); else embed.resume(); }
     live.current.playing = true; setPlaying(true);
   }, [cur, elapsed, pauseExternal, startAt]);
@@ -187,20 +187,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     else synth.current.pos = sec;
   }, [cur, startAt]);
 
-  // Хураахад видео түр зогсоно (YouTube-ийн дүрмээр харагдахгүй видео тоглохгүй), дэлгэхэд үргэлжилнэ
-  const setYtMin = useCallback((b: boolean) => {
-    const t = cur();
-    ytMinRef.current = b; setYtMinState(b);
-    if (t?.source !== 'youtube') return;
-    if (b && live.current.playing) { yt.pause(); live.current.playing = false; setPlaying(false); }
-    if (!b && !live.current.playing) { startedAt.current = performance.now(); yt.resume(); live.current.playing = true; setPlaying(true); }
-  }, [cur]);
+  // Хураахад дуу үргэлжилнэ: видео буланд 200×200 болж багасна (YouTube-ийн дүрмээр тоглуулагч харагдаж байх ёстой)
+  const setYtMin = useCallback((b: boolean) => { setYtMinState(b); }, []);
 
   const stop = useCallback(() => {
     stopMusic(); pauseExternal(cur());
     synth.current.pos = 0;
     live.current = { ...live.current, queue: [], idx: 0, playing: false };
-    setQueue([]); setIdx(0); setPlaying(false); setFull(false);
+    setQueue([]); setIdx(0); setPlaying(false); setFull(false); setYtMinState(false);
   }, [cur, pauseExternal]);
 
   // Гадны тоглуулагчийн өөрийн товчоор зогсоох/тоглуулахыг тусгана (эхлүүлсний дараах түр төлөвийг тооцохгүй)
@@ -221,13 +215,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       onState: s => {
         if (cur()?.source !== 'youtube') return;
         if (s === YT_STATE.ENDED) skip(1);
-        else if (s === YT_STATE.PLAYING) syncPlaying(true);
+        else if (s === YT_STATE.PLAYING) { ytErrors.current = 0; syncPlaying(true); }
         else if (s === YT_STATE.PAUSED) syncPlaying(false);
       },
       // 101/150: эзэмшигч нь вэб сайтад суулгахыг хориглосон, 100: устсан бичлэг
-      onError: () => { toast('Энэ бичлэгийг апп дотор тоглуулах боломжгүй тул дараагийнх руу шилжлээ'); skip(1); },
+      onError: () => {
+        // Дараалал бүхэлдээ тоглохгүй бол мөнхөд эргэлдэхгүйн тулд зогсооно
+        if (++ytErrors.current >= live.current.queue.length) { ytErrors.current = 0; toast.error('Эдгээр бичлэгийг апп дотор тоглуулах боломжгүй байна'); return stop(); }
+        toast('Энэ бичлэгийг апп дотор тоглуулах боломжгүй тул дараагийнх руу шилжлээ');
+        skip(1);
+      },
     };
-  }, [skip, cur, syncPlaying]);
+  }, [skip, cur, syncPlaying, stop]);
 
   // Демо аялгуу, Spotify дуу дуусахад дараагийнх руу шилжинэ (YouTube-ийнх ENDED эвентээр)
   useEffect(() => {
@@ -243,14 +242,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [profile.spotify_connected, spMode, onSpState]);
 
   const current = queue[idx];
-  const usesYt = current?.source === 'youtube' && !ytMin;
+  const usesYt = current?.source === 'youtube';
   const usesSpEmbed = current?.source === 'spotify' && spMode === 'embed';
 
   // Доод цэсний дээр тоглуулагч гарахад хуудасны доод зайг нэмнэ
   useEffect(() => {
     document.body.classList.toggle('has-player', queue.length > 0);
-    document.body.classList.toggle('has-yt', usesYt);
-  }, [queue.length, usesYt]);
+    document.body.classList.toggle('has-yt', usesYt && !ytMin);
+  }, [queue.length, usesYt, ytMin]);
   useEffect(() => () => { stopMusic(); document.body.classList.remove('has-player', 'has-yt'); }, []);
 
   const value = useMemo<PlayerCtx>(() => ({
@@ -258,20 +257,29 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }), [queue, idx, current, playing, full, usesYt, usesSpEmbed, ytMin, setYtMin, elapsed, duration, play, toggle, skip, jump, seek, stop]);
 
   const ctrl = 'grid size-9 flex-none place-items-center rounded-full text-white';
+  const [dockRef, grip] = useDrag(ytMin ? 'small' : 'full', usesYt);
   return (
     <Ctx value={value}>
       {children}
       {/* YouTube: Spotify маягийн нэг мөр. Видео нь YouTube-ийн дүрмээр ≥200×200, дээр нь юу ч давхарлахгүй */}
-      <div className={cn('yt-dock fixed z-36 flex overflow-hidden rounded-2xl bg-[#121212] text-white shadow-[0_10px_30px_rgba(0,0,0,.35)]', !usesYt && 'yt-off', full && 'z-56')}
+      <div ref={dockRef} className={cn('yt-dock fixed z-36 flex overflow-hidden rounded-2xl bg-[#121212] text-white shadow-[0_10px_30px_rgba(0,0,0,.35)]', !usesYt && 'yt-off', usesYt && ytMin && 'yt-small', full && 'z-56')}
         aria-hidden={!usesYt} role="region" aria-label="YouTube тоглуулагч">
+        <div {...grip} className="yt-grip" title="Чирж зөөх" aria-hidden="true"><i /></div>
         <div ref={ytWrap} className="yt-frame" />
-        <div className="flex min-w-0 flex-1 flex-col justify-between p-3">
+        {ytMin ? (
+          <div className="flex items-center justify-between px-1.5 py-1">
+            <button className={ctrl} aria-label={playing ? 'Түр зогсоох' : 'Тоглуулах'} onClick={toggle}>{playing ? '❚❚' : '▶'}</button>
+            <button className={ctrl} aria-label="Дараах" onClick={() => skip(1)}>⏭</button>
+            <button className={ctrl} aria-label="Дэлгэх" onClick={() => setYtMin(false)}>⌃</button>
+            <button className={cn(ctrl, 'text-white/70')} aria-label="Хаах" onClick={stop}>✕</button>
+          </div>
+        ) : <div className="flex min-w-0 flex-1 flex-col justify-between p-3">
           <div className="flex items-start gap-1">
             <div className="min-w-0 flex-1">
               <b className="line-clamp-2 text-sm leading-snug">{usesYt ? current.title : ''}</b>
               <span className="mt-0.5 block truncate text-xs opacity-70">{usesYt ? current.artist : ''}</span>
             </div>
-            <button className={cn(ctrl, '-mt-1 -mr-1 text-white/70')} aria-label="Хураах" title="Хураах (түр зогсоно)" onClick={() => setYtMin(true)}>⌄</button>
+            <button className={cn(ctrl, '-mt-1 -mr-1 text-white/70')} aria-label="Хураах" title="Хураах (дуу үргэлжилнэ)" onClick={() => setYtMin(true)}>⌄</button>
           </div>
           <div className="flex items-center justify-between">
             <button className={ctrl} aria-label="Өмнөх" onClick={() => skip(-1)}>⏮</button>
@@ -282,7 +290,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
             <button className={ctrl} aria-label="Дараалал" onClick={() => setFull(!full)}>☰</button>
             <button className={ctrl} aria-label="Хаах" onClick={stop}>✕</button>
           </div>
-        </div>
+        </div>}
       </div>
       {/* Spotify Embed: DOM-д байнга байна (iframe дахин ачаалагдахгүй), шаардлагагүй үед дэлгэцээс гадна */}
       <div className={cn('embed-bar fixed z-36 flex items-center gap-1 rounded-2xl bg-[#121212] p-1 shadow-[0_10px_30px_rgba(0,0,0,.3)]', !usesSpEmbed && 'embed-off', full && 'z-56')}

@@ -13,10 +13,10 @@ const STEPS = {
   },
   db: {
     title: 'Өгөгдлийн сангийн хүснэгтүүд үүсээгүй байна',
-    lead: 'Supabase холбогдсон ч хүснэгтүүд алга. supabase/setup.sql-ийг нэг удаа ажиллуулахад бүгд үүснэ.',
+    lead: 'Supabase холбогдсон ч хүснэгт, багана дутуу байна. Шинэ төсөл бол supabase/setup.sql, өмнө нь setup.sql ажиллуулсан бол зөвхөн шинэ migration-ийг ажиллуулна.',
     steps: [
       <>supabase.com → төсөл → <b>SQL Editor → New query</b> нээнэ.</>,
-      <>Төслийн <code>supabase/setup.sql</code> файлын <b>бүх</b> агуулгыг хуулж буулгаад <b>Run</b> дарна.</>,
+      <>Шинэ төсөл: <code>supabase/setup.sql</code>. Хуучин төсөл: <code>supabase/migrations/0006_personal.sql</code>. Файлын <b>бүх</b> агуулгыг хуулж буулгаад <b>Run</b> дарна.</>,
       <>&quot;Success&quot; гарсны дараа энэ хуудсыг дахин ачаална (F5).</>,
     ],
   },

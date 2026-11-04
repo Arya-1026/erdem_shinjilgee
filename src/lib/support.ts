@@ -10,7 +10,7 @@ const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{
 export { isDate as isSupportDate };
 
 export function supportPrompt(p: { name: string; hobbies: string[]; today: Entry[]; recent: Entry[]; weekday: string }) {
-  const fmt = (e: Entry) => `${e.entry_date} ${e.entry_time}: ${moodById(e.mood).label} (эрчим ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep} цаг` : ''}${e.tags.length ? `, холбоотой: ${e.tags.join(', ')}` : ''})`;
+  const fmt = (e: Entry) => `${e.entry_date} ${e.entry_time}: ${moodById(e.mood).label} (эрч хүч ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep} цаг` : ''}${e.tags.length ? `, холбоотой: ${e.tags.join(', ')}` : ''})`;
   const notes = p.today.map(e => e.note.trim()).filter(Boolean).join(' / ').slice(0, 800);
   const user = [
     `Нэр: ${p.name || 'хэрэглэгч'}. Хобби: ${p.hobbies.join(', ') || 'тодорхойгүй'}. Өнөөдөр ${p.weekday} гараг.`,

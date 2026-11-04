@@ -8,7 +8,7 @@ type Payload = { title: string; body: string; url?: string; tag?: string };
 
 /** Хэрэглэгчдийн бүх төхөөрөмж рүү push илгээнэ. Хүчингүй болсон subscription-ийг устгана. */
 export async function sendPush(userIds: string[], payload: Payload) {
-  if (!pushConfigured() || !userIds.length) return { sent: 0 };
+  if (!pushConfigured() || !userIds.length) return { sent: 0, devices: 0 };
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@example.com', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
   const db = createServiceClient();
   const { data: subs } = await db.from('push_subscriptions').select('endpoint,p256dh,auth').in('user_id', userIds);
@@ -25,5 +25,5 @@ export async function sendPush(userIds: string[], payload: Payload) {
     }
   }));
   if (gone.length) await db.from('push_subscriptions').delete().in('endpoint', gone);
-  return { sent };
+  return { sent, devices: subs?.length ?? 0 };
 }

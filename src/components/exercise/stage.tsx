@@ -10,7 +10,7 @@ export type StageProps = { anim: AnimId; period: number; running: boolean; cycle
 
 // Камерын өнцөг, зай, харах өндөр. Шалан дээрх дасгалд ойртож намсна.
 const VIEWS: Record<View, { az: number; r: number; y: number }> = {
-  front: { az: 0.28, r: 4.7, y: 0.9 }, angle: { az: 0.8, r: 4.7, y: 0.9 }, side: { az: 1.5, r: 4.7, y: 0.9 }, floor: { az: 1.32, r: 3.7, y: 0.42 }, seated: { az: 0.75, r: 3.3, y: 0.55 },
+  front: { az: 0.28, r: 4.7, y: 0.9 }, angle: { az: 0.8, r: 4.7, y: 0.9 }, side: { az: 1.5, r: 4.7, y: 0.9 }, floor: { az: 1.32, r: 3.7, y: 0.42 },
 };
 const BLEND_S = 0.7;
 

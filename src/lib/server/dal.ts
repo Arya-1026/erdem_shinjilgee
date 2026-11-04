@@ -1,9 +1,9 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
-import { BOOKING_COLS, ENTRY_COLS, EXPERT_COLS, groupSlots, normalizeEntry, PROFILE_COLS, SPOTIFY_TRACK_COLS, toExpert } from '@/lib/db';
+import { BOOKING_COLS, ENTRY_COLS, EXPERT_COLS, groupSlots, normalizeEntry, PROFILE_COLS, TODO_COLS, toExpert, YOUTUBE_TRACK_COLS } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
-import type { Booking, Entry, Expert, ExpertSlots, MusicConfig, Profile, SpotifyStatus, SpotifyTrackRow, YouTubeStatus } from '@/lib/types';
+import type { Booking, Entry, Expert, ExpertSlots, LikedSong, MusicConfig, Profile, SpotifyStatus, Todo, YouTubeStatus } from '@/lib/types';
 import { spotifyConfigured } from './spotify';
 import { youtubeOAuthConfigured, youtubeSearchConfigured } from './youtube';
 
@@ -62,8 +62,8 @@ export type AppData = {
   music: MusicConfig;
   spotify: SpotifyStatus | null;
   youtube: YouTubeStatus | null;
-  /** Апп-ын зөвлөмжийн дуунуудын Spotify хувилбар: rec_id → дуу */
-  recTracks: Record<string, SpotifyTrackRow>;
+  likedSongs: LikedSong[];
+  todos: Todo[];
 };
 
 export async function getAppData(): Promise<AppData> {
@@ -71,7 +71,7 @@ export async function getAppData(): Promise<AppData> {
   const since = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   const profile = await loadProfile(supabase, user);
   if (!profile.hobbies.length) redirect('/onboarding');
-  const [e, f, w, b, ex, sl, me, sp, rt, yt] = await Promise.all([
+  const [e, f, w, b, ex, sl, me, sp, ls, yt, td] = await Promise.all([
     supabase.from('mood_entries').select(ENTRY_COLS).gte('entry_date', since).order('entry_date').order('entry_time').returns<Entry[]>(),
     supabase.from('rec_feedback').select('rec_id,value'),
     supabase.from('watchlist').select('rec_id'),
@@ -80,8 +80,9 @@ export async function getAppData(): Promise<AppData> {
     supabase.from('expert_slots').select('expert_id,weekday,slot'),
     supabase.rpc('my_expert_id'),
     supabase.rpc('spotify_status'),
-    supabase.from('rec_tracks').select(`rec_id,${SPOTIFY_TRACK_COLS}`),
+    supabase.from('liked_songs').select(YOUTUBE_TRACK_COLS).order('created_at', { ascending: false }).returns<LikedSong[]>(),
     supabase.rpc('youtube_status'),
+    supabase.from('todos').select(TODO_COLS).order('created_at').returns<Todo[]>(),
   ]);
   return {
     profile,
@@ -95,6 +96,7 @@ export async function getAppData(): Promise<AppData> {
     music: { spotify: spotifyConfigured(), youtube: youtubeOAuthConfigured(), discovery: youtubeSearchConfigured() },
     spotify: (sp.data as SpotifyStatus[] | null)?.[0] ?? null,
     youtube: (yt.data as YouTubeStatus[] | null)?.[0] ?? null,
-    recTracks: Object.fromEntries((rt.data ?? []).map(({ rec_id, ...t }) => [rec_id, t as SpotifyTrackRow])),
+    likedSongs: ls.data ?? [],
+    todos: td.data ?? [],
   };
 }
