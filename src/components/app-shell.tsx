@@ -1,0 +1,68 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { streak } from '@/lib/analytics';
+import { cn } from '@/lib/utils';
+import { DialogHost } from './dialogs/dialog-host';
+import { FullPlayer, MiniPlayer } from './player';
+import { useApp } from './providers/app-provider';
+
+const NAV = [
+  ['/home', '🏠', 'Нүүр', 'Өнөөдөр'],
+  ['/chat', '💬', 'Чат', 'AI туслах'],
+  ['/recs', '✨', 'Зөвлөмж', 'Зөвлөмж'],
+  ['/stats', '📊', 'Тайлан', 'Миний тайлан'],
+  ['/experts', '🧑‍⚕️', 'Зөвлөгч', 'Сэтгэл зүйчид'],
+  ['/profile', '👤', 'Профайл', 'Профайл'],
+] as const;
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const path = usePathname();
+  const { profile, entries, tint, isExpert } = useApp();
+  const active = NAV.find(([href]) => path.startsWith(href)) ?? NAV[0];
+
+  return (
+    <>
+      <nav aria-label="Үндсэн цэс"
+        className="app-nav fixed inset-x-0 bottom-0 z-30 flex border-t bg-card desk:top-0 desk:right-auto desk:w-60 desk:flex-col desk:gap-1 desk:border-t-0 desk:border-r desk:px-3 desk:pt-5">
+        <div className="hidden px-3 pt-2 pb-5 text-xl font-extrabold desk:block">🌙 Сэтгэл</div>
+        {NAV.map(([href, icon, label]) => {
+          const on = href === active[0];
+          return (
+            <Link key={href} href={href} aria-current={on ? 'page' : undefined}
+              className={cn('flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[.68rem] text-muted-foreground',
+                'desk:flex-none desk:flex-row desk:justify-start desk:gap-3 desk:rounded-xl desk:px-3.5 desk:py-3 desk:text-[.95rem]',
+                href === '/profile' && 'hidden desk:flex',
+                on && 'font-bold text-primary desk:bg-secondary')}>
+              <span className="text-[1.35rem] leading-none">{icon}</span><span>{label}</span>
+            </Link>
+          );
+        })}
+        {isExpert && (
+          <Link href="/expert" className="hidden items-center gap-3 rounded-xl px-3.5 py-3 text-[.95rem] text-muted-foreground desk:mt-auto desk:flex">
+            <span className="text-[1.35rem] leading-none">🗂️</span><span>Сэтгэл зүйчийн портал</span>
+          </Link>
+        )}
+      </nav>
+
+      <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')} style={{ '--mc': tint } as React.CSSProperties}>
+        <header className="topbar sticky top-0 z-20 flex items-center justify-between px-4 desk:px-8">
+          <h1 className="m-0 text-xl font-bold">{active[3]}</h1>
+          <div className="topbar-actions flex items-center gap-2">
+            <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title="Тасралтгүй бүртгэсэн өдөр">🔥 {streak(entries)}</span>
+            <Link href="/profile" aria-label="Профайл"
+              className="grid size-10 place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-white desk:hidden">
+              {profile.name[0] || '?'}
+            </Link>
+          </div>
+        </header>
+        <main className="app-main">{children}</main>
+      </div>
+
+      <MiniPlayer />
+      <FullPlayer />
+      <DialogHost />
+    </>
+  );
+}

@@ -1,26 +1,283 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --breakpoint-desk: 56.25rem; /* 900px: доод цэс → хажуугийн цэс */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Design system: нэг фонт, Nunito (кирилл үсэгтэй, бөөрөнхий). layout.tsx-д next/font-оор ачаална */
+  --font-sans: var(--font-nunito), "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-spotify: #1DB954;
+  --color-ok: var(--success);
+  --color-warn: var(--warning);
+  --color-warm: var(--warm);
+  --color-on-warm: var(--on-warm);
+  --color-on-emotion: var(--on-emotion);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 28px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================================
+   «Emotion tracker» design system (claude.ai artifact)
+   Тайван нь үндсэн төлөв: дулаан цайвар дэвсгэр, нэг гол өнгө (primary).
+   emotion-* өнгө зөвхөн сэтгэл хөдлөлийг илэрхийлнэ (chip, календарь, график).
+   ========================================================= */
+:root {
+  /* Суурь (bg, surface, ink, line) */
+  --background: #FAF8F5;
+  --foreground: #2B2724;
+  --card: #FFFFFF;
+  --card-foreground: #2B2724;
+  --popover: #FFFFFF;
+  --popover-foreground: #2B2724;
+  --muted: #F2EEE8;
+  --muted-foreground: #6B635B;
+  --border: #E6E0D7;
+  --input: #E6E0D7;
+  --destructive: #B84A41;
+  --success: #3F7F55;
+  --warning: #9A6A12;
+  /* accent: дулаан туслах өнгө (streak, урамшуулал). shadcn-ий --accent нь hover-т ашиглагддаг тул тусдаа нэртэй */
+  --warm: #E07A5F;
+  --on-warm: #2B2724;
+  --on-emotion: #2B2724;
+  --emotion-joy: #F9D77E; --emotion-calm: #A8D8C9; --emotion-sad: #9DB4D9; --emotion-anger: #F2A08B;
+  --emotion-fear: #B9A6D6; --emotion-anxiety: #F5C29A; --emotion-tired: #C7C3BB; --emotion-love: #F2B8C6;
+  --night-from: #2B2724; --night-to: #1F3A34;
+
+  /* Гол өнгө: хэрэглэгчийн сонгосон палитр (доор). Анхдагч нь «Ногоон тал» */
+  --primary: #2F7A6B;
+  --primary-foreground: #FFFFFF;
+  --primary-2: #6CC2AF;
+  --secondary: #DCEFEA;
+  --secondary-foreground: #2F7A6B;
+  --accent: #DCEFEA;
+  --accent-foreground: #2B2724;
+  --ring: #2F7A6B;
+
+  --radius: 1rem;
+  --shadow: none; /* Сүүдэр бараг хэрэглэхгүй, оронд нь line хүрээ */
+  --nav-h: 68px;
+  --head-h: 60px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  /* Граф: шугам нь primary. Сарын heatmap: «Сэтгэлийн шкал» гуниг → тайван → баяр */
+  --chart-line: var(--primary);
+  --chart-grid: #E6E0D7;
+  --chart-axis: #6B635B;
+  --div-1: #9DB4D9; --div-1-ink: #2B2724;
+  --div-2: #A3C7D2; --div-2-ink: #2B2724;
+  --div-3: #A8D8C9; --div-3-ink: #2B2724;
+  --div-4: #D2D8A2; --div-4-ink: #2B2724;
+  --div-5: #F9D77E; --div-5-ink: #2B2724;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.dark {
+  --background: #1A1816;
+  --foreground: #F3EEE8;
+  --card: #24211E;
+  --card-foreground: #F3EEE8;
+  --popover: #24211E;
+  --popover-foreground: #F3EEE8;
+  --muted: #2E2A26;
+  --muted-foreground: #B3AAA0;
+  --border: #3A352F;
+  --input: #3A352F;
+  --destructive: #EE8A80;
+  --success: #6CBF86;
+  --warning: #E5B04F;
+  --warm: #F0957C;
+  --on-warm: #2B1A14;
+  --on-emotion: #1A1816;
+  --emotion-joy: #D9B65A; --emotion-calm: #7FB8A6; --emotion-sad: #7F98C2; --emotion-anger: #D9826D;
+  --emotion-fear: #9C89BE; --emotion-anxiety: #D9A578; --emotion-tired: #9E998F; --emotion-love: #D697A7;
+  --night-from: #24211E; --night-to: #1F3A34;
+
+  --primary: #6CC2AF;
+  --primary-foreground: #10211D;
+  --primary-2: #A8D8C9;
+  --secondary: #1F3A34;
+  --secondary-foreground: #6CC2AF;
+  --accent: #1F3A34;
+  --accent-foreground: #F3EEE8;
+  --ring: #6CC2AF;
+
+  --chart-grid: #3A352F;
+  --chart-axis: #B3AAA0;
+  --div-1: #7F98C2; --div-1-ink: #1A1816;
+  --div-2: #7FA7B4; --div-2-ink: #1A1816;
+  --div-3: #7FB8A6; --div-3-ink: #1A1816;
+  --div-4: #ACB57C; --div-4-ink: #1A1816;
+  --div-5: #D9B65A; --div-5-ink: #1A1816;
+}
+
+/* ---------- Хэрэглэгчийн сонгох өнгөний палитр (<html data-palette="...">) ---------- */
+[data-palette="water"] { --primary: #36689E; --primary-2: #9DB4D9; --secondary: #DDE7F3; --secondary-foreground: #36689E; --accent: #DDE7F3; --ring: #36689E; --primary-foreground: #FFFFFF; }
+.dark[data-palette="water"] { --primary: #8FB4E3; --primary-2: #B9CDEB; --secondary: #1E2C3D; --secondary-foreground: #8FB4E3; --accent: #1E2C3D; --ring: #8FB4E3; --primary-foreground: #0F1A26; }
+[data-palette="dawn"] { --primary: #B5533B; --primary-2: #F2A08B; --secondary: #FBE3DA; --secondary-foreground: #B5533B; --accent: #FBE3DA; --ring: #B5533B; --primary-foreground: #FFFFFF; }
+.dark[data-palette="dawn"] { --primary: #F0957C; --primary-2: #F5C29A; --secondary: #3A241D; --secondary-foreground: #F0957C; --accent: #3A241D; --ring: #F0957C; --primary-foreground: #2B1A14; }
+[data-palette="lavender"] { --primary: #6A4FD8; --primary-2: #B9A6D6; --secondary: #ECE7FB; --secondary-foreground: #6A4FD8; --accent: #ECE7FB; --ring: #6A4FD8; --primary-foreground: #FFFFFF; }
+.dark[data-palette="lavender"] { --primary: #A996F2; --primary-2: #C9BCF5; --secondary: #2A2345; --secondary-foreground: #A996F2; --accent: #2A2345; --ring: #A996F2; --primary-foreground: #17112E; }
+[data-palette="rose"] { --primary: #A8456A; --primary-2: #F2B8C6; --secondary: #F8E1E8; --secondary-foreground: #A8456A; --accent: #F8E1E8; --ring: #A8456A; --primary-foreground: #FFFFFF; }
+.dark[data-palette="rose"] { --primary: #E79AB2; --primary-2: #F2B8C6; --secondary: #3A1F29; --secondary-foreground: #E79AB2; --accent: #3A1F29; --ring: #E79AB2; --primary-foreground: #2A1019; }
+
+/* ---------- Design system-ийн градиентууд (зөвхөн том гадаргууд) ---------- */
+.grad-dawn { background: linear-gradient(135deg, var(--emotion-joy), var(--emotion-love)); color: var(--on-emotion); }
+.grad-water { background: linear-gradient(160deg, var(--emotion-calm), var(--emotion-sad)); color: var(--on-emotion); }
+.grad-sunset { background: linear-gradient(135deg, var(--emotion-anxiety), var(--emotion-anger)); color: var(--on-emotion); }
+.grad-meadow { background: linear-gradient(180deg, var(--secondary), var(--background)); }
+.grad-night { background: linear-gradient(160deg, var(--night-from), var(--night-to)); color: #F3EEE8; }
+
+@layer base {
+  * { @apply border-border outline-ring/50; -webkit-tap-highlight-color: transparent; }
+  html { @apply font-sans; }
+  body { @apply bg-background text-foreground antialiased; line-height: 1.5; }
+  input, textarea, select { font-size: 16px; } /* iOS дээр автоматаар zoom хийхээс сэргийлнэ */
+  :focus-visible { outline: 2.5px solid var(--primary); outline-offset: 2px; }
+}
+
+/* ---------- Layout ---------- */
+.app-main { padding: 8px 16px calc(var(--nav-h) + var(--safe-b) + 20px); max-width: 1180px; margin: 0 auto; }
+body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 96px); }
+.app-nav { height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b); }
+.topbar { padding-top: env(safe-area-inset-top); min-height: var(--head-h); background: color-mix(in srgb, var(--background) 88%, transparent); backdrop-filter: blur(10px); }
+@media (min-width: 900px) {
+  .app-nav { height: 100dvh; padding-bottom: 20px; }
+  .app-main { padding: 16px 32px 32px; }
+  body.has-player .app-main { padding-bottom: 100px; }
+}
+.card-x { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---------- Mood-оор будагдах дэвсгэр ---------- */
+/* @property нь gradient доторх өнгийг зөөлөн шилжүүлэх боломж олгоно */
+@property --mc { syntax: '<color>'; inherits: true; initial-value: #E2DACB; }
+.shell { transition: --mc .7s ease; min-height: 100dvh; }
+.shell.tinted { background: linear-gradient(180deg, color-mix(in srgb, var(--mc) 32%, var(--background)) 0%, var(--background) 520px); }
+.checkin { position: relative; overflow: hidden; isolation: isolate; border: 0;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--mc) 60%, var(--card)) 0%, color-mix(in srgb, var(--mc) 22%, var(--card)) 45%, var(--card) 80%); }
+.checkin::before, .checkin::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; filter: blur(40px); opacity: .55; background: var(--mc); pointer-events: none; }
+.checkin::before { width: 220px; height: 220px; top: -60px; left: -50px; animation: drift 9s ease-in-out infinite alternate; }
+.checkin::after { width: 180px; height: 180px; top: 40px; right: -60px; background: color-mix(in srgb, var(--mc) 60%, #fff); animation: drift 11s ease-in-out infinite alternate-reverse; }
+@keyframes drift { to { transform: translate(40px, 30px) scale(1.15); } }
+
+/* ---------- Mood carousel (гүйлгэж сонгоно) ---------- */
+.mood-car { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  padding: 26px calc(50% - 62px) 22px; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.mood-car::-webkit-scrollbar { display: none; }
+.mcard { flex: none; width: 124px; height: 158px; scroll-snap-align: center; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: color-mix(in srgb, var(--card) 55%, transparent); border: 1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  transform: scale(.8); opacity: .55; transition: transform .35s cubic-bezier(.2, .9, .3, 1.3), opacity .3s, box-shadow .3s, background .3s; font-size: .85rem; }
+.mcard .face { width: 76px; height: 76px; font-size: 3.9rem; }
+.mcard.active { transform: scale(1.1); opacity: 1; background: var(--c); color: #2B2724; font-weight: 800; border-color: transparent;
+  box-shadow: 0 16px 34px -10px var(--c), 0 0 0 6px color-mix(in srgb, var(--c) 30%, transparent); }
+.mcard.active .face { animation: float 2.6s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+.car-nav { display: none; }
+@media (hover: hover) { .car-nav { display: grid; place-items: center; } }
+.car-dots i { width: 7px; height: 7px; border-radius: 99px; background: color-mix(in srgb, var(--foreground) 22%, transparent); transition: all .3s; }
+.car-dots i.on { width: 22px; background: var(--mc); }
+.fade-up { animation: fadeUp .35s; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
+.nudge-x { animation: nudgeX 1.6s ease-in-out infinite; }
+@keyframes nudgeX { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+
+.face { line-height: 1; display: grid; place-items: center; flex: none; }
+.face svg { width: 100%; height: 100%; }
+
+/* ---------- Зөвлөмжийн tile (хажуу тийш гүйлгэнэ) ---------- */
+.hscroll { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; margin: 0 -18px; padding: 2px 18px 4px; }
+.hscroll::-webkit-scrollbar { display: none; }
+.tile-cover { background: linear-gradient(135deg, var(--tc), color-mix(in srgb, var(--tc) 72%, #2B2724)); }
+.htile .pl { transform: translateY(6px); opacity: 0; transition: .2s; }
+.htile:hover .pl, .htile.now .pl { transform: none; opacity: 1; }
+@media (hover: none) { .htile .pl { transform: none; opacity: 1; } }
+
+/* ---------- Equalizer ---------- */
+.eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; }
+.eq i { width: 3px; background: currentColor; border-radius: 1px; animation: eq .9s ease-in-out infinite; transform-origin: bottom; }
+.eq i:nth-child(1) { height: 40%; } .eq i:nth-child(2) { height: 100%; animation-delay: .2s; } .eq i:nth-child(3) { height: 65%; animation-delay: .4s; }
+@keyframes eq { 50% { transform: scaleY(.3); } }
+
+/* ---------- Mini player, бүтэн дэлгэцийн player ---------- */
+.mini { bottom: calc(var(--nav-h) + var(--safe-b) + 8px); background: color-mix(in srgb, var(--pc, #2F7A6B) 45%, #1A1816); animation: up .3s ease-out; transition: background .5s; }
+.mini-cover, .fp-art { background: linear-gradient(135deg, var(--pc), color-mix(in srgb, var(--pc) 35%, #000)); }
+@media (min-width: 900px) { .mini { left: 256px; right: 16px; bottom: 16px; } }
+/* Spotify Embed: mini player-ийн байрлалд. Ашиглахгүй үед дэлгэцээс гадна (iframe устахгүй) */
+.embed-bar { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); }
+.embed-bar.embed-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
+@media (min-width: 900px) { .embed-bar { left: 256px; right: 16px; bottom: 16px; } }
+body.has-player .fp { padding-bottom: 110px; }
+
+/* YouTube тоглуулагч: Spotify маягийн нэг мөр (зүүн талд видео, баруун талд удирдлага).
+   YouTube-ийн дүрмээр видео ≥200×200px, харагдаж байх ёстой → хамгийн бага зөвшөөрөгдөх хэмжээ.
+   «Хураах» дарвал 64px mini bar болж, видео түр зогсоно (харагдахгүй видеог тоглуулахыг дүрэм хориглодог). */
+:root { --yt-h: 200px; }
+.yt-dock { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); height: var(--yt-h); }
+.yt-dock.yt-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
+.yt-frame { width: var(--yt-h); height: var(--yt-h); flex: none; background: #000; }
+.yt-frame iframe { display: block; width: 100%; height: 100%; }
+@media (min-width: 900px) { .yt-dock { left: auto; right: 16px; bottom: 16px; width: 440px; } }
+body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 28px); }
+body.has-yt .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - var(--yt-h) - 64px); }
+body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
+@media (min-width: 900px) {
+  body.has-yt .app-main { padding-bottom: calc(var(--yt-h) + 40px); }
+  body.has-yt .chat { height: calc(100dvh - var(--head-h) - var(--yt-h) - 56px); }
+  body.has-yt .fp { bottom: calc(var(--yt-h) + 32px); max-height: calc(100dvh - var(--yt-h) - 56px); }
+}
+.fp { padding: calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 70%, #1A1816) 0%, #1A1816 78%); animation: up .3s ease-out; }
+.fp-art { box-shadow: 0 26px 50px -14px color-mix(in srgb, var(--pc) 70%, #000); }
+.fp.playing .fp-art .face { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08) rotate(3deg); } }
+@media (min-width: 900px) { .fp { inset: auto 24px 96px auto; width: 390px; max-height: calc(100dvh - 120px); border-radius: 24px; box-shadow: 0 30px 70px rgba(0, 0, 0, .4); } }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+
+/* ---------- Чат ---------- */
+.chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 36px); }
+body.has-player .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 108px); }
+@media (min-width: 900px) {
+  .chat { height: calc(100dvh - var(--head-h) - 48px); }
+  body.has-player .chat { height: calc(100dvh - var(--head-h) - 120px); }
+}
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-foreground); animation: bounce 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%, 60%, 100% { opacity: .3; transform: none; } 30% { opacity: 1; transform: translateY(-4px); } }
+
+/* ---------- Тайлангийн heatmap ---------- */
+.lvl-1 { background: var(--div-1); color: var(--div-1-ink); } .lvl-2 { background: var(--div-2); color: var(--div-2-ink); }
+.lvl-3 { background: var(--div-3); color: var(--div-3-ink); } .lvl-4 { background: var(--div-4); color: var(--div-4-ink); }
+.lvl-5 { background: var(--div-5); color: var(--div-5-ink); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+@media print {
+  .app-nav, .topbar-actions, .no-print, [data-slot=button] { display: none !important; }
+  .shell { margin: 0 !important; } .app-main { padding: 0 !important; } .card-x { break-inside: avoid; }
 }

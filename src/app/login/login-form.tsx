@@ -1,0 +1,72 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Segmented } from '@/components/segmented';
+import { createClient } from '@/lib/supabase/client';
+
+export function LoginForm() {
+  const router = useRouter();
+  const [tab, setTab] = useState<'register' | 'login'>('register');
+  const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const reg = tab === 'register';
+  const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const name = String(f.get('name') ?? '').trim(), email = String(f.get('email') ?? '').trim(), password = String(f.get('password') ?? '');
+    if (reg && !name) return toast('Нэрээ оруулна уу');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast('Имэйл хаяг буруу байна');
+    if (password.length < 6) return toast('Нууц үг хамгийн багадаа 6 тэмдэгт');
+
+    setBusy(true);
+    const supabase = createClient();
+    const { data, error } = reg
+      ? await supabase.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: callback('/onboarding') } })
+      : await supabase.auth.signInWithPassword({ email, password });
+    setBusy(false);
+
+    if (error) return toast.error(error.message === 'Invalid login credentials' ? 'Имэйл эсвэл нууц үг буруу байна' : error.message);
+    // Supabase-д имэйл баталгаажуулалт асаалттай бол session шууд үүсэхгүй
+    if (!data.session) return setSentTo(email);
+    router.replace(reg ? '/onboarding' : '/home');
+    router.refresh();
+  }
+
+  async function google() {
+    const { error } = await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback('/home') } });
+    if (error) toast.error(error.message);
+  }
+
+  if (sentTo) return (
+    <div className="card-x w-full max-w-[420px] text-center">
+      <div className="text-4xl">📬</div>
+      <h2 className="my-2 text-lg font-semibold">Имэйлээ шалгана уу</h2>
+      <p className="text-sm text-muted-foreground"><b>{sentTo}</b> хаяг руу баталгаажуулах холбоос илгээлээ. Холбоос дээр дарахад бүртгэл идэвхжинэ.</p>
+      <Button variant="secondary" size="xl" className="mt-4 w-full" onClick={() => { setSentTo(null); setTab('login'); }}>Нэвтрэх хуудас руу</Button>
+    </div>
+  );
+
+  return (
+    <form className="card-x w-full max-w-[420px]" onSubmit={onSubmit} noValidate>
+      <Segmented full className="mb-4.5" value={tab} onChange={setTab} options={[['register', 'Бүртгүүлэх'], ['login', 'Нэвтрэх']]} />
+      {reg && <Field id="name" label="Нэр"><Input id="name" name="name" autoComplete="given-name" placeholder="Таны нэр" className="h-12 rounded-xl" required /></Field>}
+      <Field id="email" label="Имэйл"><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl" required /></Field>
+      <Field id="password" label="Нууц үг"><Input id="password" name="password" type="password" autoComplete={reg ? 'new-password' : 'current-password'} placeholder="Хамгийн багадаа 6 тэмдэгт" minLength={6} className="h-12 rounded-xl" required /></Field>
+      <Button type="submit" size="xl" className="w-full" disabled={busy}>{busy ? '…' : reg ? 'Бүртгүүлэх' : 'Нэвтрэх'}</Button>
+      <div className="my-3.5 flex items-center gap-2.5 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">эсвэл</div>
+      <Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b> Google-ээр үргэлжлүүлэх</Button>
+      <p className="mt-4 text-center text-xs text-muted-foreground">Үргэлжлүүлснээр та үйлчилгээний нөхцөл болон нууцлалын бодлогыг зөвшөөрч байна.</p>
+    </form>
+  );
+}
+
+function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return <div className="mb-3.5 flex flex-col gap-1.5"><Label htmlFor={id} className="font-semibold">{label}</Label>{children}</div>;
+}

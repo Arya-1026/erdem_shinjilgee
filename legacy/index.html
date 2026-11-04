@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7C5CFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Сэтгэл — Mood Tracker</title>
+<style>
+:root{
+  --bg:#F6F5FB;--card:#fff;--text:#1E1B2E;--muted:#6B6880;--line:#E7E4F0;
+  --primary:#7C5CFF;--primary-2:#A78BFA;--primary-soft:#EEE9FF;
+  --ok:#10B981;--warn:#F59E0B;--danger:#EF4444;
+  --radius:18px;--shadow:0 4px 20px rgba(40,20,90,.07);
+  --nav-h:68px;--head-h:60px;--safe-b:env(safe-area-inset-bottom,0px);
+}
+[data-theme=dark]{--bg:#121019;--card:#1C1928;--text:#ECEAF5;--muted:#A19CB8;--line:#2D2940;--primary-soft:#2A2345;--shadow:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+input,textarea,select{font-size:16px} /* iOS дээр автоматаар zoom хийхээс сэргийлнэ */
+button{cursor:pointer;border:0;background:none}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{margin:0 0 .5rem;line-height:1.25}
+h1{font-size:1.5rem}h2{font-size:1.15rem}h3{font-size:1rem}
+p{margin:0 0 .5rem}
+:focus-visible{outline:2.5px solid var(--primary);outline-offset:2px}
+.muted{color:var(--muted)}.small{font-size:.85rem}.tiny{font-size:.75rem}.center{text-align:center}
+.mt{margin-top:16px}.hidden{display:none!important}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* ---------- Товч, карт, input ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:48px;padding:0 1.25rem;border-radius:14px;font-weight:600;background:var(--primary);color:#fff;transition:transform .1s,opacity .2s;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--primary-soft);color:var(--primary)}
+.btn.outline{background:transparent;border:1.5px solid var(--line);color:var(--text)}
+.btn.danger{background:#FEE2E2;color:#B91C1C}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;pointer-events:none}
+.icon-btn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.1rem}
+.card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid var(--line);min-width:0}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-weight:600;font-size:.9rem}
+.input{min-height:48px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);width:100%}
+.input:focus{outline:none;border-color:var(--primary)}
+textarea.input{resize:vertical}
+input[type=range]{width:100%;accent-color:var(--primary);height:32px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-size:.9rem;white-space:nowrap}
+.chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-bottom:14px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .chip{flex:none}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}
+.seg button{min-height:36px;padding:0 12px;border-radius:9px;font-size:.88rem;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.seg.full{display:flex;width:100%}.seg.full button{flex:1}
+.badge{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:999px;background:#D1FAE5;color:#065F46;font-weight:600}
+
+/* ---------- Layout ---------- */
+.shell{min-height:100dvh}
+.topbar{position:sticky;top:0;z-index:20;min-height:var(--head-h);padding:env(safe-area-inset-top) 16px 0;display:flex;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.topbar .title{font-size:1.25rem;margin:0}
+main{padding:8px 16px calc(var(--nav-h) + var(--safe-b) + 20px);max-width:1180px;margin:0 auto}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--card);border-top:1px solid var(--line);display:flex}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.68rem;color:var(--muted);min-width:0}
+.nav button .i{font-size:1.35rem;line-height:1}
+.nav button.on{color:var(--primary);font-weight:700}
+.nav .brand{display:none}
+.nav button.desk-only{display:none}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.avatar.lg{width:64px;height:64px;font-size:1.5rem}
+.streak{font-weight:700;background:var(--primary-soft);color:var(--primary);padding:6px 12px;border-radius:999px;font-size:.9rem}
+.grid{display:grid;gap:16px}
+.grid>*,.stack>*{min-width:0} /* хажуу тийш гүйлгэдэг мөр grid-ийг сунгахаас сэргийлнэ */
+.cards-auto{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+.greet{font-size:1.4rem}
+
+@media (min-width:900px){
+  .nav{top:0;right:auto;width:240px;height:100dvh;flex-direction:column;border-top:0;border-right:1px solid var(--line);padding:20px 12px;gap:4px}
+  .nav .brand{display:block;font-weight:800;font-size:1.3rem;padding:8px 12px 20px}
+  .nav button,.nav button.desk-only{flex:none;display:flex;flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 14px;border-radius:12px;font-size:.95rem}
+  .nav button.on{background:var(--primary-soft)}
+  .shell{margin-left:240px}
+  .mob-only{display:none!important}
+  main{padding:16px 32px 32px}
+  .topbar{padding:0 32px}
+  .grid.two{grid-template-columns:3fr 2fr;align-items:start}
+  .span2{grid-column:1/-1}
+}
+@media (hover:hover){.btn:hover{opacity:.9}.chip:hover{border-color:var(--primary)}}
+
+/* ---------- Mood сонголт ---------- */
+.face{font-size:2rem;line-height:1;width:44px;height:44px;display:grid;place-items:center}
+.face svg{width:100%;height:100%}
+/* ---------- Mood carousel (гүйлгэж сонгоно) ---------- */
+/* @property нь gradient доторх өнгийг зөөлөн шилжүүлэх боломж олгоно */
+@property --mc{syntax:'<color>';inherits:true;initial-value:#B8C1D1}
+.shell{transition:--mc .7s ease}
+.shell.tinted{background:linear-gradient(180deg,color-mix(in srgb,var(--mc) 32%,var(--bg)) 0%,var(--bg) 520px)}
+.checkin{position:relative;overflow:hidden;isolation:isolate;border:0;
+  background:linear-gradient(165deg,color-mix(in srgb,var(--mc) 60%,var(--card)) 0%,color-mix(in srgb,var(--mc) 22%,var(--card)) 45%,var(--card) 80%)}
+.checkin::before,.checkin::after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(40px);opacity:.55;background:var(--mc);pointer-events:none}
+.checkin::before{width:220px;height:220px;top:-60px;left:-50px;animation:drift 9s ease-in-out infinite alternate}
+.checkin::after{width:180px;height:180px;top:40px;right:-60px;background:color-mix(in srgb,var(--mc) 60%,#fff);animation:drift 11s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(40px,30px) scale(1.15)}}
+.checkin .seg{background:color-mix(in srgb,var(--card) 70%,transparent)}
+.car-wrap{position:relative;margin:4px -18px 0}
+.mood-car{position:relative;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  padding:26px calc(50% - 62px) 22px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.mood-car::-webkit-scrollbar{display:none}
+.mcard{flex:none;width:124px;height:158px;scroll-snap-align:center;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:color-mix(in srgb,var(--card) 55%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);
+  transform:scale(.8);opacity:.55;transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .3s,box-shadow .3s,background .3s;font-size:.85rem;color:var(--text)}
+.mcard .face{width:76px;height:76px;font-size:3.9rem;transition:transform .35s}
+.mcard.active{transform:scale(1.1);opacity:1;background:var(--c);color:#1E1B2E;font-weight:800;border-color:transparent;
+  box-shadow:0 16px 34px -10px var(--c),0 0 0 6px color-mix(in srgb,var(--c) 30%,transparent)}
+.mcard.active .face{animation:float 2.6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+.car-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:42px;height:42px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);font-size:1.4rem;display:none}
+.car-nav.prev{left:10px}.car-nav.next{right:10px}
+@media (hover:hover){.car-nav{display:grid;place-items:center}}
+.car-dots{display:flex;justify-content:center;gap:6px;margin-bottom:6px}
+.car-dots i{width:7px;height:7px;border-radius:99px;background:color-mix(in srgb,var(--text) 22%,transparent);transition:all .3s}
+.car-dots i.on{width:22px;background:var(--mc)}
+.mood-cap{text-align:center;font-weight:600;min-height:1.5em;margin-bottom:14px;animation:fadeUp .35s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}}
+.swipe-hint{text-align:center;font-size:.8rem;color:var(--muted);margin:0;animation:nudgeX 1.6s ease-in-out infinite}
+@keyframes nudgeX{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+.entry{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border:0}
+.entry .face{width:36px;height:36px;font-size:1.6rem}
+.pred{border-left:4px solid var(--primary)}
+.pred.low{border-left-color:var(--warn)}.pred.high{border-left-color:var(--ok)}
+.nudge{background:linear-gradient(135deg,#EDE9FE,#FCE7F3);border:0;color:#3B2667}
+
+/* ---------- Зөвлөмж ---------- */
+.rec{display:flex;flex-direction:column;gap:10px}
+.rec-top{display:flex;gap:12px;align-items:flex-start}
+.rec-ic{width:44px;height:44px;border-radius:12px;background:var(--primary-soft);display:grid;place-items:center;font-size:1.3rem;flex:none}
+.rec-actions{display:flex;gap:8px;align-items:center;margin-top:auto}
+.rec-actions .btn{min-height:42px;flex:1;font-size:.9rem;padding:0 10px}
+.fb{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line);flex:none}
+.fb.on{background:var(--primary-soft);border-color:var(--primary)}
+.mood-banner{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.mood-banner .face{width:56px;height:56px;font-size:2.6rem}
+.song{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.song:last-child{border:0}
+.song .cover{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#1DB954,#0F7A37);display:grid;place-items:center;color:#fff;flex:none}
+.song .meta{flex:1;min-width:0}
+.song .meta b,.song .meta span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Нүүрний зөвлөмж (хажуу тийш гүйлгэдэг мөрүүд) ---------- */
+.hr-title{font-weight:700;font-size:.9rem;margin:14px 0 8px}
+.hscroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -18px;padding:2px 18px 4px}
+.hscroll::-webkit-scrollbar{display:none}
+.htile{flex:none;width:132px;text-align:left;display:flex;flex-direction:column;justify-content:flex-start;align-self:flex-start;scroll-snap-align:start;color:var(--text)}
+.htile .cv{position:relative;width:132px;height:132px;border-radius:16px;display:grid;place-items:center;font-size:2.4rem;margin-bottom:6px;overflow:hidden;
+  background:linear-gradient(135deg,var(--tc),color-mix(in srgb,var(--tc) 35%,#1E1B2E))}
+.htile .cv .pl{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;background:#1DB954;color:#fff;display:grid;place-items:center;font-size:.85rem;box-shadow:0 4px 12px rgba(0,0,0,.3);transform:translateY(6px);opacity:0;transition:.2s}
+.htile:hover .cv .pl,.htile.now .cv .pl{transform:none;opacity:1}
+@media (hover:none){.htile .cv .pl{transform:none;opacity:1}}
+.htile b{display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.85rem;line-height:1.25}
+.htile span{display:block;font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htile.now b{color:#1DB954}
+.play-mood{width:100%;margin-top:10px;color:#1E1B2E;background:var(--mc)}
+.mood-pick{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
+.mood-pick::-webkit-scrollbar{display:none}
+.mood-pick .chip{flex:none;display:inline-flex;align-items:center;gap:6px}
+.mood-pick .chip.on{background:var(--c);border-color:var(--c);color:#1E1B2E;font-weight:700}
+.song.now b{color:#1DB954}
+.song .icon-btn{background:#1DB954;color:#fff;border-radius:50%;width:40px;height:40px;font-size:.9rem}
+
+/* ---------- Mini player (Spotify маягийн) ---------- */
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:14px}
+.eq i{width:3px;background:currentColor;border-radius:1px;animation:eq .9s ease-in-out infinite}
+.eq i:nth-child(1){height:40%}.eq i:nth-child(2){height:100%;animation-delay:.2s}.eq i:nth-child(3){height:65%;animation-delay:.4s}
+@keyframes eq{50%{transform:scaleY(.3)}}
+.eq i{transform-origin:bottom}
+.paused .eq i{animation-play-state:paused}
+.mini{position:fixed;left:8px;right:8px;bottom:calc(var(--nav-h) + var(--safe-b) + 8px);z-index:35;height:64px;border-radius:16px;padding:8px;
+  display:flex;align-items:center;gap:10px;color:#fff;cursor:pointer;overflow:hidden;
+  background:color-mix(in srgb,var(--pc,#7C5CFF) 45%,#16121f);box-shadow:0 10px 30px rgba(0,0,0,.3);animation:up .3s ease-out;transition:background .5s}
+.mini .cover{width:48px;height:48px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:1.6rem;background:linear-gradient(135deg,var(--pc),color-mix(in srgb,var(--pc) 35%,#000))}
+.mini .info{flex:1;min-width:0}
+.mini .info b,.mini .info span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .info b{font-size:.9rem}
+.mini .info span{font-size:.75rem;opacity:.75;display:flex;align-items:center;gap:6px}
+.mini .ctrl{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:1.15rem;color:#fff;flex:none}
+.mini .ctrl.play{background:#fff;color:#16121f}
+.mini .prog{position:absolute;left:12px;right:12px;bottom:3px;height:3px;border-radius:2px;background:rgba(255,255,255,.2)}
+.mini .prog i{display:block;height:100%;width:0;background:#fff;border-radius:2px}
+body.has-player main{padding-bottom:calc(var(--nav-h) + var(--safe-b) + 96px)}
+body.has-player .chat{height:calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 108px)}
+body.has-player .toast{bottom:calc(var(--nav-h) + var(--safe-b) + 88px)}
+@media (min-width:900px){
+  .mini{left:256px;right:16px;bottom:16px}
+  body.has-player main{padding-bottom:100px}
+  body.has-player .chat{height:calc(100dvh - var(--head-h) - 120px)}
+  body.has-player .toast{bottom:96px}
+}
+
+/* ---------- Бүтэн дэлгэцийн player ---------- */
+.fp{position:fixed;inset:0;z-index:55;color:#fff;display:flex;flex-direction:column;overflow-y:auto;
+  padding:calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--pc) 75%,#120f1c) 0%,#120f1c 78%);animation:up .3s ease-out}
+.fp-head{display:flex;align-items:center;justify-content:space-between}
+.fp-head .icon-btn{color:#fff;font-size:1.4rem}
+.fp-art{width:min(78vw,320px);aspect-ratio:1;margin:18px auto 22px;border-radius:24px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--pc),color-mix(in srgb,var(--pc) 30%,#000));box-shadow:0 26px 50px -14px color-mix(in srgb,var(--pc) 70%,#000)}
+.fp-art .face{width:46%;height:46%;font-size:7rem}
+.fp:not(.paused) .fp-art .face{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08) rotate(3deg)}}
+.fp-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fp-title h2{font-size:1.35rem;margin:0}
+.fp-title p{margin:0;opacity:.75}
+.fp-title .icon-btn{color:#fff;font-size:1.4rem;flex:none}
+.fp input[type=range]{accent-color:#fff;margin-top:14px}
+.fp-time{display:flex;justify-content:space-between;font-size:.75rem;opacity:.7;margin-top:-4px}
+.fp-ctrls{display:flex;align-items:center;justify-content:center;gap:28px;margin:14px 0 20px}
+.fp-ctrls .icon-btn{color:#fff;font-size:1.6rem}
+.fp-ctrls .big{width:68px;height:68px;border-radius:50%;background:#fff;color:#16121f;font-size:1.6rem}
+.fp-q h3{font-size:.95rem;opacity:.9}
+.fp-q button{display:flex;align-items:center;gap:12px;width:100%;padding:8px 0;text-align:left;color:#fff}
+.fp-q button .c{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;flex:none}
+.fp-q button.now b{color:#1DB954}
+.fp-q b,.fp-q span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-q span{font-size:.75rem;opacity:.65}
+.fp-note{font-size:.72rem;opacity:.55;text-align:center;margin-top:12px}
+@media (min-width:900px){
+  .fp{inset:auto;right:24px;bottom:96px;width:390px;max-height:calc(100dvh - 120px);border-radius:24px;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+  .fp-art{width:200px}
+}
+.movie-hero{height:150px;border-radius:18px;margin:-4px 0 14px;display:grid;place-items:center;font-size:3.5rem;background:linear-gradient(135deg,var(--tc),color-mix(in srgb,var(--tc) 30%,#1E1B2E))}
+
+/* ---------- Чат ---------- */
+.chat{display:flex;flex-direction:column;height:calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 36px)}
+@media (min-width:900px){.chat{height:calc(100dvh - var(--head-h) - 48px)}}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:12px 2px;overscroll-behavior:contain}
+.msg{max-width:85%;padding:10px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (min-width:900px){.msg{max-width:65%}}
+.msg.bot{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px;align-self:flex-start}
+.msg.me{background:var(--primary);color:#fff;border-bottom-right-radius:6px;align-self:flex-end}
+.typing{display:flex;gap:4px;padding:14px 16px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-4px)}}
+.composer{display:flex;gap:8px;align-items:flex-end;padding-top:8px}
+.composer textarea{flex:1;resize:none;max-height:120px;min-height:48px}
+.composer .btn{width:48px;padding:0;flex:none;font-size:1.2rem}
+.quick{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-top:6px}
+.quick::-webkit-scrollbar{display:none}
+.quick .chip{flex:none}
+.crisis{align-self:stretch;background:#FEF2F2;border:1px solid #FCA5A5;color:#7F1D1D;border-radius:16px;padding:16px}
+.crisis .row{margin-top:10px}
+.crisis .btn{min-height:44px;font-size:.9rem}
+
+/* ---------- Тайлан ---------- */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}
+@media (min-width:700px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.tile b{display:block;font-size:1.4rem}
+.bars{display:flex;align-items:stretch;gap:8px;height:170px;margin-top:8px}
+.bars.dense{gap:3px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.bar .track{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar i{display:block;width:100%;max-width:36px;border-radius:8px 8px 4px 4px;transition:height .4s}
+.bar.hl i{outline:2px solid var(--text);outline-offset:2px}
+.bar small{font-size:.7rem;color:var(--muted);height:1em;line-height:1}
+.dist{display:flex;align-items:center;gap:10px;margin:8px 0}
+.dist .face{width:28px;height:28px;font-size:1.3rem}
+.dist .t{flex:1;height:10px;background:var(--bg);border-radius:99px;overflow:hidden}
+.dist .t i{display:block;height:100%;border-radius:99px}
+.dist span{width:34px;text-align:right;font-size:.85rem;color:var(--muted)}
+.insights{margin:0;padding:0;list-style:none}
+.insights li{padding:10px 0;border-bottom:1px solid var(--line)}
+.insights li:last-child{border:0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal div{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-size:.8rem;background:var(--bg);color:#1E1B2E}
+.cal .h{background:none;aspect-ratio:auto;color:var(--muted);font-weight:600}
+.cal .e{background:none}
+.cal .today{outline:2px solid var(--primary);outline-offset:1px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:.75rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:middle;margin-right:4px}
+
+/* ---------- Сэтгэл зүйч ---------- */
+.exp-top{display:flex;gap:12px;align-items:flex-start}
+.exp-av{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.2rem;flex:none}
+.meta-row{display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin:8px 0}
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.day{flex:none;width:60px;padding:8px 0;border-radius:12px;border:1.5px solid var(--line);text-align:center;font-size:.78rem}
+.day b{display:block;font-size:1.1rem}
+.day.on,.slot.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{min-height:44px;border-radius:12px;border:1.5px solid var(--line)}
+.slot:disabled{opacity:.35;text-decoration:line-through}
+.booking{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.booking:last-child{border:0}
+
+/* ---------- Профайл ---------- */
+.set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);min-height:56px}
+.set:last-child{border:0}
+.set input[type=time]{min-height:40px;padding:4px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg)}
+.switch{position:relative;width:50px;height:30px;flex:none}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s}
+.switch span::after{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked+span{background:var(--primary)}
+.switch input:checked+span::after{transform:translateX(20px)}
+.switch input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.btn-list{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- Нэвтрэх, onboarding ---------- */
+.auth{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(170deg,#7C5CFF 0%,#A78BFA 38%,var(--bg) 38%)}
+.auth-hero{color:#fff;text-align:center;margin-bottom:20px;max-width:420px}
+.auth-hero .logo{font-size:3rem}
+.auth-hero h1{font-size:2rem}
+.auth-card{width:100%;max-width:420px}
+.auth-card .seg{margin-bottom:18px}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;margin:14px 0}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.check{display:flex;gap:10px;align-items:center;margin-bottom:14px;font-size:.9rem}
+.check input{width:20px;height:20px;accent-color:var(--primary);flex:none}
+@media (min-width:900px){
+  .auth{flex-direction:row;gap:72px;background:linear-gradient(110deg,#7C5CFF 0%,#A78BFA 50%,var(--bg) 50%)}
+  .auth-hero{text-align:left;margin:0}
+  .auth-hero h1{font-size:2.6rem}
+}
+.onb{max-width:760px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) 16px 120px}
+.hob-cat{margin-bottom:20px}
+.onb-foot{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + var(--safe-b));background:var(--card);border-top:1px solid var(--line)}
+.onb-foot .btn{max-width:760px;margin:0 auto;display:flex}
+
+/* ---------- Modal (гар утсан дээр доороос гарч ирнэ), toast ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(10,5,30,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal{position:relative;background:var(--card);width:100%;max-height:92dvh;overflow:auto;border-radius:22px 22px 0 0;padding:22px 18px calc(22px + var(--safe-b));animation:up .25s ease-out}
+.modal .close{position:absolute;top:10px;right:10px}
+.modal h2{padding-right:44px}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@media (min-width:640px){.modal-bg{align-items:center;padding:20px}.modal{max-width:520px;border-radius:22px;padding:26px}}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);transform:translate(-50%,20px);background:#1E1B2E;color:#fff;padding:12px 18px;border-radius:12px;font-size:.9rem;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (min-width:900px){.toast{bottom:24px;left:calc(50% + 120px)}}
+.breath{width:min(200px,60vw);aspect-ratio:1;border-radius:50%;margin:24px auto;background:radial-gradient(circle at 35% 35%,#C4B5FD,#7C5CFF);display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.1rem;transform:scale(.6);transition:transform 4s ease-in-out;box-shadow:0 0 0 14px var(--primary-soft)}
+.steps{padding-left:20px}.steps li{margin-bottom:8px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@media print{.nav,.topbar .row,.btn,.seg,.tabs{display:none!important}.shell{margin:0!important}main{padding:0!important}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="modalBg" class="modal-bg hidden"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="mini" class="mini hidden" data-act="openFull" role="region" aria-label="Тоглуулагч"></div>
+<div id="fullPlayer" class="fp hidden" role="dialog" aria-modal="true" aria-label="Тоглуулж буй дуу"></div>
+
+<script>
+/* =========================================================
+   Сэтгэл: Mood Tracker прототип (frontend-only демо)
+   Өгөгдлийг localStorage-д хадгална. Бодит системд эдгээр
+   функцууд REST API (/api/...) руу хандана.
+   ========================================================= */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = () => ymd(new Date());
+const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+
+/* ---------- Төлөв (state) ---------- */
+const KEY = 'setgel_v1';
+const fresh = () => ({ user: null, entries: [], feedback: {}, bookings: [], spotify: false, chat: [], artMode: 'emoji', chatMode: 'calm', dark: matchMedia('(prefers-color-scheme: dark)').matches, done: 0, watch: [] });
+let S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}'));
+const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+
+/* ---------- Лавлах өгөгдөл ---------- */
+const MOODS = [
+  { id: 'happy',   label: 'Баяртай',  emoji: '😄', color: '#FFD166', score: 5 },
+  { id: 'calm',    label: 'Тайван',   emoji: '😌', color: '#06D6A0', score: 4 },
+  { id: 'neutral', label: 'Энгийн',   emoji: '😐', color: '#B8C1D1', score: 3 },
+  { id: 'tired',   label: 'Ядарсан',  emoji: '😴', color: '#B794F4', score: 2 },
+  { id: 'anxious', label: 'Түгшсэн',  emoji: '😰', color: '#F6AD55', score: 2 },
+  { id: 'sad',     label: 'Гунигтай', emoji: '😢', color: '#63B3ED', score: 1 },
+  { id: 'angry',   label: 'Уурласан', emoji: '😠', color: '#FC8181', score: 1 },
+];
+const moodById = id => MOODS.find(m => m.id === id) || MOODS[2];
+const TAGS = ['Ажил', 'Хичээл', 'Гэр бүл', 'Найз нөхөд', 'Харилцаа', 'Эрүүл мэнд', 'Мөнгө', 'Нойр', 'Цаг агаар'];
+const WD = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+const WD_SHORT = ['Ня', 'Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя'];
+const HOBBIES = {
+  'Спорт': ['Фитнесс', 'Гүйлт', 'Сагсан бөмбөг', 'Йог'],
+  'Урлаг': ['Зураг', 'Гэрэл зураг', 'Бүжиг'],
+  'Хөгжим': ['Дуу сонсох', 'Хөгжим тоглох', 'Дуулах'],
+  'Уншлага': ['Уран зохиол', 'Өөрийгөө хөгжүүлэх'],
+  'Кино': ['Кино', 'Анимэ', 'Цуврал'],
+  'Байгаль': ['Аялал', 'Явган аялал', 'Загас барих'],
+  'Технологи': ['Тоглоом', 'Програмчлал'],
+  'Хоол': ['Хоол хийх', 'Кофе'],
+};
+const CAT_ICON = { 'Спорт': '🏃', 'Урлаг': '🎨', 'Хөгжим': '🎵', 'Уншлага': '📚', 'Кино': '🎬', 'Байгаль': '🏔️', 'Технологи': '💻', 'Хоол': '🍳' };
+
+const RECS = [
+  { id: 'e1', type: 'exercise', title: '4-7-8 амьсгалын дасгал', sub: '2 мин · Түгшүүр, уурыг бууруулна', moods: ['anxious', 'angry', 'sad'], action: 'breath' },
+  { id: 'e2', type: 'exercise', title: '5-4-3-2-1 газардуулах арга', sub: '3 мин · Одоо цагт эргэн ирэх', moods: ['anxious'], steps: ['Эргэн тойрондоо харагдах 5 зүйлийг нэрлэ', 'Хүрч болох 4 зүйлд хүр', 'Сонсогдож буй 3 дууг ажигла', 'Үнэртэж буй 2 зүйлийг мэдэр', 'Амтлах 1 зүйлийг ажигла'] },
+  { id: 'e3', type: 'exercise', title: '10 минутын алхалт', sub: 'Гадаа, цэвэр агаарт', moods: ['sad', 'tired', 'neutral', 'angry'], hobby: ['Гүйлт', 'Явган аялал', 'Аялал'], steps: ['Утсаа чимээгүй горимд тавь', 'Гадаа гараад 10 минут тайван алх', 'Эргэн тойрныхоо өнгө, дууг ажигла'] },
+  { id: 'e4', type: 'exercise', title: 'Иогийн сунгалт', sub: '8 мин · Хүзүү, нуруу суллах', moods: ['tired', 'anxious', 'calm'], hobby: ['Йог', 'Фитнесс'], steps: ['Хүзүүгээ зүүн, баруун тийш 5 удаа хазайлга', 'Мөрөө 10 удаа эргүүл', 'Муур-үнээ байрлалаар 8 удаа', 'Хүүхдийн байрлалд 1 минут амар'] },
+  { id: 'e5', type: 'exercise', title: 'Талархлын тэмдэглэл', sub: '3 мин · Өнөөдөр талархсан 3 зүйл', moods: ['sad', 'neutral', 'calm', 'happy'], hobby: ['Уран зохиол', 'Өөрийгөө хөгжүүлэх'], steps: ['Өнөөдөр болсон сайн 3 зүйлийг бич', 'Тус бүр яагаад сайн байсныг нэг өгүүлбэрээр тайлбарла'] },
+  { id: 'e6', type: 'exercise', title: 'Булчин суллах дасгал', sub: '7 мин · Биеэ бүхэлд нь тайвшруулна', moods: ['angry', 'anxious', 'tired'], steps: ['Хөлийн булчингаа 5 секунд чангалаад сулла', 'Гуя, гэдэс, гар, мөр, нүүр гэх мэтээр дээшлэн давт', 'Суллах бүртээ тайвшрах мэдрэмжийг ажигла'] },
+  { id: 'e7', type: 'exercise', title: 'Энергитэй 15 мин дасгал', sub: 'Эерэг эрч хүчээ хадгал', moods: ['happy', 'neutral'], hobby: ['Фитнесс', 'Сагсан бөмбөг', 'Бүжиг'], steps: ['20 үсрэлт', '15 суулт', '10 түлхэлт', '30 секунд планк', '3 тойрог давт'] },
+  { id: 'e8', type: 'exercise', title: 'Мэдрэмжээ зураглах', sub: '15 мин · Өнгө, хэлбэрээр илэрхийл', moods: ['sad', 'angry', 'anxious'], hobby: ['Зураг', 'Гэрэл зураг'], steps: ['Цаас, өнгийн харандаа бэлд', 'Одоогийн мэдрэмжээ өнгө, хэлбэрээр зур (гоё байх албагүй)', 'Дуусаад зурсан зүйлээ нэг үгээр нэрлэ'] },
+  { id: 's1', type: 'song', title: 'Weightless', sub: 'Marconi Union', moods: ['anxious', 'angry'], hobby: ['Дуу сонсох'] },
+  { id: 's2', type: 'song', title: 'Clair de Lune', sub: 'Claude Debussy', moods: ['anxious', 'tired', 'calm'], hobby: ['Хөгжим тоглох'] },
+  { id: 's3', type: 'song', title: 'Fix You', sub: 'Coldplay', moods: ['sad'] },
+  { id: 's4', type: 'song', title: 'Here Comes the Sun', sub: 'The Beatles', moods: ['sad', 'neutral', 'tired'] },
+  { id: 's5', type: 'song', title: 'Happy', sub: 'Pharrell Williams', moods: ['happy', 'neutral'], hobby: ['Бүжиг'] },
+  { id: 's6', type: 'song', title: "Don't Stop Me Now", sub: 'Queen', moods: ['happy'], hobby: ['Дуулах'] },
+  { id: 's7', type: 'song', title: 'Three Little Birds', sub: 'Bob Marley', moods: ['anxious', 'sad', 'neutral'] },
+  { id: 's8', type: 'song', title: 'Lovely Day', sub: 'Bill Withers', moods: ['calm', 'happy', 'tired'] },
+  { id: 'm1', type: 'movie', title: 'Inside Out (2015)', sub: 'Сэтгэл хөдлөлөө ойлгох тухай', moods: ['sad', 'angry', 'anxious', 'neutral'], hobby: ['Кино'], desc: '11 настай Райлигийн толгой доторх Баяр, Гуниг, Уур, Айдас, Жигшил гэсэн сэтгэл хөдлөлүүдийн түүх. Гуниг ч гэсэн хэрэгтэй мэдрэмж гэдгийг ойлгуулдаг.' },
+  { id: 'm2', type: 'movie', title: 'Soul (2020)', sub: 'Амьдралын утга учир', moods: ['sad', 'neutral', 'tired'], hobby: ['Хөгжим тоглох'], desc: 'Жазз хөгжимчин Жо Гарднер амьдралын утга учир, өдөр тутмын жижиг мөчүүдийн үнэ цэнийг ойлгох түүх.' },
+  { id: 'm3', type: 'movie', title: 'Paddington 2 (2017)', sub: 'Дулаахан инээдмийн кино', moods: ['sad', 'tired', 'anxious'], desc: 'Паддингтон баавгай авга эгчдээ бэлэг авах гэж байгаад буруутгагдах ч эелдэг сайхан сэтгэлээрээ бүгдийг өөрчилдөг дулаахан кино.' },
+  { id: 'm4', type: 'movie', title: 'The Secret Life of Walter Mitty (2013)', sub: 'Адал явдал, урам зориг', moods: ['neutral', 'happy', 'tired'], hobby: ['Аялал', 'Гэрэл зураг'], desc: 'Сэтгүүлийн ажилтан Уолтер алга болсон гэрэл зургийг хайж, амьдралдаа анх удаа жинхэнэ адал явдалд гардаг.' },
+  { id: 'm5', type: 'movie', title: 'My Neighbor Totoro (1988)', sub: 'Тайвшруулах анимэ', moods: ['anxious', 'calm', 'tired'], hobby: ['Анимэ'], desc: 'Хоёр охин хөдөө нүүж очоод ойн сүнс Тоторотой танилцана. Тайван, дулаахан уур амьсгалтай анимэ.' },
+  { id: 'm6', type: 'movie', title: 'The Intouchables (2011)', sub: 'Нөхөрлөл, инээд', moods: ['sad', 'angry', 'neutral'], hobby: ['Кино', 'Цуврал'], desc: 'Саа өвчтэй баян эр болон түүний асрагч болсон залуугийн нөхөрлөл. Бодит явдлаас сэдэвлэсэн, инээд хөөртэй кино.' },
+  { id: 'm7', type: 'movie', title: 'Up (2009)', sub: 'Гэр бүл, адал явдал', moods: ['happy', 'calm', 'sad'], desc: 'Өндөр настан Карл байшингаа мянга мянган бөмбөлгөөр нисгэж, бяцхан Расселтай хамт мөрөөдлийнхөө адал явдалд гарна.' },
+];
+// Spotify-аас татсан хэрэглэгчийн playlist (демо). Бодит системд дуу бүрийг backend дээр LLM-ээр mood-оор ангилна.
+const MY_PLAYLIST = [
+  { t: 'Someone Like You', a: 'Adele', moods: ['sad'] },
+  { t: 'Weightless', a: 'Marconi Union', moods: ['anxious', 'tired'] },
+  { t: 'Uptown Funk', a: 'Mark Ronson ft. Bruno Mars', moods: ['happy', 'neutral'] },
+  { t: 'Riptide', a: 'Vance Joy', moods: ['calm', 'happy'] },
+  { t: 'Lose Yourself', a: 'Eminem', moods: ['angry', 'tired'] },
+  { t: 'Holocene', a: 'Bon Iver', moods: ['calm', 'sad', 'anxious'] },
+  { t: 'Good as Hell', a: 'Lizzo', moods: ['sad', 'neutral', 'happy'] },
+  { t: 'Breathe Me', a: 'Sia', moods: ['sad', 'anxious'] },
+];
+const EXPERTS = [
+  { id: 'p1', name: 'Б. Сарангэрэл', title: 'Клиник сэтгэл зүйч', spec: ['Түгшүүр', 'Стресс'], exp: 8, rating: 4.9, price: 60000, color: '#8B5CF6' },
+  { id: 'p2', name: 'Д. Тэмүүлэн', title: 'Зөвлөх сэтгэл зүйч', spec: ['Харилцаа', 'Гэр бүл'], exp: 6, rating: 4.8, price: 50000, color: '#10B981' },
+  { id: 'p3', name: 'Г. Номин', title: 'Өсвөр насны сэтгэл зүйч', spec: ['Өсвөр нас', 'Стресс'], exp: 10, rating: 4.9, price: 55000, color: '#F59E0B' },
+  { id: 'p4', name: 'Э. Бат-Эрдэнэ', title: 'Сэтгэл засалч', spec: ['Сэтгэл гутрал', 'Нойр'], exp: 12, rating: 4.7, price: 70000, color: '#3B82F6' },
+];
+const SLOTS = ['10:00', '11:30', '14:00', '15:30', '17:00', '19:00'];
+const SUPPORT = {
+  happy: 'Гайхалтай! Энэ сайхан мэдрэмж юунаас үүдсэнийг тэмдэглээд аваарай. Хэцүү өдөр уншихад тус болно. ✨',
+  calm: 'Тайван байх их сайхан. Энэ мөчийг мэдэрч, амьсгалаа ажиглаарай. 🌿',
+  neutral: 'Энгийн өдөр ч хэвийн зүйл. Өөртөө жижиг баяр баясгалан бэлэглээд, дуртай дуугаа сонсоорой. 🎧',
+  tired: 'Бие чинь амрахыг хүсэж байна. Өнөө орой дэлгэцээ эрт унтрааж, 15 минут эрт унтаарай. 😴',
+  anxious: 'Түгшүүр бол түр зуурын мэдрэмж, өнгөрнө. Хамтдаа 1 минут амьсгалын дасгал хийх үү? 🫁',
+  sad: 'Гунигтай байх нь зүгээр. Мэдрэмжээ хүлээн зөвшөөрөх нь эхний алхам. Би энд байна. 💜',
+  angry: 'Уур бол хүчтэй мэдрэмж. Хариу үйлдэл хийхээсээ өмнө 10 хүртэл тоолоод, гүнзгий амьсгаа. 🌊',
+};
+
+/* ---------- 2D дүр (SVG) ---------- */
+function faceSVG(m) {
+  const ink = '#2D2440';
+  const mouths = { happy: 'M14 27 Q24 38 34 27', calm: 'M16 28 Q24 33 32 28', neutral: 'M16 30 L32 30', tired: 'M19 31 Q24 29 29 31', anxious: 'M15 31 Q18 28 21 31 T27 31 T33 31', sad: 'M16 33 Q24 26 32 33', angry: 'M16 33 Q24 28 32 33' };
+  const eyes = m.id === 'tired' ? `<path d="M14 20h7M27 20h7" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>`
+    : (m.id === 'happy' || m.id === 'calm') ? `<path d="M14 21Q17.5 17 21 21M27 21Q30.5 17 34 21" stroke="${ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="17.5" cy="20" r="2.6" fill="${ink}"/><circle cx="30.5" cy="20" r="2.6" fill="${ink}"/>`;
+  const brows = m.id === 'angry' ? `<path d="M13 13L21 16.5M35 13L27 16.5" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>`
+    : (m.id === 'anxious' || m.id === 'sad') ? `<path d="M13 15.5L20 13.5M35 15.5L28 13.5" stroke="${ink}" stroke-width="2" stroke-linecap="round"/>` : '';
+  const extra = m.id === 'sad' ? '<path d="M33 24q2.5 4 0 6.5q-2.5-2.5 0-6.5z" fill="#3B82F6"/>'
+    : m.id === 'happy' ? '<circle cx="11.5" cy="27" r="3" fill="#FF8FA3" opacity=".6"/><circle cx="36.5" cy="27" r="3" fill="#FF8FA3" opacity=".6"/>'
+    : m.id === 'tired' ? `<text x="35" y="11" font-size="9" font-weight="700" fill="${ink}">z</text>`
+    : m.id === 'anxious' ? '<path d="M38 12q2 3 0 5q-2-2 0-5z" fill="#60A5FA"/>' : '';
+  return `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="${m.color}"/>${brows}${eyes}<path d="${mouths[m.id]}" stroke="${ink}" stroke-width="2.5" fill="none" stroke-linecap="round"/>${extra}</svg>`;
+}
+const face = m => S.artMode === 'art' ? faceSVG(m) : m.emoji;
+
+/* ---------- Демо өгөгдөл (Даваа гарагт доогуур байх хэв маягтай) ---------- */
+function seed() {
+  const base = [3.8, 1.8, 2.8, 3, 3.2, 4, 4.5]; // Ням..Бямба
+  const byScore = { 5: ['happy'], 4: ['calm'], 3: ['neutral'], 2: ['tired', 'anxious'], 1: ['sad', 'angry'] };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  for (let i = 35; i >= 1; i--) {
+    if (Math.random() < .12) continue;
+    const d = addDays(new Date(), -i);
+    const sc = Math.max(1, Math.min(5, Math.round(base[d.getDay()] + (Math.random() * 1.6 - .8))));
+    S.entries.push({
+      id: uid(), date: ymd(d), time: '21:00', mood: pick(byScore[sc]), intensity: 3, note: '',
+      tags: sc <= 2 ? [pick(['Ажил', 'Хичээл', 'Ажил', 'Нойр'])] : [pick(['Найз нөхөд', 'Гэр бүл'])],
+      sleep: sc <= 2 ? 5 + Math.round(Math.random() * 2) / 2 : 7 + Math.round(Math.random() * 2) / 2,
+    });
+  }
+}
+
+/* ---------- Шинжилгээ ---------- */
+const scoreOf = e => moodById(e.mood).score;
+const scoreColor = s => s >= 4.5 ? '#FFD166' : s >= 3.5 ? '#06D6A0' : s >= 2.5 ? '#B8C1D1' : s >= 1.5 ? '#F6AD55' : '#63B3ED';
+const dayAvg = date => mean(S.entries.filter(e => e.date === date).map(scoreOf));
+const overallAvg = () => mean(S.entries.map(scoreOf)) ?? 3;
+const currentMood = () => S.entries.length ? moodById(S.entries[S.entries.length - 1].mood) : MOODS[2];
+function weekdayStats() {
+  const sum = Array(7).fill(0), cnt = Array(7).fill(0);
+  S.entries.forEach(e => { const w = new Date(e.date + 'T12:00').getDay(); sum[w] += scoreOf(e); cnt[w]++; });
+  return sum.map((s, w) => ({ w, avg: cnt[w] ? s / cnt[w] : null, n: cnt[w] }));
+}
+function streak() {
+  const set = new Set(S.entries.map(e => e.date));
+  let d = new Date(); if (!set.has(ymd(d))) d = addDays(d, -1);
+  let n = 0; while (set.has(ymd(d))) { n++; d = addDays(d, -1); }
+  return n;
+}
+function topTag(entries) {
+  const c = {}; entries.forEach(e => e.tags.forEach(t => c[t] = (c[t] || 0) + 1));
+  return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+// Маргаашийн таамаглал: тухайн гаригийн дундажийг нийт дундажтай харьцуулна.
+// Бодит системд backend дээр шөнө бүр ажилладаг job (Prophet/ML загвар) гаргана.
+function prediction() {
+  const w = addDays(new Date(), 1).getDay();
+  const ws = weekdayStats()[w], all = overallAvg();
+  const hobby = S.user?.hobbies?.[0];
+  if (!ws.avg || ws.n < 2) return { level: 'none', title: 'Өгөгдөл хуримтлагдаж байна', text: '2–3 долоо хоног тогтмол бүртгэвэл таны гаригийн хэв маягийг таамаглаж эхэлнэ.' };
+  const diff = ws.avg - all;
+  if (diff <= -.4) {
+    const tag = topTag(S.entries.filter(e => new Date(e.date + 'T12:00').getDay() === w && scoreOf(e) <= 2));
+    return { level: 'low', title: `Маргааш ${WD[w]} гараг: анхаарах өдөр`, text: `Өмнөх ${ws.n} ${WD[w]} гарагт таны сэтгэл санаа дунджаас ${Math.abs(diff).toFixed(1)} оноогоор доогуур байсан${tag ? ` (ихэвчлэн «${tag}»-тай холбоотой)` : ''}. Өглөө 10 минут алхаж, өдрийн дундуур 4-7-8 амьсгалын дасгал хийхийг зөвлөж байна. Өнөө орой эрт унтаарай. 🌙` };
+  }
+  if (diff >= .4) return { level: 'high', title: `Маргааш ${WD[w]} гараг: сайхан өдөр 🌤️`, text: `${WD[w]} гарагт та ихэвчлэн сайхан байдаг. Энэ эрч хүчээ ${hobby ? `«${hobby}»` : 'дуртай зүйлдээ'} зарцуулаарай!` };
+  return { level: 'mid', title: `Маргааш ${WD[w]} гараг: тогтвортой өдөр`, text: 'Таны сэтгэл санаа энэ гарагт ихэвчлэн тогтвортой байдаг. Өдрөө жижиг зорилгоор эхлүүлээрэй.' };
+}
+function insights() {
+  const out = [];
+  const lo = S.entries.filter(e => e.sleep != null && e.sleep < 6).map(scoreOf);
+  const hi = S.entries.filter(e => e.sleep != null && e.sleep >= 7).map(scoreOf);
+  if (lo.length >= 3 && hi.length >= 3 && mean(hi) - mean(lo) >= .5)
+    out.push(`😴 6 цагаас бага унтсан өдрүүдэд таны сэтгэл санаа ${Math.round((mean(hi) - mean(lo)) / mean(hi) * 100)}% доогуур байна.`);
+  const tag = topTag(S.entries.filter(e => scoreOf(e) <= 2));
+  if (tag) out.push(`🏷️ Хэцүү өдрүүдэд хамгийн их давтагдсан шалтгаан: «${tag}».`);
+  const wk = S.entries.filter(e => [0, 6].includes(new Date(e.date + 'T12:00').getDay())).map(scoreOf);
+  const wd = S.entries.filter(e => ![0, 6].includes(new Date(e.date + 'T12:00').getDay())).map(scoreOf);
+  if (wk.length >= 2 && wd.length >= 2 && mean(wk) - mean(wd) >= .5) out.push('📅 Амралтын өдрүүдэд та илүү сайхан байдаг. Ажлын өдрүүдэд жижиг амралт товлоорой.');
+  const s = streak(); if (s >= 3) out.push(`🔥 ${s} өдөр дараалан бүртгэлээ. Гайхалтай зуршил байна!`);
+  if (!out.length) out.push('Илүү их бүртгэл хийх тусам ажиглалт нарийвчлагдана.');
+  return out;
+}
+const needsExpert = () => { const l = S.entries.slice(-5); return l.length >= 5 && mean(l.map(scoreOf)) <= 1.6; };
+function scoredRecs(m) {
+  const hobbies = S.user?.hobbies || [];
+  return RECS.map(r => {
+    const fb = S.feedback[r.id] || 0;
+    const hob = (r.hobby || []).some(h => hobbies.includes(h));
+    return { ...r, hob, fb, score: (r.moods.includes(m.id) ? 3 : 0) + (hob ? 2 : 0) + (fb === 1 ? 1 : fb === -1 ? -10 : 0) };
+  }).filter(r => r.score > 0).sort((a, b) => b.score - a.score);
+}
+
+/* ---------- Чатбот ---------- */
+const isCrisis = t => /(үхмээр|амиа\s*хорло|өөрийгөө\s*(гэмтээ|ал)|амьдрах\s*хүсэл\s*(алга|байхгүй)|амьдрахыг\s*хүсэхгүй|алга\s*болмоор|бүх\s*юм\s*дуусаасай)/.test(t.toLowerCase());
+const QUICK = ['Стресстэй байна 😣', 'Нойр хүрэхгүй байна', 'Ганцаардаж байна', 'Дуу санал болго 🎵', 'Кино санал болго 🎬'];
+function greeting() {
+  const t = S.entries.filter(e => e.date === today()).pop();
+  return `Сайн уу, ${S.user.name}! 🌙 Би таны AI туслах.\n${t ? `Өнөөдөр та «${moodById(t.mood).label}» байна гэж тэмдэглэсэн байна.` : 'Өнөөдөр ямар байна?'} Юу ч хамаагүй ярилцаж болно, би сонсоход бэлэн.`;
+}
+// ДЕМО хариулт. Бодит системд:
+//   const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message, mode }) });
+// Backend нь хэрэглэгчийн хобби, mood-ийн түүхийг system prompt-д нэмж LLM API-г дуудна.
+// LLM API key-г frontend-д ХЭЗЭЭ Ч бүү хадгал.
+function botReply(text) {
+  const t = text.toLowerCase(), m = currentMood(), hobby = S.user.hobbies[0];
+  const top = type => scoredRecs(m).filter(r => r.type === type).slice(0, 3).map(r => `• ${r.title}: ${r.sub}`).join('\n');
+  if (/стресс|ажил|хичээл|шалгалт|дарамт|ачаалал/.test(t)) return 'Ачаалал ихтэй байгааг чинь ойлгож байна. 😔\n\n• Хийх ажлуудаа хамгийн чухал 3 зүйл болгон жагсаа\n• 25 минут ажиллаад 5 минут амар (Pomodoro)\n• Яг одоо 1 минут: 4 секунд амьсгал аваад 6 секунд гарга\n\nЯг юу хамгийн их дарамт болж байна вэ?';
+  if (/нойр|унтаж|унтах|нойргүй/.test(t)) return 'Нойр сэтгэл санаанд маш их нөлөөлдөг. 🌙\n\n• Унтахаас 1 цагийн өмнө утсаа тавь\n• Өдөр бүр нэг цагт унтаж, нэг цагт бос\n• Оройн цагаар кофе, энергийн ундаа бүү уу\n• Орондоо ороод 4-7-8 амьсгалын дасгал хий\n\nСүүлийн үед дунджаар хэдэн цаг унтаж байна?';
+  if (/ганцаар|хэн ч|ойлгохгүй/.test(t)) return `Ганцаардах мэдрэмж үнэхээр хэцүү. Энэ тухай ярьсанд баярлалаа. 💜\n\nӨнөөдөр итгэдэг нэг хүндээ богино мессеж бичээд үзэх үү? Мөн ${hobby ? `«${hobby}» сонирхогчдын бүлэгт нэгдэх` : 'сонирхлын бүлэгт нэгдэх'} нь шинэ хүмүүстэй танилцах сайн арга.\n\nСүүлд хэнтэй сайхан ярилцсанаа санаж байна уу?`;
+  if (/уур|бухимд|залхаж/.test(t)) return 'Уурлах бол хүний хэвийн мэдрэмж. Гол нь түүнийгээ хэрхэн илэрхийлэх вэ гэдэг. 🌊\n\n• 10 хүртэл удаан тоол\n• Хүйтэн ус уу эсвэл нүүрээ угаа\n• 5 минут хурдан алх\n• Бодлоо цаасан дээр бичээд, дараа нь урж хая\n\nЮу чамайг ингэж бухимдуулав?';
+  if (/дуу|хөгжим|playlist/.test(t)) return `«${m.label}» үед тохирох дуунууд: 🎵\n${top('song')}\n\n«Зөвлөмж» хэсэгт Spotify playlist-ээ холбоход өөрийн дуунаасаа санал авна.`;
+  if (/кино|цуврал|анимэ/.test(t)) return `Одоогийн сэтгэл санаанд тохирох кинонууд: 🎬\n${top('movie')}`;
+  if (/баяр|сайхан|аз жаргал|гоё|амжилт/.test(t)) return `Ямар сайхан юм бэ! 🎉 Энэ мэдрэмжийг юу авчирсныг тэмдэглээд аваарай.\n\nЭнэ эрч хүчээ ${hobby ? `«${hobby}»` : 'дуртай зүйлдээ'} зарцуулбал ямар вэ?`;
+  return {
+    calm: 'Ойлголоо. Хэсэг зогсоод өөрийгөө мэдэрцгээе. 🌿\n\nНүдээ аниад 3 удаа гүнзгий амьсгаа. Хөл чинь газарт хүрч байгааг мэдэр.\n\nОдоо биеийн аль хэсэг хамгийн их чангарч байна вэ?',
+    motivate: 'Чи үүнийг даван туулж чадна! 💪 Өмнө нь ч хэцүү үеийг давж байсан.\n\nӨнөөдөр хийж чадах ганцхан жижиг алхам юу вэ? Жишээ нь 10 минут алхах, өрөөгөө цэгцлэх, эсвэл нэг хүнд залгах.',
+    listen: 'Би сонсож байна. 👂 Энэ талаар илүү дэлгэрэнгүй ярьж өгөөч. Чамд яг юу мэдрэгдэж байна вэ?',
+  }[S.chatMode];
+}
+const crisisHTML = () => `<div class="crisis" role="alert"><b>Та ганцаараа биш 💜</b><p>Таны бичсэн зүйл надад санаа зовоож байна. Яг одоо мэргэжлийн хүнтэй ярилцахыг хүсч байна.</p>
+  <div class="row wrap"><a class="btn danger" href="tel:103">📞 103 Түргэн тусламж</a><a class="btn danger" href="tel:108">📞 108 Тусламжийн утас</a><button class="btn" data-act="go" data-v="experts">Сэтгэл зүйчтэй холбогдох</button></div></div>`;
+const msgHTML = m => m.crisis ? crisisHTML() : `<div class="msg ${m.r}">${esc(m.t)}</div>`;
+let typing = false;
+function renderMsgs() {
+  const box = $('#msgs'); if (!box) return;
+  box.innerHTML = S.chat.map(msgHTML).join('') + (typing ? '<div class="msg bot typing" aria-label="Бичиж байна"><i></i><i></i><i></i></div>' : '');
+  box.scrollTop = box.scrollHeight;
+}
+async function sendMsg(text) {
+  text = text.trim(); if (!text || typing) return;
+  S.chat.push({ r: 'me', t: text });
+  const inp = $('#chatIn'); if (inp) { inp.value = ''; inp.style.height = ''; }
+  typing = true; renderMsgs();
+  await sleep(600 + Math.random() * 700);
+  typing = false;
+  S.chat.push(isCrisis(text) ? { r: 'bot', crisis: true } : { r: 'bot', t: botReply(text) });
+  S.chat = S.chat.slice(-60); save(); renderMsgs();
+}
+
+/* ---------- UI туслах функцууд ---------- */
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2200); }
+let breathTimer = null;
+function showModal(html) { $('#modal').innerHTML = `<button class="icon-btn close" data-act="closeModal" aria-label="Хаах">✕</button>${html}`; $('#modalBg').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+function closeModal() { $('#modalBg').classList.add('hidden'); document.body.style.overflow = ''; clearTimeout(breathTimer); }
+const go = v => { if (location.hash.slice(1) === v) render(); else location.hash = v; };
+
+/* =================== VIEWS =================== */
+let authTab = 'register', hobbySel = null, editingHobby = false;
+let draft = { mood: null, intensity: 3, tags: [], note: '', sleep: 7 };
+let recTab = 'all', statRange = 7, expFilter = 'Бүгд', bk = null;
+
+function authView() {
+  const reg = authTab === 'register';
+  return `<div class="auth">
+    <div class="auth-hero"><div class="logo">🌙</div><h1>Сэтгэл</h1><p>Өдөр бүрийн сэтгэл санаагаа тэмдэглэж, өөрийгөө илүү сайн ойлгоорой. AI туслах, хувийн зөвлөмж, сэтгэл зүйчийн дэмжлэг нэг дор.</p></div>
+    <form class="card auth-card" id="authForm" novalidate>
+      <div class="seg full" role="tablist">
+        <button type="button" class="${reg ? 'on' : ''}" data-act="authTab" data-v="register">Бүртгүүлэх</button>
+        <button type="button" class="${!reg ? 'on' : ''}" data-act="authTab" data-v="login">Нэвтрэх</button>
+      </div>
+      ${reg ? '<div class="field"><label for="aName">Нэр</label><input id="aName" class="input" autocomplete="given-name" placeholder="Таны нэр" required></div>' : ''}
+      <div class="field"><label for="aEmail">Имэйл</label><input id="aEmail" class="input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required></div>
+      <div class="field"><label for="aPass">Нууц үг</label><input id="aPass" class="input" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" placeholder="Хамгийн багадаа 6 тэмдэгт" minlength="6" required></div>
+      ${reg ? '<label class="check"><input type="checkbox" id="aDemo" checked> Туршилтын 5 долоо хоногийн өгөгдөл нэмэх</label>' : ''}
+      <button class="btn block" type="submit">${reg ? 'Бүртгүүлэх' : 'Нэвтрэх'}</button>
+      <div class="divider">эсвэл</div>
+      <button type="button" class="btn outline block" data-act="google"><b style="color:#4285F4">G</b> Google-ээр үргэлжлүүлэх</button>
+      <p class="tiny muted center mt">Үргэлжлүүлснээр та үйлчилгээний нөхцөл болон нууцлалын бодлогыг зөвшөөрч байна.</p>
+    </form></div>`;
+}
+
+function hobbyView() {
+  if (!hobbySel) hobbySel = new Set(S.user.hobbies);
+  return `<div class="onb">
+    <p class="muted small">${editingHobby ? 'Профайл засах' : 'Алхам 2 / 2'}</p>
+    <h1>Таны сонирхол юу вэ?</h1>
+    <p class="muted">Хоббид тань тулгуурлан тохирох дасгал, дуу, кино санал болгоно. Дор хаяж 1-ийг сонгоно уу.</p>
+    ${Object.entries(HOBBIES).map(([cat, items]) => `<section class="hob-cat"><h3>${CAT_ICON[cat]} ${cat}</h3><div class="chips">
+      ${items.map(h => `<button class="chip ${hobbySel.has(h) ? 'on' : ''}" data-act="hob" data-v="${esc(h)}" aria-pressed="${hobbySel.has(h)}">${esc(h)}</button>`).join('')}</div></section>`).join('')}
+    <div class="onb-foot"><button class="btn block" data-act="hobDone" id="hobDone" ${hobbySel.size ? '' : 'disabled'}>Үргэлжлүүлэх (<span id="hobN">${hobbySel.size}</span> сонгосон)</button></div>
+  </div>`;
+}
+
+const NAV = [['home', '🏠', 'Нүүр'], ['chat', '💬', 'Чат'], ['recs', '✨', 'Зөвлөмж'], ['stats', '📊', 'Тайлан'], ['experts', '🧑‍⚕️', 'Зөвлөгч'], ['profile', '👤', 'Профайл']];
+const TITLES = { home: 'Өнөөдөр', chat: 'AI туслах', recs: 'Зөвлөмж', stats: 'Миний тайлан', experts: 'Сэтгэл зүйчид', profile: 'Профайл' };
+function shell(v) {
+  return `<nav class="nav" aria-label="Үндсэн цэс"><div class="brand">🌙 Сэтгэл</div>
+    ${NAV.map(([id, i, l]) => `<button data-act="go" data-v="${id}" class="${v === id ? 'on' : ''} ${id === 'profile' ? 'desk-only' : ''}" ${v === id ? 'aria-current="page"' : ''}><span class="i">${i}</span><span>${l}</span></button>`).join('')}
+  </nav>
+  <div class="shell ${v === 'home' ? 'tinted' : ''}" id="shell" style="--mc:${moodById(draft.mood || 'neutral').color}">
+    <header class="topbar"><h1 class="title">${TITLES[v]}</h1>
+      <div class="row"><span class="streak" title="Тасралтгүй бүртгэсэн өдөр">🔥 ${streak()}</span>
+      <button class="avatar mob-only" data-act="go" data-v="profile" aria-label="Профайл">${esc(S.user.name[0] || '?')}</button></div>
+    </header>
+    <main id="main">${VIEWS[v]()}</main>
+  </div>`;
+}
+
+function homeView() {
+  const d = new Date(), todays = S.entries.filter(e => e.date === today()).reverse();
+  const p = prediction(), cm = currentMood();
+  return `<p class="muted">${WD[d.getDay()]} гараг, ${d.getMonth() + 1}-р сарын ${d.getDate()}</p>
+  <h2 class="greet">Сайн уу, ${esc(S.user.name)} 👋</h2>
+  <div class="grid two mt">
+    <section class="card checkin">
+      <div class="row between wrap"><h2>Өнөөдөр ямар байна?</h2>
+        <div class="seg" aria-label="Дүрсний төрөл"><button data-act="art" data-v="emoji" class="${S.artMode !== 'art' ? 'on' : ''}">😊 Emoji</button><button data-act="art" data-v="art" class="${S.artMode === 'art' ? 'on' : ''}">🎨 2D</button></div>
+      </div>
+      ${carTouched ? '' : '<p class="swipe-hint" id="swipeHint">👆 Хажуу тийш гүйлгээд сонгоорой →</p>'}
+      <div class="car-wrap">
+        <button class="car-nav prev" data-act="carStep" data-v="-1" aria-label="Өмнөх">‹</button>
+        <div class="mood-car" id="moodCar" role="listbox" aria-label="Сэтгэл хөдлөл сонгох">
+          ${MOODS.map((m, i) => `<button class="mcard" role="option" data-act="carPick" data-v="${i}" style="--c:${m.color}" aria-label="${m.label}"><span class="face">${face(m)}</span><span>${m.label}</span></button>`).join('')}
+        </div>
+        <button class="car-nav next" data-act="carStep" data-v="1" aria-label="Дараах">›</button>
+      </div>
+      <div class="car-dots" aria-hidden="true">${MOODS.map(() => '<i></i>').join('')}</div>
+      <p class="mood-cap" id="moodCap"></p>
+      <div class="field"><label for="int">Эрчим: <b id="intv">${draft.intensity}</b> / 5</label><input id="int" type="range" min="1" max="5" value="${draft.intensity}" data-input="intensity"></div>
+      <div class="field"><label>Юутай холбоотой вэ?</label><div class="chips">${TAGS.map(t => `<button class="chip ${draft.tags.includes(t) ? 'on' : ''}" data-act="tag" data-v="${t}">${t}</button>`).join('')}</div></div>
+      <div class="field"><label for="sl">Өнгөрсөн шөнө унтсан: <b id="slv">${draft.sleep}</b> цаг</label><input id="sl" type="range" min="0" max="12" step="0.5" value="${draft.sleep}" data-input="sleep"></div>
+      <div class="field"><label for="note">Тэмдэглэл <span class="muted">(заавал биш)</span></label><textarea id="note" class="input" rows="3" placeholder="Өнөөдөр юу болов?" data-input="note">${esc(draft.note)}</textarea></div>
+      <button class="btn block" data-act="saveEntry" id="saveBtn" ${draft.mood ? '' : 'disabled'}>Хадгалах</button>
+    </section>
+    <div class="stack">
+      ${needsExpert() ? `<section class="card nudge"><h3>Сүүлийн өдрүүд хэцүү байна уу? 💜</h3><p class="small">Мэргэжлийн хүнтэй ярилцах нь их тус болдог. Эхний 15 минутын зөвлөгөө үнэгүй.</p><button class="btn" data-act="go" data-v="experts">Сэтгэл зүйч харах</button></section>` : ''}
+      <section class="card pred ${p.level}"><div class="small muted">🔮 Урьдчилсан таамаг</div><h3>${p.title}</h3><p class="small">${p.text}</p></section>
+      <section class="card" id="homeRecs" aria-live="polite"></section>
+      <section class="card"><h3>Өнөөдрийн бүртгэл</h3>
+        ${todays.length ? todays.map(e => { const m = moodById(e.mood); return `<div class="entry"><span class="face">${face(m)}</span><div style="flex:1;min-width:0"><b>${m.label}</b> <span class="muted small">· ${e.time} · эрчим ${e.intensity}/5</span>${e.tags.length ? `<div class="small muted">${e.tags.join(', ')}</div>` : ''}${e.note ? `<div class="small">${esc(e.note)}</div>` : ''}</div></div>`; }).join('') : '<p class="muted small">Одоогоор бүртгэл алга. Дээрээс сэтгэл хөдлөлөө сонгоорой.</p>'}
+      </section>
+    </div>
+  </div>`;
+}
+
+function chatView() {
+  if (!S.chat.length) { S.chat.push({ r: 'bot', t: greeting() }); save(); }
+  const modes = [['calm', '🌊 Тайвшруулах'], ['motivate', '💪 Урам өгөх'], ['listen', '👂 Сонсох']];
+  return `<div class="chat">
+    <div class="row between wrap"><div class="seg" aria-label="Хариултын горим">${modes.map(([k, l]) => `<button data-act="chatMode" data-v="${k}" class="${S.chatMode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <button class="small muted" data-act="clearChat">Цэвэрлэх</button></div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <div class="chips quick">${QUICK.map(q => `<button class="chip" data-act="quick" data-v="${q}">${q}</button>`).join('')}</div>
+    <form class="composer" id="composer"><textarea id="chatIn" class="input" rows="1" placeholder="Мессеж бичих..." aria-label="Мессеж"></textarea><button class="btn" type="submit" aria-label="Илгээх">➤</button></form>
+    <p class="tiny muted center" style="margin-top:6px">AI туслах нь мэргэжлийн эмчилгээг орлохгүй.</p>
+  </div>`;
+}
+
+/* Одоогийн сэтгэл хөдлөл: хэрэглэгч сүүлд сонгосон (carousel/зөвлөмж хуудас) → сүүлийн бүртгэл */
+let liveMood = null;
+const activeMood = () => liveMood ? moodById(liveMood) : currentMood();
+const ICON = { exercise: '🧘', song: '🎵', movie: '🎬' };
+const nowId = () => P.queue[P.idx]?.id;
+
+function tileHTML(r, m) {
+  const act = r.type === 'song' ? `data-act="playRec" data-v="${r.id}|${m.id}"` : r.type === 'movie' ? `data-act="movie" data-v="${r.id}|${m.id}"` : `data-act="exercise" data-v="${r.id}"`;
+  return `<button class="htile ${nowId() === r.id ? 'now' : ''}" ${act}><div class="cv" style="--tc:${moodById(r.moods[0]).color}">${ICON[r.type]}${r.type === 'song' ? `<span class="pl">${nowId() === r.id && P.playing ? '<span class="eq"><i></i><i></i><i></i></span>' : '▶'}</span>` : ''}</div><b>${esc(r.title)}</b><span>${esc(r.sub)}</span></button>`;
+}
+// Нүүрний «Танд зориулав» хэсэг: carousel дээр сонгосон mood-оор шууд шинэчлэгдэнэ
+function renderHomeRecs(m) {
+  const box = $('#homeRecs'); if (!box) return;
+  const recs = scoredRecs(m), row = (t, title) => { const l = recs.filter(r => r.type === t); return l.length ? `<div class="hr-title">${title}</div><div class="hscroll">${l.map(r => tileHTML(r, m)).join('')}</div>` : ''; };
+  box.innerHTML = `<div class="row between"><h3 style="margin:0">«${m.label}» үед танд ✨</h3><button class="small" style="color:var(--primary);font-weight:600" data-act="go" data-v="recs">Бүгд →</button></div>
+    <button class="btn play-mood" data-act="playMood" data-v="${m.id}">▶ «${m.label}» playlist тоглуулах</button>
+    ${row('song', '🎵 Сонсох')}${row('exercise', '🧘 Хийх')}${row('movie', '🎬 Үзэх')}`;
+}
+
+function recCard(r, m) {
+  const isNow = nowId() === r.id;
+  const main = r.type === 'exercise' ? `<button class="btn" data-act="exercise" data-v="${r.id}">▶ Эхлэх</button>`
+    : r.type === 'song' ? `<button class="btn" style="background:#1DB954" data-act="playRec" data-v="${r.id}|${m.id}">${isNow && P.playing ? '<span class="eq"><i></i><i></i><i></i></span> Тоглож байна' : '▶ Тоглуулах'}</button>`
+    : `<button class="btn ghost" data-act="movie" data-v="${r.id}|${m.id}">Дэлгэрэнгүй</button>`;
+  return `<article class="card rec"><div class="rec-top"><div class="rec-ic">${ICON[r.type]}</div><div style="min-width:0"><b>${esc(r.title)}</b><div class="small muted">${esc(r.sub)}</div>${r.hob ? '<span class="badge">Таны хоббид тохирсон</span>' : ''}</div></div>
+    <div class="rec-actions">${main}<button class="fb ${r.fb === 1 ? 'on' : ''}" data-act="fb" data-v="${r.id}:1" aria-label="Таалагдсан">👍</button><button class="fb" data-act="fb" data-v="${r.id}:-1" aria-label="Таалагдаагүй">👎</button></div></article>`;
+}
+function recsView() {
+  const cm = activeMood(), list = scoredRecs(cm).filter(r => recTab === 'all' || r.type === recTab);
+  const mine = MY_PLAYLIST.filter(s => s.moods.includes(cm.id));
+  return `<section class="card mood-banner checkin" style="--mc:${cm.color}"><span class="face">${face(cm)}</span><div><div class="small muted">Одоогийн сэтгэл хөдлөл</div><b>${cm.label}</b><div class="small muted">Сонирхол: ${S.user.hobbies.slice(0, 3).map(esc).join(', ')}${S.user.hobbies.length > 3 ? '…' : ''}</div></div></section>
+  <div class="chips mood-pick" aria-label="Сэтгэл хөдлөл солих">${MOODS.map(m => `<button class="chip ${m.id === cm.id ? 'on' : ''}" style="--c:${m.color}" data-act="recMood" data-v="${m.id}">${m.emoji} ${m.label}</button>`).join('')}</div>
+  <div class="chips tabs">${[['all', 'Бүгд'], ['exercise', '🧘 Дасгал'], ['song', '🎵 Дуу'], ['movie', '🎬 Кино']].map(([k, l]) => `<button class="chip ${recTab === k ? 'on' : ''}" data-act="recTab" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="cards-auto">${list.map(r => recCard(r, cm)).join('') || '<p class="muted">Энэ төрөлд зөвлөмж олдсонгүй.</p>'}</div>
+  <h2 class="mt">🎧 Миний playlist</h2>
+  ${S.spotify ? `<section class="card"><div class="row between"><span class="small muted">Spotify · «${cm.label}» мэдрэмжид тохирох ${mine.length} дуу</span><button class="small muted" data-act="spotify">Салгах</button></div>
+      ${(mine.length ? mine : MY_PLAYLIST).map(s => { const id = 'pl' + MY_PLAYLIST.indexOf(s); return `<div class="song ${nowId() === id ? 'now' : ''}"><div class="cover">♪</div><div class="meta"><b>${esc(s.t)}</b><span class="small muted">${esc(s.a)}</span></div><button class="icon-btn" data-act="playPl" data-v="${id}|${cm.id}" aria-label="Тоглуулах">${nowId() === id && P.playing ? '<span class="eq"><i></i><i></i><i></i></span>' : '▶'}</button></div>`; }).join('')}</section>`
+    : `<section class="card"><p>Өөрийн Spotify playlist-ээ холбоход тухайн үеийн сэтгэл санаанд тохирох дууг таны дуртай дуунуудаас сонгож өгнө.</p><button class="btn" style="background:#1DB954" data-act="spotify">🎧 Spotify холбох</button></section>`}`;
+}
+
+/* =========================================================
+   ТОГЛУУЛАГЧ (сайтаас гарахгүйгээр тоглуулна)
+   ДЕМО: дууны оронд Web Audio API-аар тухайн mood-ийн аялгууг үүсгэж тоглуулна.
+   БОДИТ СИСТЕМ: Music.start/stop-ийг Spotify Web Playback SDK-ийн
+   player.play()/pause()-аар солино (хэрэглэгч Spotify Premium байх шаардлагатай).
+   ========================================================= */
+const Music = (() => {
+  let ctx, bus, padIn, leadIn, timer, nextT = 0, step = 0, prof, motif, stepDur;
+  const PROF = {
+    happy:   { bpm: 116, root: 60, scale: [0, 2, 4, 7, 9],  prog: [[0, 4, 7], [5, 9, 12], [9, 12, 16], [7, 11, 14]], wave: 'triangle', dens: .7, kick: true },
+    calm:    { bpm: 76,  root: 57, scale: [0, 2, 4, 7, 9],  prog: [[0, 4, 7, 11], [5, 9, 12, 16], [2, 5, 9, 12], [7, 11, 14, 17]], wave: 'sine', dens: .35 },
+    neutral: { bpm: 92,  root: 62, scale: [0, 2, 4, 7, 9],  prog: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]], wave: 'triangle', dens: .5 },
+    tired:   { bpm: 66,  root: 55, scale: [0, 2, 4, 7, 9],  prog: [[0, 4, 7, 11], [5, 9, 12, 16]], wave: 'sine', dens: .25 },
+    anxious: { bpm: 60,  root: 57, scale: [0, 2, 4, 7, 9],  prog: [[0, 7, 12, 16], [5, 12, 16, 19], [-3, 4, 9, 12], [2, 9, 14, 17]], wave: 'sine', dens: .22 },
+    sad:     { bpm: 70,  root: 57, scale: [0, 3, 5, 7, 10], prog: [[0, 3, 7], [8, 12, 15], [3, 7, 10], [10, 14, 17]], wave: 'sine', dens: .35 },
+    angry:   { bpm: 98,  root: 52, scale: [0, 3, 5, 7, 10], prog: [[0, 3, 7], [10, 14, 17], [8, 12, 15], [7, 10, 14]], wave: 'sawtooth', dens: .55, kick: true },
+  };
+  const freq = n => 440 * 2 ** ((n - 69) / 12);
+  const rng = seed => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  function note(n, t, dur, type, vol, dest, attack) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = freq(n);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + .05);
+  }
+  function kick(t) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + .15);
+    g.gain.setValueAtTime(.45, t); g.gain.exponentialRampToValueAtTime(.001, t + .28);
+    o.connect(g); g.connect(bus); o.start(t); o.stop(t + .3);
+  }
+  function playStep(s, t) {
+    const inBar = s % 8, barDur = stepDur * 8;
+    if (inBar === 0) {
+      const ch = prof.prog[Math.floor(s / 8) % prof.prog.length];
+      ch.forEach(n => note(prof.root + n, t, barDur * 1.05, prof.wave, .04, padIn, .35));
+      note(prof.root + ch[0] - 12, t, barDur * .9, 'sine', .1, bus, .02);
+    }
+    const m = motif[s % 16]; if (m != null) note(prof.root + 12 + m, t, stepDur * 1.8, 'triangle', .06, leadIn, .01);
+    if (prof.kick && inBar % 4 === 0) kick(t);
+  }
+  function stop() {
+    clearInterval(timer); timer = null;
+    if (bus) { const b = bus; b.gain.setTargetAtTime(0, ctx.currentTime, .05); setTimeout(() => b.disconnect(), 400); bus = null; }
+  }
+  function start(mood, seedStr, offset = 0) {
+    stop();
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+    prof = PROF[mood] || PROF.neutral; stepDur = 60 / prof.bpm / 2;
+    const r = rng([...seedStr].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7));
+    motif = [...Array(16)].map(() => r() < prof.dens ? prof.scale[Math.floor(r() * prof.scale.length)] + (r() < .25 ? 12 : 0) : null);
+    // Нэг session-ий бүх дуу нэг bus-аар дамжина → pause хийхэд бүгд зөөлөн чимээгүй болно
+    bus = ctx.createGain(); bus.gain.value = .9; bus.connect(ctx.destination);
+    padIn = ctx.createBiquadFilter(); padIn.type = 'lowpass'; padIn.frequency.value = prof.wave === 'sawtooth' ? 700 : 1400; padIn.connect(bus);
+    leadIn = ctx.createGain(); leadIn.connect(bus);
+    const dl = ctx.createDelay(), fb = ctx.createGain(), wet = ctx.createGain();
+    dl.delayTime.value = stepDur * 3; fb.gain.value = .3; wet.gain.value = .3;
+    leadIn.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(bus);
+    step = Math.floor(offset / stepDur); nextT = ctx.currentTime + .06;
+    timer = setInterval(() => { while (nextT < ctx.currentTime + .12) { playStep(step++, nextT); nextT += stepDur; } }, 25);
+  }
+  return { start, stop };
+})();
+
+const P = { queue: [], idx: 0, playing: false, pos: 0, t0: 0, full: false };
+const fmtT = s => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
+const hashN = s => [...s].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 3);
+const mkTrack = (id, title, artist, mood) => ({ id, title, artist, mood, dur: 150 + hashN(title) % 90 });
+const songsFor = m => scoredRecs(m).filter(r => r.type === 'song').map(r => mkTrack(r.id, r.title, r.sub, r.moods[0]));
+
+function playQueue(tracks, i) { if (!tracks.length) return; P.queue = tracks; P.idx = Math.max(0, i); P.pos = 0; startPlay(); }
+function startPlay() {
+  const t = P.queue[P.idx]; Music.start(t.mood, t.title, P.pos);
+  P.playing = true; P.t0 = performance.now() - P.pos * 1000; playerUI(true);
+}
+function pausePlay() { P.pos = elapsed(); Music.stop(); P.playing = false; playerUI(true); }
+const elapsed = () => P.playing ? (performance.now() - P.t0) / 1000 : P.pos;
+function skip(d) {
+  if (d < 0 && elapsed() > 3) { P.pos = 0; return startPlay(); }
+  P.idx = (P.idx + d + P.queue.length) % P.queue.length; P.pos = 0; startPlay();
+}
+function seek(sec) { P.pos = sec; P.playing ? startPlay() : playerUI(false); }
+setInterval(() => {
+  if (!P.queue.length) return;
+  const t = P.queue[P.idx], e = elapsed();
+  if (P.playing && e >= t.dur) return skip(1);
+  const pct = Math.min(100, e / t.dur * 100);
+  const mp = $('#mini .prog i'); if (mp) mp.style.width = pct + '%';
+  const fs = $('#fpSeek'); if (fs && document.activeElement !== fs) fs.value = e;
+  const fc = $('#fpCur'); if (fc) fc.textContent = fmtT(e);
+}, 250);
+
+function stopPlayer() { Music.stop(); Object.assign(P, { queue: [], idx: 0, playing: false, pos: 0, full: false }); $('#mini').classList.add('hidden'); $('#fullPlayer').classList.add('hidden'); document.body.classList.remove('has-player'); document.body.style.overflow = ''; }
+const playIcon = () => P.playing ? '❚❚' : '▶';
+// Тоглуулагчийн UI-г шинэчилнэ. refreshPage=true бол хуудсан дээрх "тоглож байна" тэмдгийг ч шинэчилнэ.
+function playerUI(refreshPage) {
+  const t = P.queue[P.idx], mini = $('#mini'), fp = $('#fullPlayer'); if (!t) return;
+  const m = moodById(t.mood), liked = S.feedback[t.id] === 1;
+  document.body.classList.add('has-player');
+  mini.classList.remove('hidden'); mini.classList.toggle('paused', !P.playing); mini.style.setProperty('--pc', m.color);
+  mini.innerHTML = `<div class="cover">${m.emoji}</div>
+    <div class="info"><b>${esc(t.title)}</b><span>${P.playing ? '<span class="eq" style="color:#1DB954"><i></i><i></i><i></i></span>' : ''}${esc(t.artist)}</span></div>
+    <button class="ctrl" data-act="like" aria-label="Таалагдсан">${liked ? '💚' : '♡'}</button>
+    <button class="ctrl play" data-act="playPause" aria-label="${P.playing ? 'Түр зогсоох' : 'Тоглуулах'}">${playIcon()}</button>
+    <div class="prog"><i style="width:${elapsed() / t.dur * 100}%"></i></div>`;
+  fp.style.setProperty('--pc', m.color); fp.classList.toggle('paused', !P.playing);
+  if (P.full) {
+    fp.classList.remove('hidden');
+    fp.innerHTML = `<div class="fp-head"><button class="icon-btn" data-act="closeFull" aria-label="Хураах">⌄</button><span class="small" style="opacity:.8">«${m.label}» playlist</span><span style="width:44px"></span></div>
+      <div class="fp-art"><span class="face">${face(m)}</span></div>
+      <div class="fp-title"><div style="min-width:0"><h2>${esc(t.title)}</h2><p>${esc(t.artist)}</p></div><button class="icon-btn" data-act="like" aria-label="Таалагдсан">${liked ? '💚' : '♡'}</button></div>
+      <input type="range" id="fpSeek" min="0" max="${t.dur}" step="1" value="${elapsed()}" aria-label="Явц">
+      <div class="fp-time"><span id="fpCur">${fmtT(elapsed())}</span><span>${fmtT(t.dur)}</span></div>
+      <div class="fp-ctrls"><button class="icon-btn" data-act="prev" aria-label="Өмнөх">⏮</button><button class="icon-btn big" data-act="playPause" aria-label="Тоглуулах/зогсоох">${playIcon()}</button><button class="icon-btn" data-act="next" aria-label="Дараах">⏭</button></div>
+      <div class="fp-q"><h3>Дараалал</h3>${P.queue.map((q, i) => `<button class="${i === P.idx ? 'now' : ''}" data-act="qPlay" data-v="${i}"><span class="c" style="background:${moodById(q.mood).color}">${i === P.idx && P.playing ? '<span class="eq" style="color:#16121f"><i></i><i></i><i></i></span>' : moodById(q.mood).emoji}</span><span style="min-width:0;flex:1"><b>${esc(q.title)}</b><span>${esc(q.artist)}</span></span><span>${fmtT(q.dur)}</span></button>`).join('')}</div>
+      <p class="fp-note">Демо: дууны оронд тухайн mood-ийн аялгууг браузер дээр үүсгэж тоглуулж байна. Бодит системд Spotify Web Playback SDK-аар жинхэнэ дууг тоглуулна.</p>`;
+  }
+  if (refreshPage) {
+    const v = location.hash.slice(1) || 'home';
+    if (v === 'recs') { const y = scrollY; $('#main').innerHTML = recsView(); scrollTo(0, y); }
+    if (v === 'home') { const sc = $$('#homeRecs .hscroll').map(h => h.scrollLeft); renderHomeRecs(MOODS[carIdx] || activeMood()); $$('#homeRecs .hscroll').forEach((h, i) => h.scrollLeft = sc[i] || 0); }
+  }
+}
+
+function bar(v, label, title, hl) {
+  const h = v ? v / 5 * 100 : 4;
+  return `<div class="bar ${hl ? 'hl' : ''}" title="${title}: ${v ? v.toFixed(1) + ' / 5' : 'бүртгэлгүй'}"><div class="track"><i style="height:${h}%;background:${v ? scoreColor(v) : 'var(--line)'}"></i></div><small>${label}</small></div>`;
+}
+function statsView() {
+  const days = [...Array(statRange)].map((_, i) => addDays(new Date(), i - statRange + 1));
+  const vals = days.map(d => dayAvg(ymd(d)));
+  const rangeE = S.entries.filter(e => e.date >= ymd(days[0]));
+  const avg = mean(vals.filter(v => v != null));
+  const counts = {}; rangeE.forEach(e => counts[e.mood] = (counts[e.mood] || 0) + 1);
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  const ws = weekdayStats(), valid = ws.filter(x => x.avg != null);
+  const lowest = valid.length ? valid.reduce((a, b) => b.avg < a.avg ? b : a) : null;
+  const highest = valid.length ? valid.reduce((a, b) => b.avg > a.avg ? b : a) : null;
+  const now = new Date(), first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), off = (first.getDay() + 6) % 7;
+  return `<div class="row between wrap"><div class="seg">${[[7, '7 хоног'], [30, '30 хоног']].map(([k, l]) => `<button data-act="range" data-v="${k}" class="${statRange === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <button class="btn outline" style="min-height:40px" data-act="print">⬇ PDF тайлан</button></div>
+  <div class="tiles">
+    <div class="tile"><span class="small muted">Дундаж оноо</span><b>${avg ? avg.toFixed(1) : '–'}<small class="muted"> / 5</small></b></div>
+    <div class="tile"><span class="small muted">Бүртгэсэн өдөр</span><b>${vals.filter(v => v != null).length}<small class="muted"> / ${statRange}</small></b></div>
+    <div class="tile"><span class="small muted">Дараалсан өдөр</span><b>🔥 ${streak()}</b></div>
+    <div class="tile"><span class="small muted">Их давтагдсан</span><b>${top ? `${moodById(top[0]).emoji} ${moodById(top[0]).label}` : '–'}</b></div>
+  </div>
+  <div class="grid two">
+    <section class="card"><h3>Өдөр тутмын сэтгэл санаа</h3>
+      <div class="bars ${statRange > 7 ? 'dense' : ''}">${days.map((d, i) => bar(vals[i], statRange === 7 ? WD_SHORT[d.getDay()] : (i % 5 === 0 || i === days.length - 1 ? d.getDate() : ''), `${d.getMonth() + 1}/${d.getDate()}`)).join('')}</div></section>
+    <section class="card"><h3>Гаригийн хэв маяг</h3>
+      <div class="bars">${[1, 2, 3, 4, 5, 6, 0].map(w => bar(ws[w].avg, WD_SHORT[w], WD[w], lowest && w === lowest.w)).join('')}</div>
+      ${lowest && highest && valid.length >= 3 ? `<p class="small mt">📉 <b>${WD[lowest.w]}</b> гарагт хамгийн доогуур (${lowest.avg.toFixed(1)}), 📈 <b>${WD[highest.w]}</b> гарагт хамгийн өндөр (${highest.avg.toFixed(1)}) байдаг.</p>` : ''}
+    </section>
+    <section class="card"><h3>Сэтгэл хөдлөлийн тархалт</h3>
+      ${MOODS.map(m => { const c = counts[m.id] || 0, pct = rangeE.length ? Math.round(c / rangeE.length * 100) : 0; return `<div class="dist"><span class="face">${face(m)}</span><div class="t"><i style="width:${pct}%;background:${m.color}"></i></div><span>${pct}%</span></div>`; }).join('')}
+    </section>
+    <section class="card"><h3>💡 Ажиглалт</h3><ul class="insights">${insights().map(t => `<li class="small">${t}</li>`).join('')}</ul>
+      <div class="pred ${prediction().level}" style="padding-left:12px;margin-top:10px"><b class="small">🔮 ${prediction().title}</b></div></section>
+    <section class="card span2"><h3>${now.getFullYear()} оны ${now.getMonth() + 1}-р сар</h3>
+      <div class="cal">${['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня'].map(d => `<div class="h">${d}</div>`).join('')}${'<div class="e"></div>'.repeat(off)}
+        ${[...Array(dim)].map((_, i) => { const ds = ymd(new Date(now.getFullYear(), now.getMonth(), i + 1)), v = dayAvg(ds); return `<div class="${ds === today() ? 'today' : ''}" style="${v ? `background:${scoreColor(v)}` : ''}" title="${ds}${v ? ': ' + v.toFixed(1) : ''}">${i + 1}</div>`; }).join('')}
+      </div>
+      <div class="legend">${[[5, 'Маш сайн'], [4, 'Сайн'], [3, 'Дунд'], [2, 'Муу'], [1, 'Маш муу']].map(([s, l]) => `<span><i style="background:${scoreColor(s)}"></i>${l}</span>`).join('')}</div>
+    </section>
+  </div>`;
+}
+
+function expertsView() {
+  const specs = ['Бүгд', ...new Set(EXPERTS.flatMap(e => e.spec))];
+  const list = EXPERTS.filter(e => expFilter === 'Бүгд' || e.spec.includes(expFilter));
+  return `${S.bookings.length ? `<section class="card" style="margin-bottom:16px"><h3>📅 Миний захиалгууд</h3>${S.bookings.map(b => { const e = EXPERTS.find(x => x.id === b.pid); return `<div class="booking"><div><b>${e.name}</b><div class="small muted">${b.date} · ${b.slot} · ${b.type === 'video' ? '🎥 Видео' : '💬 Чат'}${b.share ? ' · тайлан хуваалцсан' : ''}</div></div><button class="btn danger" style="min-height:40px" data-act="cancelBook" data-v="${b.id}">Цуцлах</button></div>`; }).join('')}</section>` : ''}
+  <div class="chips tabs">${specs.map(s => `<button class="chip ${expFilter === s ? 'on' : ''}" data-act="expFilter" data-v="${s}">${s}</button>`).join('')}</div>
+  <div class="cards-auto">${list.map(e => `<article class="card">
+    <div class="exp-top"><div class="exp-av" style="background:${e.color}">${e.name.split(' ')[1][0]}</div><div><b>${e.name}</b><div class="small muted">${e.title}</div><div class="chips" style="margin-top:6px;gap:4px">${e.spec.map(s => `<span class="badge" style="background:var(--primary-soft);color:var(--primary)">${s}</span>`).join('')}</div></div></div>
+    <div class="meta-row"><span>⭐ ${e.rating}</span><span>🎓 ${e.exp} жил</span><span>💳 ${e.price.toLocaleString()}₮ / 50 мин</span></div>
+    <button class="btn block" data-act="book" data-v="${e.id}">Цаг захиалах</button></article>`).join('')}</div>
+  <p class="small muted mt">✅ Бүх сэтгэл зүйч мэргэжлийн лицензээ баталгаажуулсан. Яаралтай үед <a href="tel:103" style="color:var(--primary);font-weight:600">103</a> руу залгана уу.</p>`;
+}
+function bookHTML() {
+  const e = EXPERTS.find(x => x.id === bk.pid);
+  const days = [...Array(7)].map((_, i) => addDays(new Date(), i + 1));
+  return `<h2>${e.name}</h2><p class="small muted">${e.title} · ${e.price.toLocaleString()}₮</p>
+    <div class="field mt"><label>Өдөр сонгох</label><div class="days">${days.map((d, i) => `<button class="day ${bk.day === i ? 'on' : ''}" data-act="bkDay" data-v="${i}">${WD_SHORT[d.getDay()]}<b>${d.getDate()}</b></button>`).join('')}</div></div>
+    <div class="field"><label>Цаг сонгох</label><div class="slots">${SLOTS.map((s, i) => { const busy = (bk.day * 7 + i * 3 + e.id.charCodeAt(1)) % 4 === 0; return `<button class="slot ${bk.slot === s ? 'on' : ''}" data-act="bkSlot" data-v="${s}" ${busy ? 'disabled' : ''}>${s}</button>`; }).join('')}</div></div>
+    <div class="field"><label>Уулзалтын хэлбэр</label><div class="seg full"><button data-act="bkType" data-v="video" class="${bk.type === 'video' ? 'on' : ''}">🎥 Видео</button><button data-act="bkType" data-v="chat" class="${bk.type === 'chat' ? 'on' : ''}">💬 Чат</button></div></div>
+    <label class="check"><input type="checkbox" id="bkShare" ${bk.share ? 'checked' : ''}> Сүүлийн 30 хоногийн mood тайлангаа сэтгэл зүйчтэй хуваалцах</label>
+    <button class="btn block" data-act="confirmBook" ${bk.slot ? '' : 'disabled'}>Захиалга баталгаажуулах</button>`;
+}
+
+function profileView() {
+  const u = S.user;
+  const sw = (key, on) => `<label class="switch"><input type="checkbox" data-set="${key}" ${on ? 'checked' : ''}><span></span></label>`;
+  return `<div class="grid two">
+    <section class="card"><div class="row" style="gap:14px"><div class="avatar lg">${esc(u.name[0] || '?')}</div><div style="min-width:0"><h2>${esc(u.name)}</h2><p class="muted small" style="overflow-wrap:anywhere">${esc(u.email)}</p></div></div>
+      <div class="tiles" style="grid-template-columns:repeat(3,1fr)"><div class="tile"><span class="tiny muted">Бүртгэл</span><b>${S.entries.length}</b></div><div class="tile"><span class="tiny muted">Дасгал</span><b>${S.done}</b></div><div class="tile"><span class="tiny muted">Streak</span><b>${streak()}</b></div></div>
+      <h3>Миний хобби</h3><div class="chips">${u.hobbies.map(h => `<span class="chip on" style="display:inline-flex;align-items:center">${esc(h)}</span>`).join('')}</div>
+      <button class="btn ghost mt" data-act="editHobby">✏️ Хобби засах</button></section>
+    <section class="card"><h3>Тохиргоо</h3>
+      <div class="set"><div><b>Өдөр тутмын сануулга</b><div class="small muted">Mood бүртгэх цаг</div></div><input type="time" value="${u.reminder}" data-set="reminder" aria-label="Сануулах цаг"></div>
+      <div class="set"><div><b>Мэдэгдэл</b><div class="small muted">Push notification зөвшөөрөх</div></div><button class="btn ghost" style="min-height:40px" data-act="notify">Идэвхжүүлэх</button></div>
+      <div class="set"><div><b>Харанхуй горим</b></div>${sw('dark', S.dark)}</div>
+      <div class="set"><div><b>2D дүр ашиглах</b><div class="small muted">Emoji-ийн оронд</div></div>${sw('art', S.artMode === 'art')}</div>
+      <div class="set"><div><b>Spotify</b><div class="small muted">${S.spotify ? 'Холбогдсон ✓' : 'Холбогдоогүй'}</div></div>${sw('spotify', S.spotify)}</div>
+    </section>
+    <section class="card span2"><h3>Нууцлал ба өгөгдөл</h3>
+      <p class="small muted">Таны тэмдэглэл, чатын түүх шифрлэгдэж хадгалагдана. Таны зөвшөөрөлгүйгээр хэнтэй ч хуваалцахгүй.</p>
+      <div class="btn-list" style="max-width:420px">
+        <button class="btn outline" data-act="export">⬇ Өгөгдлөө татах (JSON)</button>
+        <button class="btn outline" data-act="logout">↩ Гарах</button>
+        <button class="btn danger" data-act="wipe">🗑 Бүх өгөгдлөө устгах</button>
+      </div>
+      <p class="tiny muted mt">⚠️ Энэхүү апп нь мэргэжлийн оношилгоо, эмчилгээг орлохгүй. Яаралтай тусламж хэрэгтэй бол 103 руу залгана уу.</p>
+    </section></div>`;
+}
+
+const VIEWS = { home: homeView, chat: chatView, recs: recsView, stats: statsView, experts: expertsView, profile: profileView };
+
+function render() {
+  document.documentElement.dataset.theme = S.dark ? 'dark' : 'light';
+  const root = $('#root');
+  if (!S.user) { root.innerHTML = authView(); return; }
+  if (!S.user.hobbies.length || editingHobby) { root.innerHTML = hobbyView(); window.scrollTo(0, 0); return; }
+  let v = location.hash.slice(1); if (!VIEWS[v]) v = 'home';
+  root.innerHTML = shell(v);
+  if (v === 'chat') renderMsgs();
+  if (v === 'home') initCarousel();
+}
+
+/* ---------- Mood carousel ---------- */
+const MOOD_CAP = {
+  happy: 'Өнөөдөр гэрэлтэй, сайхан өдөр байна ☀️', calm: 'Амар тайван, тэнцвэртэй байна 🌿', neutral: 'Ердийн л нэг өдөр 🙂',
+  tired: 'Эрч хүч жаахан дутуу байна 🔋', anxious: 'Санаа зовж, тайван бус байна 🌪️', sad: 'Сэтгэл жаахан гунигтай байна 🌧️', angry: 'Бухимдал, уур хүрч байна 🔥',
+};
+let carTouched = false, carIdx = -1;
+function centerCard(i, smooth) {
+  const car = $('#moodCar'), c = car?.children[i]; if (!c) return;
+  car.scrollTo({ left: c.offsetLeft - (car.clientWidth - c.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'instant' });
+}
+function setActive(i, byUser) {
+  if (i === carIdx) return;
+  carIdx = i;
+  const m = MOODS[i];
+  draft.mood = m.id;
+  $$('#moodCar .mcard').forEach((b, j) => { b.classList.toggle('active', j === i); b.setAttribute('aria-selected', j === i); });
+  $$('.car-dots i').forEach((d, j) => d.classList.toggle('on', j === i));
+  $('#shell').style.setProperty('--mc', m.color);
+  const cap = $('#moodCap'); cap.textContent = MOOD_CAP[m.id]; cap.style.animation = 'none'; cap.offsetWidth; cap.style.animation = '';
+  $('#saveBtn').disabled = false;
+  renderHomeRecs(m);
+  if (byUser) {
+    liveMood = m.id;
+    navigator.vibrate?.(8); // Android дээр бага зэрэг чичирнэ
+    if (!carTouched) { carTouched = true; $('#swipeHint')?.remove(); }
+  }
+}
+function initCarousel() {
+  const car = $('#moodCar'); if (!car) return;
+  carIdx = -1;
+  const start = MOODS.findIndex(m => m.id === (liveMood || draft.mood || 'neutral'));
+  centerCard(start, false);
+  setActive(start, false);
+  let raf = 0;
+  car.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const mid = car.scrollLeft + car.clientWidth / 2;
+      let best = 0, bestD = Infinity;
+      [...car.children].forEach((c, j) => { const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid); if (d < bestD) { bestD = d; best = j; } });
+      setActive(best, true);
+    });
+  }, { passive: true });
+  car.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); A.carStep(e.key === 'ArrowRight' ? 1 : -1); }
+  });
+}
+
+/* =================== ҮЙЛДЛҮҮД =================== */
+const A = {
+  go: v => go(v),
+  closeModal,
+  authTab: v => { authTab = v; render(); },
+  google: () => login('Хэрэглэгч', 'user@gmail.com', true),
+  hob: (v, el) => {
+    hobbySel.has(v) ? hobbySel.delete(v) : hobbySel.add(v);
+    el.classList.toggle('on'); el.setAttribute('aria-pressed', hobbySel.has(v));
+    $('#hobN').textContent = hobbySel.size; $('#hobDone').disabled = !hobbySel.size;
+  },
+  hobDone: () => { S.user.hobbies = [...hobbySel]; hobbySel = null; save(); if (editingHobby) { editingHobby = false; toast('Хобби шинэчлэгдлээ'); } render(); },
+  editHobby: () => { editingHobby = true; hobbySel = null; render(); },
+  art: v => { S.artMode = v; save(); render(); },
+  carPick: v => centerCard(+v, true),
+  /* --- Тоглуулагч --- */
+  playRec: v => {
+    const [id, mid] = v.split('|');
+    if (nowId() === id) return A.playPause();
+    const q = songsFor(moodById(mid)); playQueue(q, q.findIndex(t => t.id === id));
+  },
+  playPl: v => {
+    const [id, mid] = v.split('|');
+    if (nowId() === id) return A.playPause();
+    const mine = MY_PLAYLIST.filter(s => s.moods.includes(mid)), list = mine.length ? mine : MY_PLAYLIST;
+    const q = list.map(s => mkTrack('pl' + MY_PLAYLIST.indexOf(s), s.t, s.a, s.moods[0]));
+    playQueue(q, q.findIndex(t => t.id === id));
+  },
+  playMood: v => {
+    // Spotify холбосон бол хэрэглэгчийн өөрийн дуунуудыг дараалалд эхэнд нь нэмнэ
+    const m = moodById(v);
+    const own = S.spotify ? MY_PLAYLIST.filter(s => s.moods.includes(v)).map(s => mkTrack('pl' + MY_PLAYLIST.indexOf(s), s.t, s.a, s.moods[0])) : [];
+    playQueue([...own, ...songsFor(m)], 0); toast(`«${m.label}» playlist тоглож байна 🎧`);
+  },
+  playMoodClose: v => { closeModal(); A.playMood(v); },
+  playPause: () => P.playing ? pausePlay() : startPlay(),
+  next: () => skip(1),
+  prev: () => skip(-1),
+  qPlay: v => { P.idx = +v; P.pos = 0; startPlay(); },
+  like: () => { const id = nowId(); S.feedback[id] = S.feedback[id] === 1 ? 0 : 1; save(); playerUI(false); toast(S.feedback[id] === 1 ? 'Таалагдсан дуунд нэмэгдлээ 💚' : 'Хасагдлаа'); },
+  openFull: () => { P.full = true; playerUI(false); document.body.style.overflow = 'hidden'; },
+  closeFull: () => { P.full = false; $('#fullPlayer').classList.add('hidden'); document.body.style.overflow = ''; },
+  recMood: v => { liveMood = v; render(); },
+  movie: v => {
+    const [id, mid] = v.split('|'), r = RECS.find(x => x.id === id), m = moodById(mid), inList = (S.watch || []).includes(id);
+    showModal(`<div class="movie-hero" style="--tc:${moodById(r.moods[0]).color}">🎬</div>
+      <h2>${esc(r.title)}</h2><p class="small muted">${esc(r.sub)}</p><p>${esc(r.desc)}</p>
+      <div class="card" style="background:var(--primary-soft);border:0;padding:12px"><b class="small">💡 Яагаад санал болгож байна вэ?</b><p class="small" style="margin:4px 0 0">«${m.label}» мэдрэмжтэй үед энэ кино ${['sad', 'anxious', 'tired', 'angry'].includes(m.id) ? 'сэтгэлийг тайвшруулж, дулаахан мэдрэмж төрүүлдэг' : 'эерэг эрч хүчийг тань улам нэмэгдүүлдэг'}.${r.hob ? ' Мөн таны хоббид тохирсон.' : ''}</p></div>
+      <div class="btn-list mt"><button class="btn" data-act="watch" data-v="${id}">${inList ? '✓ Үзэх жагсаалтад байна' : '＋ Үзэх жагсаалтад нэмэх'}</button>
+      <button class="btn outline" data-act="fbClose" data-v="${id}:1">👍 Таалагдсан</button></div>`);
+  },
+  watch: v => {
+    S.watch = S.watch || [];
+    S.watch = S.watch.includes(v) ? S.watch.filter(x => x !== v) : [...S.watch, v];
+    save(); closeModal(); toast(S.watch.includes(v) ? 'Үзэх жагсаалтад нэмэгдлээ 🎬' : 'Жагсаалтаас хасагдлаа');
+  },
+  fbClose: v => { closeModal(); A.fb(v); },
+  carStep: v => { const i = Math.max(0, Math.min(MOODS.length - 1, carIdx + +v)); centerCard(i, true); $$('#moodCar .mcard')[i]?.focus({ preventScroll: true }); },
+  tag: (v, el) => { draft.tags = draft.tags.includes(v) ? draft.tags.filter(t => t !== v) : [...draft.tags, v]; el.classList.toggle('on'); },
+  saveEntry: () => {
+    if (!draft.mood) return;
+    const n = new Date();
+    S.entries.push({ id: uid(), date: today(), time: `${pad(n.getHours())}:${pad(n.getMinutes())}`, ...draft });
+    const m = moodById(draft.mood);
+    liveMood = m.id;
+    draft = { mood: null, intensity: 3, tags: [], note: '', sleep: 7 };
+    save(); render();
+    showModal(`<div class="center"><div class="face" style="width:88px;height:88px;font-size:4rem;margin:0 auto 10px">${face(m)}</div><h2 style="padding:0">Бүртгэгдлээ!</h2><p>${SUPPORT[m.id]}</p></div>
+      <div class="btn-list mt">${['anxious', 'angry', 'sad'].includes(m.id) ? '<button class="btn" data-act="breath">🫁 Амьсгалын дасгал хийх</button>' : ''}
+      <button class="btn" style="background:#1DB954" data-act="playMoodClose" data-v="${m.id}">▶ Тохирох дуу сонсох</button>
+      <button class="btn ghost" data-act="goClose" data-v="recs">✨ Зөвлөмж харах</button><button class="btn outline" data-act="goClose" data-v="chat">💬 AI-тай ярилцах</button></div>`);
+  },
+  goClose: v => { closeModal(); go(v); },
+  chatMode: v => { S.chatMode = v; save(); $$('[data-act=chatMode]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); },
+  clearChat: () => { S.chat = []; save(); render(); },
+  quick: v => sendMsg(v),
+  recTab: v => { recTab = v; render(); },
+  fb: v => { const [id, val] = v.split(':'); S.feedback[id] = S.feedback[id] === +val ? 0 : +val; save(); render(); toast(+val === 1 ? 'Баярлалаа! Илүү ойролцоо санал болгоно 👍' : 'Ойлголоо, үүнийг дахин санал болгохгүй'); },
+  exercise: v => {
+    const r = RECS.find(x => x.id === v);
+    if (r.action === 'breath') return A.breath();
+    showModal(`<h2>${r.title}</h2><p class="muted small">${r.sub}</p><ol class="steps">${r.steps.map(s => `<li>${s}</li>`).join('')}</ol><button class="btn block mt" data-act="exDone">✓ Дууслаа</button>`);
+  },
+  exDone: () => { S.done++; save(); closeModal(); toast('Сайн байна! Дасгал бүртгэгдлээ 🎉'); },
+  breath: () => showModal(`<h2>4-7-8 амьсгал</h2><p class="muted small">Тав тухтай суугаад тойргийг дагаарай: 4 сек амьсгал авч, 7 сек барьж, 8 сек гаргана.</p><div class="breath" id="breath"><span id="bt">Бэлэн үү?</span></div><p class="center muted" id="bc">4 давталт</p><button class="btn block" data-act="breathGo" id="bgo">Эхлэх</button>`),
+  breathGo: () => {
+    const ph = [['Амьсгал ав', 4, 1], ['Барь', 7, 1], ['Гарга', 8, .6]];
+    let cycle = 0, i = 0; $('#bgo').classList.add('hidden');
+    const step = () => {
+      const c = $('#breath'); if (!c) return;
+      if (i === ph.length) { i = 0; cycle++; }
+      if (cycle === 4) { $('#bt').textContent = 'Сайн байна 🌿'; $('#bc').textContent = 'Дасгал дууслаа'; S.done++; save(); return; }
+      const [label, sec, sc] = ph[i++];
+      $('#bt').textContent = label; $('#bc').textContent = `${cycle + 1} / 4 давталт`;
+      c.style.transitionDuration = sec + 's'; c.style.transform = `scale(${sc})`;
+      breathTimer = setTimeout(step, sec * 1000);
+    };
+    step();
+  },
+  // Бодит систем: backend-ийн /auth/spotify руу чиглүүлж OAuth (PKCE) урсгалаар холбоно.
+  spotify: () => { S.spotify = !S.spotify; save(); render(); toast(S.spotify ? 'Spotify холбогдлоо 🎧' : 'Spotify салгагдлаа'); },
+  range: v => { statRange = +v; render(); },
+  print: () => window.print(),
+  expFilter: v => { expFilter = v; render(); },
+  book: v => { bk = { pid: v, day: 0, slot: null, type: 'video', share: true }; showModal(bookHTML()); },
+  bkDay: v => { bk.day = +v; bk.slot = null; bk.share = $('#bkShare').checked; showModal(bookHTML()); },
+  bkSlot: v => { bk.slot = v; bk.share = $('#bkShare').checked; showModal(bookHTML()); },
+  bkType: v => { bk.type = v; bk.share = $('#bkShare').checked; showModal(bookHTML()); },
+  confirmBook: () => {
+    S.bookings.push({ id: uid(), pid: bk.pid, date: ymd(addDays(new Date(), bk.day + 1)), slot: bk.slot, type: bk.type, share: $('#bkShare').checked });
+    save(); closeModal(); render(); toast('Захиалга баталгаажлаа ✓ Имэйлээр сануулга очно.');
+  },
+  cancelBook: v => { if (!confirm('Захиалгаа цуцлах уу?')) return; S.bookings = S.bookings.filter(b => b.id !== v); save(); render(); },
+  notify: () => {
+    if (!('Notification' in window)) return toast('Таны браузер мэдэгдэл дэмждэггүй');
+    // Бодит системд Service Worker + Web Push (VAPID) ашиглан серверээс илгээнэ.
+    Notification.requestPermission().then(p => toast(p === 'granted' ? 'Сануулга идэвхжлээ 🔔' : 'Зөвшөөрөл олгогдсонгүй'));
+  },
+  export: () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' }));
+    a.download = 'setgel-data.json'; a.click(); URL.revokeObjectURL(a.href);
+  },
+  logout: () => { stopPlayer(); S.user = null; save(); location.hash = ''; render(); },
+  wipe: () => { if (!confirm('Бүх өгөгдөл бүрмөсөн устгагдана. Итгэлтэй байна уу?')) return; stopPlayer(); localStorage.removeItem(KEY); S = fresh(); location.hash = ''; render(); toast('Өгөгдөл устгагдлаа'); },
+};
+
+function login(name, email, demo) {
+  S.user = { name, email, hobbies: [], reminder: '21:00' };
+  if (demo && !S.entries.length) seed();
+  save(); render();
+}
+
+/* ---------- Event delegation ---------- */
+document.addEventListener('click', e => {
+  if (e.target.id === 'modalBg') return closeModal();
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  A[el.dataset.act]?.(el.dataset.v, el, e);
+});
+document.addEventListener('input', e => {
+  const k = e.target.dataset.input;
+  if (k === 'intensity') { draft.intensity = +e.target.value; $('#intv').textContent = draft.intensity; }
+  if (k === 'sleep') { draft.sleep = +e.target.value; $('#slv').textContent = draft.sleep; }
+  if (k === 'note') draft.note = e.target.value;
+  if (e.target.id === 'fpSeek') $('#fpCur').textContent = fmtT(+e.target.value);
+  if (e.target.id === 'chatIn') { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'fpSeek') return seek(+e.target.value);
+  const k = e.target.dataset.set; if (!k) return;
+  if (k === 'reminder') { S.user.reminder = e.target.value; toast(`Өдөр бүр ${e.target.value}-д сануулна`); }
+  if (k === 'dark') S.dark = e.target.checked;
+  if (k === 'art') S.artMode = e.target.checked ? 'art' : 'emoji';
+  if (k === 'spotify') S.spotify = e.target.checked;
+  save(); render();
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'composer') return sendMsg($('#chatIn').value);
+  if (e.target.id === 'authForm') {
+    const email = $('#aEmail').value.trim(), pass = $('#aPass').value, name = $('#aName')?.value.trim();
+    if (authTab === 'register' && !name) return toast('Нэрээ оруулна уу');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast('Имэйл хаяг буруу байна');
+    if (pass.length < 6) return toast('Нууц үг хамгийн багадаа 6 тэмдэгт');
+    // Бодит систем: POST /api/auth/register эсвэл /api/auth/login → JWT token авна.
+    login(name || email.split('@')[0], email, authTab === 'register' ? $('#aDemo').checked : true);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (P.full) A.closeFull(); else closeModal(); }
+  // Компьютер дээр Enter дарахад илгээнэ, Shift+Enter дарахад шинэ мөрөнд шилжинэ
+  if (e.target.id === 'chatIn' && e.key === 'Enter' && !e.shiftKey && matchMedia('(hover:hover)').matches) { e.preventDefault(); sendMsg(e.target.value); }
+});
+addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+render();
+</script>
+</body>
+</html>
