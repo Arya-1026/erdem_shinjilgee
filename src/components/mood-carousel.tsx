@@ -1,59 +1,51 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { MOODS } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { MoodFace } from './mood-face';
+import type { Mood } from '@/lib/types';
+import CircularCarousel from './circular-carousel';
+import { FaceSVG } from './mood-face';
+import { useApp } from './providers/app-provider';
 
-/* Хажуу тийш гүйлгэж mood сонгох carousel. Голд ирсэн карт идэвхтэй болно. */
+const N = MOODS.length;
+const ARROWS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End']);
+
+/** CircularCarousel зөвхөн зураг харуулдаг тул mood-ийн картыг SVG зураг болгоно:
+ *  өнгөт дэвсгэр + өөрийн зураг / 2D дүр / emoji + нэр */
+function cardSrc(m: Mood, art: string, img?: string) {
+  const face = img
+    ? `<clipPath id="c"><circle cx="220" cy="190" r="118"/></clipPath><image href="${img}" x="102" y="72" width="236" height="236" clip-path="url(#c)" preserveAspectRatio="xMidYMid slice"/>`
+    : art === 'art'
+      ? renderToStaticMarkup(<FaceSVG m={m} />).replace('<svg', '<svg x="94" y="64" width="252" height="252"')
+      : `<text x="220" y="262" font-size="200" text-anchor="middle">${m.emoji}</text>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440">`
+    + `<rect width="440" height="440" fill="${m.color}"/><circle cx="220" cy="190" r="130" fill="#fff" opacity=".35"/>${face}`
+    + `<text x="220" y="392" font-family="Nunito, 'Segoe UI', sans-serif" font-size="48" font-weight="800" fill="#2B2724" text-anchor="middle">${m.label}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/* React Bits-ийн CircularCarousel (default тохиргоогоор) дээр mood сонгоно. Урд ирсэн карт идэвхтэй.
+   Хэрэглэгч хөндөх хүртэл өөрөө эргэнэ. Хөндсөний дараа эргэлт зогсож сонголт нь хэвээр үлдэнэ. */
 export function MoodCarousel({ index, onChange }: { index: number; onChange: (i: number, byUser: boolean) => void }) {
-  const car = useRef<HTMLDivElement>(null);
-  const cur = useRef(index);
+  const { profile } = useApp();
+  // Carousel 0-р картаас эхэлдэг тул эхний mood урд ирэхээр жагсаалтыг эргүүлнэ
+  const [start] = useState(index);
+  const [auto, setAuto] = useState(true);
+  const touched = useRef(false);
+  const user = () => { touched.current = true; setAuto(false); };
 
-  const center = useCallback((i: number, smooth: boolean) => {
-    const el = car.current, c = el?.children[i] as HTMLElement | undefined; if (!el || !c) return;
-    el.scrollTo({ left: c.offsetLeft - (el.clientWidth - c.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'instant' });
-  }, []);
-
-  // Эхлэхдээ сонгогдсон картыг голлуулна (хэрэглэгчийн үйлдэл гэж тооцохгүй)
-  useEffect(() => { center(cur.current, false); }, [center]);
-
-  useEffect(() => {
-    const el = car.current; if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const mid = el.scrollLeft + el.clientWidth / 2;
-        let best = 0, bestD = Infinity;
-        [...el.children].forEach((c, j) => { const h = c as HTMLElement, d = Math.abs(h.offsetLeft + h.offsetWidth / 2 - mid); if (d < bestD) { bestD = d; best = j; } });
-        if (best !== cur.current) { cur.current = best; onChange(best, true); }
-      });
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => { el.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
-  }, [onChange]);
-
-  const step = (d: number) => {
-    const i = Math.max(0, Math.min(MOODS.length - 1, cur.current + d));
-    center(i, true);
-    (car.current?.children[i] as HTMLElement | undefined)?.focus({ preventScroll: true });
-  };
+  const items = useMemo(() => Array.from({ length: N }, (_, k) => {
+    const m = MOODS[(start + k) % N];
+    return { src: cardSrc(m, profile.art_mode, profile.mood_images?.[m.id]), alt: m.label, title: m.label };
+  }), [start, profile.art_mode, profile.mood_images]);
 
   return (
     <>
-      <div className="relative -mx-[18px] mt-1">
-        <button className="car-nav absolute top-1/2 left-2.5 z-2 size-[42px] -translate-y-1/2 rounded-full bg-card text-2xl shadow-[var(--shadow)]" aria-label="Өмнөх" onClick={() => step(-1)}>‹</button>
-        <div ref={car} className="mood-car" role="listbox" aria-label="Сэтгэл хөдлөл сонгох"
-          onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1); } }}>
-          {MOODS.map((m, i) => (
-            <button key={m.id} role="option" aria-selected={i === index} aria-label={m.label} onClick={() => center(i, true)}
-              className={cn('mcard', i === index && 'active')} style={{ '--c': m.color } as React.CSSProperties}>
-              <MoodFace m={m} /><span>{m.label}</span>
-            </button>
-          ))}
-        </div>
-        <button className="car-nav absolute top-1/2 right-2.5 z-2 size-[42px] -translate-y-1/2 rounded-full bg-card text-2xl shadow-[var(--shadow)]" aria-label="Дараах" onClick={() => step(1)}>›</button>
+      <div className="-mx-[18px] mt-1 h-[260px]" onPointerDown={user} onKeyDown={e => { if (ARROWS.has(e.key)) user(); }}>
+        <CircularCarousel items={items} autoplay={auto ? 'drift' : 'off'}
+          onChange={i => onChange((start + i) % N, touched.current)} onItemClick={user} />
       </div>
       <div className="car-dots mb-1.5 flex justify-center gap-1.5" aria-hidden="true">{MOODS.map((m, i) => <i key={m.id} className={cn(i === index && 'on')} />)}</div>
     </>

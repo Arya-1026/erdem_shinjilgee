@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fallbackReply } from '@/lib/chat-fallback';
 import { isCrisisText } from '@/lib/crisis';
-import { chatSystemPrompt, splitActions } from '@/lib/chat-prompt';
-import { ENTRY_COLS, normalizeEntry } from '@/lib/db';
-import { llmReply } from '@/lib/server/llm';
+import { asksForExercise, asksForExpert, chatSystemPrompt, extractInlineActions, guessActions, splitActions } from '@/lib/chat-prompt';
+import { ENTRY_COLS, EXPERT_COLS, normalizeEntry, toExpert } from '@/lib/db';
+import { llmReply, polishMongolian } from '@/lib/server/llm';
 import { flagsSelfHarm } from '@/lib/server/moderation';
 import { createClient } from '@/lib/supabase/server';
 import type { ChatMode, Entry } from '@/lib/types';
@@ -17,11 +17,12 @@ export async function POST(req: Request) {
   const message = typeof body?.message === 'string' ? body.message.trim().slice(0, 2000) : '';
   if (!message) return NextResponse.json({ error: 'empty' }, { status: 400 });
 
-  const [profileRes, entriesRes, historyRes, fbRes] = await Promise.all([
+  const [profileRes, entriesRes, historyRes, fbRes, expertsRes] = await Promise.all([
     supabase.from('profiles').select('name,hobbies,chat_mode').eq('id', user.id).single(),
     supabase.from('mood_entries').select(ENTRY_COLS).order('entry_date', { ascending: false }).order('entry_time', { ascending: false }).limit(14).returns<Entry[]>(),
     supabase.from('chat_messages').select('role,content,crisis').order('created_at', { ascending: false }).limit(12),
     supabase.from('rec_feedback').select('rec_id,value'),
+    supabase.from('experts').select(EXPERT_COLS).order('id'),
   ]);
   const profile = profileRes.data ?? { name: '', hobbies: [], chat_mode: 'calm' };
   const entries = (entriesRes.data ?? []).map(normalizeEntry).reverse();
@@ -40,7 +41,8 @@ export async function POST(req: Request) {
   // 2) LLM. Хэрэглэгчийн хобби, сүүлийн mood, өнөөдрийн тэмдэглэлийг system prompt-д нэмнэ. API key зөвхөн сервер дээр.
   const todayStr = entries.length ? entries[entries.length - 1].entry_date : '';
   const todayNote = entries.filter(e => e.entry_date === todayStr).map(e => e.note).filter(Boolean).join(' / ');
-  const system = chatSystemPrompt({ name: profile.name, hobbies: profile.hobbies, entries, mode, todayNote });
+  const experts = (expertsRes.data ?? []).map(toExpert);
+  const system = chatSystemPrompt({ name: profile.name, hobbies: profile.hobbies, entries, mode, todayNote, experts });
 
   const llm = await llmReply([
     { role: 'system', content: system },
@@ -49,8 +51,23 @@ export async function POST(req: Request) {
     { role: 'user', content: message },
   ]);
 
-  // 3) LLM унавал дүрэмд суурилсан хариулт
-  const reply = llm?.text ?? fallbackReply(message, {
+  // 3) Монгол найруулгыг редактороор засна (ACTIONS мөрийг салгаж, засварын дараа буцааж залгана).
+  //    LLM унавал дүрэмд суурилсан хариулт.
+  let polished: string | null = null;
+  if (llm) {
+    const split = splitActions(llm.text);
+    // Текст дотор бичсэн кодыг («partner») товч болгоно
+    const inline = extractInlineActions(split.text);
+    const text = inline.text, said = [...new Set([...split.actions, ...inline.actions])].slice(0, 3);
+    // Сэтгэл зүйчийн картыг зөвхөн энэ мессежээрээ асуусан үед, байгаа хүнийг л харуулна
+    const known = asksForExpert(message) ? split.experts.filter(id => experts.some(e => e.id === id)) : [];
+    // AI дасгалын товч гаргахаа мартсан бол: энэ мессеж → өмнөх мессежүүдийн агуулга → «дасгал» гэж асуусан бол ерөнхий дасгал
+    const recent = history.filter(m => m.role === 'user').slice(-3).map(m => m.content).reverse();
+    const guessed = [message, ...(asksForExercise(message) ? recent : [])].map(guessActions).find(a => a.length) ?? [];
+    const actions = said.length || known.length ? said : guessed.length ? guessed : asksForExercise(message) ? ['breath', 'walk'] as const : [];
+    polished = (await polishMongolian(text)) + (actions.length ? `\nACTIONS: ${actions.join(', ')}` : '') + (known.length ? `\nEXPERTS: ${known.join(', ')}` : '');
+  }
+  const reply = polished ?? fallbackReply(message, {
     name: profile.name, hobbies: profile.hobbies, entries, mode,
     feedback: Object.fromEntries((fbRes.data ?? []).map(x => [x.rec_id, x.value])),
   });

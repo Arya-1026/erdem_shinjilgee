@@ -19,7 +19,7 @@ import { addDays, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
 
 // Гар утсан дээр доороос гарч ирэх sheet, том дэлгэцэн дээр голд
-const SHEET = 'top-auto bottom-0 left-0 max-h-[92dvh] max-w-full translate-x-0 translate-y-0 gap-0 overflow-auto rounded-t-[22px] rounded-b-none px-[18px] pt-[22px] pb-[calc(22px+var(--safe-b))] text-base ring-0 max-sm:data-open:zoom-in-100 max-sm:data-open:slide-in-from-bottom-10 max-sm:data-closed:zoom-out-100 max-sm:data-closed:slide-out-to-bottom-10 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[22px] sm:p-[26px]';
+const SHEET = 'top-auto bottom-0 left-0 max-h-[92dvh] max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden translate-x-0 translate-y-0 gap-0 overflow-auto rounded-t-[22px] rounded-b-none px-[18px] pt-[22px] pb-[calc(22px+var(--safe-b))] text-base ring-0 max-sm:data-open:zoom-in-100 max-sm:data-open:slide-in-from-bottom-10 max-sm:data-closed:zoom-out-100 max-sm:data-closed:slide-out-to-bottom-10 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[22px] sm:p-[26px]';
 
 export function DialogHost() {
   const { dialog, openDialog } = useApp();
@@ -156,14 +156,14 @@ function Wipe() {
     stop();
     await supabase.auth.signOut();
     openDialog(null);
-    toast('Өгөгдөл устгагдлаа');
+    toast('Бүртгэл 30 хоногийн дараа бүрмөсөн устгагдана. Энэ хугацаанд нэвтэрвэл сэргээгдэнэ.');
     router.replace('/login'); router.refresh();
   }
 
   return (
     <form onSubmit={e => void confirm(e)}>
       <Title>Бүртгэл, бүх өгөгдлөө устгах</Title>
-      <DialogDescription>Бүх бүртгэл, чат, төлөвлөгөө бүрмөсөн устгагдана. Буцаах боломжгүй.</DialogDescription>
+      <DialogDescription>Та бүх төхөөрөмжөөс гарна. <b>30 хоногийн дотор</b> дахин нэвтэрвэл бүртгэл тань сэргээгдэнэ. Нэвтрэхгүй бол бүх бүртгэл, чат, төлөвлөгөө бүрмөсөн устгагдаж, буцаах боломжгүй болно.</DialogDescription>
       <label htmlFor="wipe-secret" className="mt-3 mb-1.5 block text-sm font-semibold">{hasPassword === false ? `Баталгаажуулахын тулд имэйлээ бичнэ үү (${profile.email})` : 'Нууц үгээ оруулна уу'}</label>
       <input id="wipe-secret" type={hasPassword === false ? 'email' : 'password'} autoComplete={hasPassword === false ? 'off' : 'current-password'} value={secret} onChange={e => setSecret(e.target.value)} required
         className="min-h-12 w-full rounded-xl border-[1.5px] bg-background px-3.5 focus:border-primary focus:outline-none" />

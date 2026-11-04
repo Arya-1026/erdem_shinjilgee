@@ -21,11 +21,10 @@ export type DialogState =
   | { kind: 'wipe' }
   | null;
 
-type AppCtx = AppData & {
+type AppCtx = Omit<AppData, 'restored'> & {
   supabase: ReturnType<typeof createClient>;
-  /** Хэрэглэгч сүүлд сонгосон mood (carousel/зөвлөмж) → байхгүй бол сүүлийн бүртгэл */
+  /** Хамгийн сүүлд хадгалсан бүртгэлийн mood. Carousel, зөвлөмжийн түр сонголт үүнд нөлөөлөхгүй. */
   activeMood: Mood;
-  setLiveMood: (m: MoodId) => void;
   /** Нүүр хуудасны дэвсгэрийн өнгө (carousel дээр сонгож буй mood) */
   tint: string;
   setTint: (c: string) => void;
@@ -72,7 +71,6 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [feedback, setFb] = useState(initial.feedback);
   const [watchlist, setWatch] = useState(initial.watchlist);
   const [bookings, setBookings] = useState(initial.bookings);
-  const [liveMood, setLiveMood] = useState<MoodId | null>(null);
   const [tint, setTint] = useState(moodById('neutral').color);
   const [dialog, openDialog] = useState<DialogState>(null);
   const [spotify, setSpotify] = useState(initial.spotify);
@@ -84,6 +82,9 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
 
   // Хэрэглэгчийн сонгосон өнгө (өөр төхөөрөмж дээр сонгосон байж болно → localStorage-тай тааруулна)
   useEffect(() => { applyPalette(isPaletteId(profile.theme) ? profile.theme : DEFAULT_PALETTE); }, [profile.theme]);
+
+  // Устгах хүсэлт гаргасан бүртгэлээр 30 хоногийн дотор нэвтэрвэл сэргээгдсэнийг мэдэгдэнэ
+  useEffect(() => { if (initial.restored) toast('Тавтай морил! Таны бүртгэл сэргээгдлээ, устгах хүсэлт цуцлагдсан 💜'); }, [initial.restored]);
 
   // API route нь Google/Spotify руу redirect хийдэг тул client navigation биш, бүтэн хуудсаар шилжинэ
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -140,7 +141,6 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     if (fail('Бүртгэл хадгалагдсангүй')(error) || !data) return null;
     const e = normalizeEntry(data);
     setEntries(list => [...list, e]);
-    setLiveMood(e.mood);
     return e;
   }, [supabase]);
 
@@ -192,12 +192,12 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const value = useMemo<AppCtx>(() => ({
     supabase, profile, entries, feedback, watchlist, bookings,
     experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, spotify, youtube, likedSongs, todos, setTodos, toggleLike,
-    activeMood: liveMood ? moodById(liveMood) : lastMood(entries), setLiveMood,
+    activeMood: lastMood(entries),
     tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion,
     dialog, openDialog,
   }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, youtube, likedSongs, todos, toggleLike,
-    liveMood, tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
+    tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog]);
 
   return <Ctx value={value}>{children}</Ctx>;

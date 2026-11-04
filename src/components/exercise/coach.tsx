@@ -57,7 +57,7 @@ export function ExerciseCoach({ moves, onFinish }: { moves: Move[]; onFinish: ()
   const total = totalSeconds(moves);
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 min-w-0">
       <div className="relative h-[min(44dvh,340px)] overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,var(--secondary),color-mix(in_srgb,var(--secondary)_55%,var(--card)))]">
         {noWebGL ? <p className="grid size-full place-items-center p-6 text-center text-sm text-muted-foreground">Таны төхөөрөмж 3D дэмжихгүй байна. Доорх зааврыг дагаарай.</p>
           : <Stage anim={done ? 'idle' : m.anim} cycle={ready ? -1 : i} period={done ? 5 : m.period} running={status === 'run' ? !prep : ready || done} view={done ? 'front' : m.view} onFail={() => setNoWebGL(true)} />}

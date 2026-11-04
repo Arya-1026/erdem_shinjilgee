@@ -4,7 +4,7 @@ import { TODO_COLS } from '@/lib/db';
 import { weekdayOf } from '@/lib/date';
 import { llmConfigured, llmSmart } from '@/lib/server/llm';
 import { createClient } from '@/lib/supabase/server';
-import { explainPrompt, parseExplain, parseTaskList, planTodos, statsSummary, taskPrompt, weekdayProfile } from '@/lib/todo-plan';
+import { explainPrompt, isFixed, parseExplain, parseTaskList, planTodos, statsSummary, taskPrompt, weekdayProfile } from '@/lib/todo-plan';
 import type { Todo } from '@/lib/types';
 
 // POST /api/todos/plan { text?: "чөлөөт бичвэр", today: "YYYY-MM-DD", replan?: boolean }
@@ -21,12 +21,15 @@ export async function POST(req: Request) {
   if (!today) return NextResponse.json({ error: 'invalid today' }, { status: 400 });
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
 
+  // Хэрэглэгчийн заасан өдөрт шууд тавьсан ажлууд (хуваарилагч хөдөлгөхгүй)
+  let pinned: { title: string; planned_date: string | null; planned_time: string | null }[] = [];
   if (text) {
     const parsed = llmConfigured() ? parseTaskList((await llmSmart(taskPrompt(text, today), { temperature: 0.2, maxTokens: 1200, timeoutMs: 25_000 }))?.text ?? '', today) : [];
     // AI байхгүй/бүтэхгүй бол мөр бүрийг нэг ажил гэж үзнэ
     const rows = parsed.length ? parsed : text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 20).map(title => ({ title: title.slice(0, 200) }));
     const { error } = await supabase.from('todos').insert(rows);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    pinned = parsed.filter(r => r.planned_date);
   }
 
   const since = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10);
@@ -39,7 +42,8 @@ export async function POST(req: Request) {
   const stats = weekdayProfile(entries.data ?? [], todos.filter(t => t.done));
 
   const open = todos.filter(t => !t.done);
-  const tasks = open.filter(t => body?.replan === true || !t.planned_date);
+  // Өдрийг нь хэрэглэгч өөрөө заасан ажлыг дахин хуваарилахад ч хөдөлгөхгүй
+  const tasks = open.filter(t => !t.planned_date || (body?.replan === true && !isFixed(t)));
   const moving = new Set(tasks.map(t => t.id));
   // Өмнө товлосон ажлын ачааллыг тооцно
   const busy: Record<string, number> = {};
@@ -54,6 +58,11 @@ export async function POST(req: Request) {
     const r = parseExplain((await llmSmart(explainPrompt(rows, statsSummary(stats)), { temperature: 0.5, maxTokens: 1600, timeoutMs: 25_000 }))?.text ?? '', plan.length);
     r?.why.forEach((w, i) => { if (w) plan[i].reason = w; });
     if (r?.summary) summary = r.summary;
+  }
+
+  if (pinned.length) {
+    const said = pinned.map(p => `«${p.title}» → ${WD[weekdayOf(p.planned_date!)]} ${p.planned_date!.slice(5).replace('-', '/')}${p.planned_time ? ` ${p.planned_time}` : ''}`).join(', ');
+    summary = `Таны заасан өдөрт тэмдэглэлээ: ${said}.${plan.length ? ` ${summary}` : ''}`;
   }
 
   const results = await Promise.all(plan.map(p => supabase.from('todos').update({ planned_date: p.planned_date, reason: p.reason }).eq('id', p.id)));

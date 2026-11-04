@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseExplain, parseTaskList, planTodos, supportHints, weekdayProfile } from './todo-plan';
+import { calendarTable, isFixed, parseExplain, parseTaskList, planTodos, supportHints, weekdayProfile } from './todo-plan';
 import type { Todo } from './types';
 
 // 2026-11-02 Даваа. Лхагва сайн, Даваа муу сэтгэл санаатай хүн
@@ -52,10 +52,26 @@ describe('төлөвлөгөө', () => {
   it('AI-ийн ажлын жагсаалтыг шалгаж авна', () => {
     const rows = parseTaskList('{"t":[{"title":" Тайлан ","category":"Хичээл","effort":3,"minutes":90,"due":"2026-11-06"},{"title":"","effort":9},{"title":"X","category":"?","effort":9,"minutes":"a","due":"2020-01-01"}]}', TODAY);
     expect(rows).toEqual([
-      { title: 'Тайлан', category: 'Хичээл', effort: 3, minutes: 90, due_date: '2026-11-06' },
-      { title: 'X', category: 'Ажил', effort: 2, minutes: 30, due_date: null },
+      { title: 'Тайлан', category: 'Хичээл', effort: 3, minutes: 90, due_date: '2026-11-06', planned_date: null, planned_time: null, reason: '' },
+      { title: 'X', category: 'Ажил', effort: 2, minutes: 30, due_date: null, planned_date: null, planned_time: null, reason: '' },
     ]);
     expect(parseTaskList('биш', TODAY)).toEqual([]);
+  });
+  it('хэрэглэгчийн заасан өдөр, цагийг тогтоож, дахин хуваарилахад хөдөлгөхгүй', () => {
+    const [r, past, bad] = parseTaskList('{"t":[{"title":"Шүд","on":"2026-11-09","time":"10:00"},{"title":"Хуучин","on":"2026-10-01","time":"25:00"},{"title":"Буруу","on":"маргааш"}]}', TODAY);
+    expect(r).toMatchObject({ planned_date: '2026-11-09', planned_time: '10:00' });
+    expect(isFixed(r)).toBe(true);
+    expect(past).toMatchObject({ planned_date: null, planned_time: null, reason: '' });
+    expect(isFixed(past)).toBe(false);
+    expect(bad.planned_date).toBeNull();
+  });
+  it('LLM-д огноог гарагтай нь хүснэгтээр өгнө', () => {
+    // 2026-11-04 Лхагва: «дараагийн даваа» нь 11/09, «дараа долоо хоногийн» мөрүүд 11/09-өөс эхэлнэ
+    const rows = calendarTable('2026-11-04').split('\n');
+    expect(rows[0]).toBe('2026-11-04 Wednesday (Лхагва) - today');
+    expect(rows[1]).toContain('tomorrow');
+    expect(rows.find(l => l.includes('Monday'))).toBe('2026-11-09 Monday (Даваа) - next week');
+    expect(rows.find(l => l.startsWith('2026-11-08'))).toContain('this week');
   });
   it('тайлбарын тоо зөрвөл хэрэглэхгүй', () => {
     expect(parseExplain('{"why":["a"],"summary":"s"}', 2)).toEqual({ why: [], summary: 's' });

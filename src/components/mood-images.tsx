@@ -9,13 +9,13 @@ import { useApp } from './providers/app-provider';
 
 const SIZE = 128;
 
-/** Зургийг төвөөс нь дөрвөлжин тайрч 128px болгоно: өгөгдлийн санд ~10KB хадгалагдана */
-async function squareThumb(file: File) {
+/** Зургийг төвөөс нь дөрвөлжин тайрч size px болгоно: 128px нь өгөгдлийн санд ~10KB хадгалагдана */
+export async function squareThumb(file: File, size = SIZE) {
   const bmp = await createImageBitmap(file);
   const c = document.createElement('canvas');
-  c.width = c.height = SIZE;
+  c.width = c.height = size;
   const s = Math.min(bmp.width, bmp.height);
-  c.getContext('2d')!.drawImage(bmp, (bmp.width - s) / 2, (bmp.height - s) / 2, s, s, 0, 0, SIZE, SIZE);
+  c.getContext('2d')!.drawImage(bmp, (bmp.width - s) / 2, (bmp.height - s) / 2, s, s, 0, 0, size, size);
   bmp.close();
   return c.toDataURL('image/jpeg', 0.82);
 }

@@ -519,4 +519,88 @@ drop policy if exists "own todos" on public.todos;
 create policy "own todos" on public.todos
   for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
+-- >>>>>>>>>> 0007_grants.sql
+-- =========================================================
+-- 0007: Data API-ийн эрх. Шинэ Supabase төслүүд public schema-гийн хүснэгтэд
+-- anon/authenticated/service_role-д автоматаар эрх олгохоо больсон
+-- ("permission denied for table ..."). Мөр бүрийг RLS хамгаалсаар байна.
+-- anon-д эрх өгөхгүй: апп зөвхөн нэвтэрсэн хэрэглэгчид өгөгдөл харуулна.
+-- =========================================================
+
+grant usage on schema public to authenticated, service_role;
+
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant all on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
+
+-- Цаашид үүсэх хүснэгтэд ч мөн адил
+alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant usage, select on sequences to authenticated, service_role;
+
+notify pgrst, 'reload schema';
+
+-- >>>>>>>>>> 0008_todo_time_emoji.sql
+-- =========================================================
+-- 0008: Төлөвлөгөөний цаг, эможи (календарь дээр харагдана)
+-- =========================================================
+
+alter table public.todos
+  add column if not exists planned_time time,
+  add column if not exists emoji text check (char_length(emoji) <= 16);
+
+notify pgrst, 'reload schema';
+
+-- >>>>>>>>>> 0009_account_deletion.sql
+-- =========================================================
+-- 0009: Бүртгэл устгах хүсэлт 30 хоног хүлээгдэнэ.
+-- Энэ хугацаанд дахин нэвтэрвэл сэргээгдэнэ (dal.ts → requireUser),
+-- нэвтрэхгүй бол /api/cron/purge-accounts бүрмөсөн устгана (0010_purge_cron.sql).
+-- =========================================================
+
+alter table public.profiles add column if not exists deletion_requested_at timestamptz;
+
+-- Устгах хугацаа нь болсон хэрэглэгчид. Зөвхөн service_role дуудна.
+create or replace function public.due_deletions()
+returns table (user_id uuid)
+language sql security definer set search_path = '' as $$
+  select p.id from public.profiles p
+  where p.deletion_requested_at is not null
+    and p.deletion_requested_at < now() - interval '30 days';
+$$;
+revoke execute on function public.due_deletions() from public, anon, authenticated;
+grant execute on function public.due_deletions() to service_role;
+
+-- Устгах хүсэлттэй хүнд сануулга илгээхгүй
+create or replace function public.due_reminders()
+returns table (user_id uuid, email text, name text)
+language sql security definer set search_path = '' as $$
+  select p.id, p.email, p.name
+  from public.profiles p
+  where p.reminder_enabled
+    and p.deletion_requested_at is null
+    and p.email <> ''
+    and (now() at time zone p.timezone)::time >= p.reminder_time
+    and (now() at time zone p.timezone)::time <  p.reminder_time + interval '10 minutes'
+    and p.last_reminded_on is distinct from (now() at time zone p.timezone)::date
+    and not exists (
+      select 1 from public.mood_entries e
+      where e.user_id = p.id and e.entry_date = (now() at time zone p.timezone)::date
+    );
+$$;
+revoke execute on function public.due_reminders() from public, anon, authenticated;
+grant execute on function public.due_reminders() to service_role;
+
+notify pgrst, 'reload schema';
+
+-- >>>>>>>>>> 0011_avatar.sql
+-- =========================================================
+-- 0011: Профайл зураг. Хөтөч дээр 256px болгож багасгасан data URL (~20–40KB).
+-- =========================================================
+
+alter table public.profiles
+  add column if not exists avatar text check (avatar is null or (avatar like 'data:image/%' and char_length(avatar) < 200000));
+
+notify pgrst, 'reload schema';
+
 commit;

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordReset } from '@/components/password-reset';
 import { Segmented } from '@/components/segmented';
 import { createClient } from '@/lib/supabase/client';
 
@@ -14,6 +15,7 @@ export function LoginForm() {
   const [tab, setTab] = useState<'register' | 'login'>('register');
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(false);
   const reg = tab === 'register';
   const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
@@ -53,12 +55,21 @@ export function LoginForm() {
     </div>
   );
 
+  // Код баталгаажмагц session үүссэн тул шууд апп руу орно
+  if (forgot) return (
+    <div className="card-x w-full max-w-[420px]">
+      <h2 className="mb-2 text-lg font-semibold">🔑 Нууц үг сэргээх</h2>
+      <PasswordReset onDone={() => { router.replace('/home'); router.refresh(); }} onCancel={() => setForgot(false)} />
+    </div>
+  );
+
   return (
     <form className="card-x w-full max-w-[420px]" onSubmit={onSubmit} noValidate>
       <Segmented full className="mb-4.5" value={tab} onChange={setTab} options={[['register', 'Бүртгүүлэх'], ['login', 'Нэвтрэх']]} />
       {reg && <Field id="name" label="Нэр"><Input id="name" name="name" autoComplete="given-name" placeholder="Таны нэр" className="h-12 rounded-xl" required /></Field>}
       <Field id="email" label="Имэйл"><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl" required /></Field>
       <Field id="password" label="Нууц үг"><Input id="password" name="password" type="password" autoComplete={reg ? 'new-password' : 'current-password'} placeholder="Хамгийн багадаа 6 тэмдэгт" minLength={6} className="h-12 rounded-xl" required /></Field>
+      {!reg && <button type="button" className="-mt-1.5 mb-3 min-h-9 text-sm font-semibold text-primary" onClick={() => setForgot(true)}>Нууц үгээ мартсан уу?</button>}
       <Button type="submit" size="xl" className="w-full" disabled={busy}>{busy ? '…' : reg ? 'Бүртгүүлэх' : 'Нэвтрэх'}</Button>
       <div className="my-3.5 flex items-center gap-2.5 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">эсвэл</div>
       <Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b> Google-ээр үргэлжлүүлэх</Button>

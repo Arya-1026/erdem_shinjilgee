@@ -235,6 +235,37 @@ export async function findSong(artist: string, title: string, userToken?: string
 }
 
 /**
+ * Хэрэглэгчийн бичсэн хайлт (дуу, уран бүтээлч). Нэг хайлт 100 квот зарцуулдаг тул
+ * үр дүнг бүх хэрэглэгчид 7 хоног cache-лнэ (song_cache: search:түлхүүр:дугаар).
+ */
+export async function searchSongs(query: string, userToken?: string | null): Promise<FoundSong[]> {
+  const prefix = `search:${songKey(query, '')}:`;
+  const db = createServiceClient();
+  const { data: hit } = await db.from('song_cache').select('*').like('query_key', `${prefix}%`).order('query_key');
+  if (hit?.length && Date.now() - new Date(hit[0].cached_at).getTime() < 7 * 864e5)
+    return hit.filter(h => h.found).sort((a, b) => Number(a.query_key.slice(prefix.length)) - Number(b.query_key.slice(prefix.length)))
+      .map(h => ({ video_id: h.video_id, title: h.title, channel: h.channel, thumbnail: h.thumbnail, duration_s: h.duration_s }));
+
+  const auth: Auth | null = process.env.YOUTUBE_API_KEY ? { key: process.env.YOUTUBE_API_KEY } : userToken ? { token: userToken } : null;
+  if (!auth) return [];
+  const q = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', maxResults: '12', q: query });
+  if (/[Ѐ-ӿ]/.test(query)) { q.set('regionCode', 'MN'); q.set('relevanceLanguage', 'mn'); }
+  let res: Page<{ id: { videoId: string } }>;
+  try {
+    res = await yt(`/search?${q}`, auth);
+  } catch (e) {
+    if (e instanceof YouTubeError && e.status === 403 && /quota/i.test(e.reason ?? e.message)) throw new QuotaExceeded();
+    throw e;
+  }
+  const videos = (await videoDetails((res.items ?? []).map(i => i.id.videoId), auth)).filter(playable);
+  const found = videos.map(v => ({ video_id: v.id, title: v.snippet.title, channel: v.snippet.channelTitle, thumbnail: pickThumb(v.snippet.thumbnails), duration_s: parseIsoDuration(v.contentDetails?.duration) }));
+  const cached_at = new Date().toISOString();
+  if (found.length) await db.from('song_cache').upsert(found.map((f, i) => ({ query_key: prefix + i, found: true, ...f, cached_at })));
+  else await db.from('song_cache').upsert({ query_key: prefix + 0, found: false, cached_at });
+  return found;
+}
+
+/**
  * Уран бүтээлчийн дуунууд. Нэг хайлтаар 15 бичлэг авч бүх хэрэглэгчид 30 хоног cache-лнэ (song_cache: artist:нэр:дугаар).
  * budget: энэ хүсэлтэд шинээр хайж болох тоо. Нэр нь гарчиг, сувагт байхгүй бичлэгийг хасна.
  */

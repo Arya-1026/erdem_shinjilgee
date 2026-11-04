@@ -2,7 +2,7 @@ import { createClient as createPlainClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
-// Бүртгэлийг бүрмөсөн устгана. auth.users-ээс устгахад бүх хүснэгт "on delete cascade"-ээр цэвэрлэгдэнэ.
+// Бүртгэл устгах хүсэлт. 30 хоног нэвтрэхгүй бол бүрмөсөн устгагдана.
 // Нууц үгээр (Google-ээр бүртгүүлсэн бол имэйлээр) баталгаажуулна.
 export async function DELETE(req: Request) {
   const supabase = await createClient();
@@ -21,9 +21,12 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'wrong-email' }, { status: 403 });
   }
 
-  const { error } = await createServiceClient().auth.admin.deleteUser(user.id);
+  // Шууд устгахгүй: 30 хоногийн дотор дахин нэвтэрвэл сэргээгдэнэ (dal.ts → requireUser),
+  // нэвтрэхгүй бол /api/cron/purge-accounts бүрмөсөн устгана.
+  const { error } = await createServiceClient().from('profiles').update({ deletion_requested_at: new Date().toISOString() }).eq('id', user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await supabase.auth.signOut();
-  return NextResponse.json({ ok: true });
+  // Бүх төхөөрөмжөөс гаргана: өөр төхөөрөмж дээр нээлттэй байсан session санамсаргүй сэргээхгүй
+  await supabase.auth.signOut({ scope: 'global' });
+  return NextResponse.json({ ok: true, purgeAfterDays: 30 });
 }

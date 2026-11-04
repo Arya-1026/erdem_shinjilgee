@@ -11,7 +11,7 @@ import { Chip, Segmented } from '@/components/segmented';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { todaysEntries } from '@/lib/analytics';
 import { greeting } from '@/lib/chat-fallback';
-import { CHAT_ACTIONS, splitActions, type ChatAction } from '@/lib/chat-prompt';
+import { CHAT_ACTIONS, extractInlineActions, splitActions, type ChatAction } from '@/lib/chat-prompt';
 import { QUICK, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import type { ChatMessage, ChatMode, SongRec } from '@/lib/types';
@@ -19,7 +19,7 @@ import type { ChatMessage, ChatMode, SongRec } from '@/lib/types';
 const MODES: [ChatMode, string][] = [['calm', '🌊 Тайвшруулах'], ['motivate', '💪 Урам өгөх'], ['listen', '👂 Сонсох']];
 
 export default function ChatPage() {
-  const { supabase, profile, entries, updateProfile, openDialog, activeMood } = useApp();
+  const { supabase, profile, entries, updateProfile, openDialog, activeMood, experts } = useApp();
   const play = usePlay();
   const router = useRouter();
   const [msgs, setMsgs] = useState<ChatMessage[] | null>(null);
@@ -84,11 +84,27 @@ export default function ChatPage() {
       <div ref={box} className="flex flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain px-0.5 py-3" aria-live="polite">
         {msgs && [hello, ...msgs].map(m => {
           if (m.crisis) return <Crisis key={m.id} />;
-          const { text, actions } = m.role === 'assistant' ? splitActions(m.content) : { text: m.content, actions: [] };
+          const split = m.role === 'assistant' ? splitActions(m.content) : { text: m.content, actions: [], experts: [] };
+          // Хуучин хариултуудад текст дотор үлдсэн кодыг («partner») ч товч болгоно
+          const inline = m.role === 'assistant' ? extractInlineActions(split.text) : { text: split.text, actions: [] };
+          const text = inline.text, picks = split.experts;
+          const actions = [...new Set([...split.actions, ...inline.actions])].slice(0, 3);
+          const recs = picks.flatMap(id => experts.filter(e => e.id === id));
           return (
             <div key={m.id} className={cn('flex max-w-[88%] flex-col gap-1.5 desk:max-w-[65%]', m.role === 'user' ? 'self-end items-end' : 'self-start items-start')}>
               <div className={cn('rounded-[18px] px-3.5 py-2.5 whitespace-pre-wrap [overflow-wrap:anywhere]',
                 m.role === 'user' ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border bg-card')}>{text}</div>
+              {recs.map(e => (
+                <div key={e.id} className="flex w-full max-w-[360px] items-center gap-3 rounded-2xl border bg-card p-3">
+                  <span className="grid size-11 flex-none place-items-center rounded-full text-lg font-bold text-white" style={{ background: e.color }}>{e.name.split('. ').pop()?.[0]}</span>
+                  <div className="min-w-0 flex-1 text-sm">
+                    <b className="block truncate">{e.name}</b>
+                    <span className="block truncate text-muted-foreground">{e.title} · ★{e.rating}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{e.spec.join(', ')} · {e.price.toLocaleString('en-US')}₮</span>
+                  </div>
+                  <Button size="sm" className="flex-none" onClick={() => openDialog({ kind: 'book', expertId: e.id })}>Цаг захиалах</Button>
+                </div>
+              ))}
               {actions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {actions.map(a => (

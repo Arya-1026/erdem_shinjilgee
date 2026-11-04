@@ -103,8 +103,8 @@ src/
     server/           зөвхөн сервер: DAL, LLM, YouTube, Spotify, push, имэйл, шифрлэлт
   proxy.ts            session шинэчлэх, нэвтрээгүй бол /login руу шилжүүлэх
 supabase/
-  migrations/         0001 үндсэн, 0002 cron, 0003 сэтгэл зүйч + push + Spotify, 0004 YouTube + дууны санал
-  setup.sql           0001+0003+0004-ийг нэгтгэсэн файл (npm run db:bundle)
+  migrations/         0001 үндсэн, 0002 cron, 0003 сэтгэл зүйч + push + Spotify, 0004 YouTube + дууны санал, 0005 өнгө + ая + өдрийн дэмжлэг, 0006 нас + дуртай дуучид + todo, 0007 Data API эрх, 0008 төлөвлөгөөний цаг + эможи
+  setup.sql           0002-оос бусад бүх migration-ийг нэгтгэсэн файл (npm run db:bundle)
 public/sw.js          push мэдэгдлийн service worker
 ```
 
@@ -119,6 +119,14 @@ public/sw.js          push мэдэгдлийн service worker
 3. **Authentication → URL Configuration**:
    - Site URL: `http://127.0.0.1:3000`
    - Redirect URLs: `http://127.0.0.1:3000/auth/callback`, `https://<таны-апп>.vercel.app/auth/callback`
+4. **Нууц үгээ мартсан**: анхдагч байдлаар имэйлээр холбоос ирнэ (`/auth/callback` → `/reset-password`). Нэмэлт тохиргоо шаардлагагүй.
+   Холбоосын оронд **код** илгээх бол эхлээд **Authentication → Emails → SMTP Settings**-д Resend (эсвэл Gmail SMTP) тохируулна. Supabase загвар засахыг зөвхөн өөрийн SMTP-тэй үед зөвшөөрдөг. Дараа нь **Templates → Reset password**-д кодыг нэмнэ:
+   ```html
+   <h2>Нууц үг сэргээх</h2>
+   <p>Таны баталгаажуулах код: <b>{{ .Token }}</b></p>
+   <p>Эсвэл <a href="{{ .ConfirmationURL }}">энд дарж</a> сэргээнэ.</p>
+   ```
+   Supabase-ийн үндсэн имэйл сервер цагт хэдхэн имэйл, зөвхөн төслийн гишүүдийн хаяг руу илгээдэг. Жинхэнэ хэрэглэгчидтэй болбол SMTP заавал хэрэгтэй.
 
 ### 2. YouTube (хувийн Gmail-ээр, үнэгүй)
 
@@ -179,7 +187,7 @@ npm test                # unit тест
    select vault.create_secret('https://<таны-апп>.vercel.app', 'app_url');
    select vault.create_secret('<CRON_SECRET-ийн утга>', 'cron_secret');
    ```
-   Үүний дараа `0002_cron.sql`-ийг ажиллуулна.
+   Үүний дараа `0002_cron.sql`, `0010_purge_cron.sql`-ийг ажиллуулна. Сүүлийнх нь устгах хүсэлт гаргаад 30 хоног нэвтрээгүй бүртгэлийг өдөр бүр бүрмөсөн устгана.
 
 ### Сэтгэл зүйчийн эрх олгох
 
@@ -203,6 +211,7 @@ update experts set user_id = (select id from auth.users where email = 'psycholog
 | «Supabase-ийн түлхүүр тохируулаагүй байна» дэлгэц (`/setup`) | `.env.local`-д Supabase-ийн 3 түлхүүр алга. Бөглөөд `npm run dev`-ийг дахин эхлүүлнэ. |
 | «Өгөгдлийн сангийн хүснэгтүүд үүсээгүй байна» (`Could not find the table 'public.profiles'`) | Supabase SQL Editor дээр `supabase/setup.sql`-ийг бүтнээр нь ажиллуулаагүй. |
 | `Route "/home": Next.js encountered the unstable value Date.now()` | Засагдсан: `getAppData()` дотор `connection()` дуудаж байна. Хуучин `.next` хавтас үлдсэн бол устгаад дахин эхлүүлнэ. |
+| `permission denied for table ...` | Шинэ Supabase төсөл хүснэгтэд эрх автоматаар олгодоггүй. [0007_grants.sql](supabase/migrations/0007_grants.sql)-ийг SQL Editor дээр ажиллуулна. |
 | Spotify/YouTube холбоход `wrong-host` | Апп-ыг `localhost` биш `http://127.0.0.1:3000` хаягаар нээнэ. |
 
 ## Аюулгүй байдал

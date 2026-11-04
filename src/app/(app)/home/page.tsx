@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { Botgo3D } from '@/components/botgo-3d';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
 import { MoodFace } from '@/components/mood-face';
 import { useApp } from '@/components/providers/app-provider';
 import { RecTile } from '@/components/rec-tiles';
+import { SeasonalGreeting } from '@/components/seasonal';
 import { Segmented, Chip } from '@/components/segmented';
 import { Eq } from '@/components/player';
 import { usePlayer, ytTrack } from '@/components/providers/player-provider';
@@ -17,7 +19,7 @@ import { MOOD_CAP, MOODS, TAGS, WD, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
 import { cn } from '@/lib/utils';
 import type { MusicKind } from '@/lib/music-suggest';
-import type { Mood, RecType } from '@/lib/types';
+import type { Entry, Mood, RecType } from '@/lib/types';
 
 export default function HomePage() {
   const { profile, entries, activeMood } = useApp();
@@ -28,8 +30,14 @@ export default function HomePage() {
 
   return (
     <>
-      <p className="text-muted-foreground">{WD[d.getDay()]} гараг, {d.getMonth() + 1}-р сарын {d.getDate()}</p>
-      <h2 className="text-[1.4rem] font-bold">Сайн уу, {profile.name} 👋</h2>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-muted-foreground">{WD[d.getDay()]} гараг, {d.getMonth() + 1}-р сарын {d.getDate()}</p>
+          <h2 className="text-[1.4rem] font-bold">Сайн уу, {profile.name} 👋</h2>
+        </div>
+        <TodayStatus entries={todays} />
+      </div>
+      <SeasonalGreeting />
       <div className="mt-4 grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
         <CheckinCard moodIdx={moodIdx} setMoodIdx={setMoodIdx} />
         <div className="flex min-w-0 flex-col gap-4">
@@ -47,33 +55,58 @@ export default function HomePage() {
             <p className="text-sm">{p.text}</p>
           </section>
           <HomeRecs m={MOODS[moodIdx]} />
-          <section className="card-x">
-            <h3 className="mb-1 font-semibold">Өнөөдрийн бүртгэл</h3>
-            {todays.length ? todays.map(e => {
-              const m = moodById(e.mood);
-              return (
-                <div key={e.id} className="flex items-center gap-3 border-b py-2.5 last:border-0">
-                  <MoodFace m={m} className="size-9 text-[1.6rem]" />
-                  <div className="min-w-0 flex-1">
-                    <b>{m.label}</b> <span className="text-sm text-muted-foreground">· {e.entry_time} · эрч хүч {e.intensity}/5</span>
-                    {e.tags.length > 0 && <div className="text-sm text-muted-foreground">{e.tags.join(', ')}</div>}
-                    {e.note && <div className="text-sm">{e.note}</div>}
-                  </div>
-                </div>
-              );
-            }) : <p className="text-sm text-muted-foreground">Одоогоор бүртгэл алга. Дээрээс сэтгэл хөдлөлөө сонгоорой.</p>}
-          </section>
         </div>
       </div>
     </>
   );
 }
 
+/* Нэрний хажууд: өнөөдөр бүртгэсэн эсэх. Бүртгэсэн бол сүүлийнхийг, дарвал бүгдийг харуулна. */
+function TodayStatus({ entries }: { entries: Entry[] }) {
+  if (!entries.length) return (
+    <div className="flex items-center gap-2 rounded-2xl border border-dashed bg-card/60 px-3.5 py-2 text-sm">
+      <span className="text-lg">📝</span>
+      <span><b className="block">Өнөөдрийн бүртгэл хийгээгүй байна</b><span className="text-muted-foreground">Доороос сэтгэл хөдлөлөө сонгоорой</span></span>
+    </div>
+  );
+  // todaysEntries шинэ нь эхэндээ байдаг
+  const last = entries[0], m = moodById(last.mood);
+  return (
+    <details className="group relative max-w-full rounded-2xl border bg-card/80 px-3.5 py-2 text-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2.5">
+        <MoodFace m={m} className="size-8 text-[1.5rem]" />
+        <span className="min-w-0">
+          <span className="block text-xs text-muted-foreground">Өнөөдөр бүртгэсэн ✓{entries.length > 1 && ` · ${entries.length} удаа`}</span>
+          <b>{m.label}</b> <span className="text-muted-foreground">· {last.entry_time.slice(0, 5)} · эрч хүч {last.intensity}/5</span>
+        </span>
+        <span className="ml-1 text-muted-foreground transition group-open:rotate-180" aria-hidden>⌄</span>
+      </summary>
+      <div className="mt-2 border-t pt-1">
+        {entries.map(e => {
+          const em = moodById(e.mood);
+          return (
+            <div key={e.id} className="flex items-start gap-2.5 border-b py-2 last:border-0">
+              <MoodFace m={em} className="size-7 text-[1.3rem]" />
+              <div className="min-w-0 flex-1">
+                <b>{em.label}</b> <span className="text-muted-foreground">· {e.entry_time.slice(0, 5)} · эрч хүч {e.intensity}/5</span>
+                {e.tags.length > 0 && <div className="text-muted-foreground">{e.tags.join(', ')}</div>}
+                {e.note && <div className="[overflow-wrap:anywhere]">{e.note}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i: number) => void }) {
-  const { profile, updateProfile, addEntry, setLiveMood, setTint, openDialog } = useApp();
+  const { profile, updateProfile, addEntry, setTint, openDialog } = useApp();
   const [touched, setTouched] = useState(false);
   const [intensity, setIntensity] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [custom, setCustom] = useState('');
   const [sleep, setSleep] = useState(7);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -82,14 +115,21 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
   const onChange = useCallback((i: number, byUser: boolean) => {
     setMoodIdx(i);
     if (byUser) {
-      setLiveMood(MOODS[i].id);
       navigator.vibrate?.(8); // Android дээр бага зэрэг чичирнэ
       setTouched(true);
     }
-  }, [setMoodIdx, setLiveMood]);
+  }, [setMoodIdx]);
 
   // Хуудасны дэвсгэр сонгож буй mood-ийн өнгөөр зөөлөн будагдана
   useEffect(() => { setTint(m.color); }, [m.color, setTint]);
+
+  // Жагсаалтад байхгүй шалтгааныг өөрөө бичиж нэмнэ (жишээ нь «Шалгалт»)
+  function addCustom() {
+    const t = custom.trim().replace(/\s+/g, ' ');
+    if (!t) return;
+    setTags(s => (s.some(x => x.toLowerCase() === t.toLowerCase()) ? s : [...s, t]));
+    setCustom(''); setAdding(false);
+  }
 
   async function save() {
     setSaving(true);
@@ -110,13 +150,26 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
       {!touched && <p className="nudge-x m-0 text-center text-[.8rem] text-muted-foreground">👆 Хажуу тийш гүйлгээд сонгоорой →</p>}
       <MoodCarousel index={moodIdx} onChange={onChange} />
       <p key={m.id} className="fade-up mb-3.5 min-h-[1.5em] text-center font-semibold">{MOOD_CAP[m.id]}</p>
+      {/* Өнөөдрийн сэтгэл санаанд тохирсон 3D Ботгоо: хүрч, эргүүлж болно */}
+      <Botgo3D mood={m.id} className="mb-3.5 h-[320px]" />
 
       <Range id="int" label={<>Эрч хүч: <b>{intensity}</b> / 5</>} min={1} max={5} value={intensity} onChange={setIntensity} />
       <div className="mb-3.5">
         <div className="mb-1.5 text-sm font-semibold">Юутай холбоотой вэ?</div>
         <div className="flex flex-wrap gap-2">
           {TAGS.map(t => <Chip key={t} on={tags.includes(t)} onClick={() => setTags(s => (s.includes(t) ? s.filter(x => x !== t) : [...s, t]))}>{t}</Chip>)}
+          {tags.filter(t => !TAGS.includes(t)).map(t => <Chip key={t} on aria-label={`${t} хасах`} onClick={() => setTags(s => s.filter(x => x !== t))}>{t} ✕</Chip>)}
+          {!adding && <Chip onClick={() => setAdding(true)}>＋ Нэмэлт</Chip>}
         </div>
+        {adding && (
+          <form className="mt-2 flex gap-2" onSubmit={e => { e.preventDefault(); addCustom(); }}>
+            <input autoFocus aria-label="Нэмэлт шалтгаан" placeholder="Жишээ нь: Шалгалт" value={custom} maxLength={30}
+              onChange={e => setCustom(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setCustom(''); } }}
+              className="min-h-10 min-w-0 flex-1 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none" />
+            <Button type="submit" size="xl" variant="secondary" className="h-10 flex-none" disabled={!custom.trim()}>Нэмэх</Button>
+            <Button type="button" size="xl" variant="ghost" className="h-10 flex-none" onClick={() => { setAdding(false); setCustom(''); }}>Болих</Button>
+          </form>
+        )}
       </div>
       <Range id="sl" label={<>Өнгөрсөн шөнө унтсан: <b>{sleep}</b> цаг</>} min={0} max={12} step={0.5} value={sleep} onChange={setSleep} />
       <div className="mb-3.5 flex flex-col gap-1.5">
