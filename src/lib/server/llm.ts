@@ -45,7 +45,8 @@ async function callProvider(p: (typeof PROVIDERS)[number], model: string, messag
       });
       if (!res.ok) { console.error(`[llm] ${p.name}/${model} ${res.status}: ${(await res.text()).slice(0, 300)}`); return null; }
       const json = await res.json();
-      const text: string | undefined = json.choices?.[0]?.message?.content?.trim();
+      // Qwen бодлоо <think> дотор бичдэг
+      const text: string | undefined = json.choices?.[0]?.message?.content?.replace(/<think>[\s\S]*?<\/think>/, '').trim();
       return text ? { text, provider: `${p.name}:${model}` } : null;
     } catch (e) {
       console.error(`[llm] ${p.name}/${model} алдаа:`, e);
@@ -60,8 +61,12 @@ async function callProvider(p: (typeof PROVIDERS)[number], model: string, messag
 export async function llmReply(messages: Msg[]) {
   const groq = PROVIDERS[0];
   const big = process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b';
-  const opts: Opts = { temperature: 0.8, maxTokens: 1400, timeoutMs: 30_000, reasoning: 'medium' };
-  return (await callProvider(groq, big, messages, opts)) ?? llmChat(messages, opts);
+  // Groq-ийн үнэгүй хязгаар минутад 8000 токен бөгөөд max_tokens ч тооцогддог тул бага байлгана.
+  // Хязгаар тулвал монгол хэл нь муу 20b руу шууд унахгүй, эхлээд Qwen-ийг оролдоно.
+  const opts: Opts = { temperature: 0.6, maxTokens: 900, timeoutMs: 30_000, reasoning: 'low' };
+  return (await callProvider(groq, big, messages, opts))
+    ?? (await callProvider({ ...PROVIDERS[1], name: 'groq-qwen', url: groq.url, key: groq.key }, 'qwen/qwen3.8-27b', messages, { ...opts, maxTokens: 1500 }))
+    ?? llmChat(messages, opts);
 }
 
 /** Монгол хэлээр бичих шаардлагатай ажил: том загвар → бүтэхгүй бол ердийн загвар */

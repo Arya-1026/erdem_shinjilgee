@@ -25,7 +25,8 @@ export async function POST(req: Request) {
   ]);
   const profile = profileRes.data ?? { name: '', hobbies: [], chat_mode: 'calm' };
   const entries = (entriesRes.data ?? []).map(normalizeEntry).reverse();
-  const history = (historyRes.data ?? []).reverse().filter(m => !m.crisis);
+  // Сүүлийн хэдэн мессеж л: олон хуучин хариулт өгвөл загвар тэр хэв маягийг дууриаж давтагддаг
+  const history = (historyRes.data ?? []).reverse().filter(m => !m.crisis).slice(-6);
   const mode = profile.chat_mode as ChatMode;
 
   await supabase.from('chat_messages').insert({ role: 'user', content: message });
