@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { pickGenres } from '@/lib/mn-songs';
 import type { MusicKind } from '@/lib/music-suggest';
 import { spotifyTrackUrl } from '@/lib/spotify-parse';
 import { cn } from '@/lib/utils';
-import type { Mood, SongRec } from '@/lib/types';
+import type { Mood, SongRec, SpotifyTrackRow } from '@/lib/types';
 import { Eq } from './player';
 import { useApp } from './providers/app-provider';
 import { songTrack, spTrack, usePlayer, type Track } from './providers/player-provider';
@@ -113,7 +113,7 @@ export function ForYou({ mood }: { mood: Mood }) {
   const taste = [...profile.fav_artists.slice(0, 3), ...pickGenres(profile.hobbies).slice(0, 3).map(g => tr(g))];
   const basis = profile.spotify_connected
     ? tr('Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан')
-    : tr('Таны хобби, үнэлгээнд тулгуурласан. Spotify-аа холбовол илүү оновчтой болно');
+    : tr('Таны хобби, үнэлгээнд тулгуурласан');
   const isLiked = (r: SongRec) => likedSongs.some(x => x.video_id === r.video_id);
   const like = (r: SongRec) => {
     toast(isLiked(r) ? tr('Таалагдсан дуунаас хасагдлаа') : tr('Таалагдсан дуунд хадгалагдлаа 💚'));
@@ -188,7 +188,7 @@ export function LikedSongs({ mood }: { mood: Mood }) {
 const META = {
   name: 'Spotify', icon: '🎧', color: 'bg-spotify hover:bg-spotify/85',
   pitch: 'Spotify-аа холбоход таны playlist, liked songs-ийг сэтгэл хөдлөлөөр ангилж, тухайн үед тохирохыг нь санал болгоно. Premium бол апп дотроо бүтэн дуу тоглоно.',
-  note: 'Premium бол апп дотроо бүтэн тоглоно. Бусад үед embed-ээр тоглох ба 30 секундээр хязгаарлагдаж болно, бүтэн сонсохын тулд «Spotify-д нээх»-ийг дарна уу.',
+  note: 'Апп дотор бүтэн дуу зөвхөн Premium бүртгэлээ холбосон үед тоглоно. Бусад үед 30 орчим секундын хэсэг тоглох тул бүтэн сонсохын тулд «Spotify-д нээх»-ийг дарна уу.',
 };
 
 /* ---------- Профайл: Spotify бүртгэл холбох, салгах ---------- */
@@ -225,6 +225,96 @@ export function SpotifyAccount() {
   );
 }
 
+/* ---------- Spotify-д нэвтрэлгүй өөрийн сан: дууны холбоосуудаа буулгаж оруулна ---------- */
+function PlaylistImport({ mood, rows }: { mood: Mood; rows: SpotifyTrackRow[] | null }) {
+  const tr = useT();
+  const { supabase, libraryVersion, bumpLibrary, musicConnect } = useApp();
+  const play = usePlay();
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    supabase.from('spotify_tracks').select('track_id', { count: 'exact', head: true })
+      .then(({ count: n }) => { if (alive) setCount(n ?? 0); });
+    return () => { alive = false; };
+  }, [supabase, libraryVersion]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const t = toast.loading(tr('Дуунуудыг уншиж, сэтгэл хөдлөлөөр ангилж байна…'));
+    try {
+      const res = await fetch('/api/music/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+      const j: { added?: number; failed?: number; skipped?: number; error?: string } = await res.json().catch(() => ({ error: 'failed' }));
+      if (!res.ok) {
+        const message = j.error === 'not-track-links' ? tr('Энэ нь playlist эсвэл цомгийн холбоос байна. Playlist дотроос дуунуудаа сонгож хуулна уу.')
+          : j.error === 'no-tracks' ? tr('Дууны холбоос олдсонгүй. Spotify-аас дуунуудаа хуулаад дахин буулгана уу.')
+          : tr('Дуунуудыг оруулж чадсангүй. Дахин оролдоно уу.');
+        return void toast.error(message, { id: t });
+      }
+      if (j.added) toast.success(tr('{0} дуу нэмэгдэж, сэтгэл хөдлөлөөр ангилагдлаа 🎧', j.added), { id: t });
+      else toast(j.skipped ? tr('Таны сан дүүрсэн байна. Эхлээд цэвэрлэнэ үү.') : tr('Эдгээр дуу таны санд аль хэдийн байна'), { id: t });
+      if (j.failed || j.skipped) toast(tr('Уншиж чадаагүй {0}, оруулаагүй {1} дуу байна. Дахин буулгаж нэмж болно.', j.failed ?? 0, j.skipped ?? 0));
+      setText(''); setOpen(false);
+      bumpLibrary();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clear() {
+    if (!confirm(tr('Оруулсан бүх дуугаа сангаас устгах уу?'))) return;
+    const res = await fetch('/api/music/import', { method: 'DELETE' });
+    if (!res.ok) return void toast.error(tr('Цэвэрлэж чадсангүй'));
+    toast(tr('Сан цэвэрлэгдлээ'));
+    bumpLibrary();
+  }
+
+  const tracks = (rows ?? []).map(r => spTrack(r, mood.id));
+  const hasLibrary = Boolean(count);
+  return (
+    <section className="card-x" aria-label={tr('Миний сан')}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <b>{tr('🎧 Миний сан')}{hasLibrary && <span className="ml-1.5 text-sm font-normal text-muted-foreground">{tr('{0} дуу', count)}</span>}</b>
+        {hasLibrary && (
+          <div className="flex gap-3 text-sm">
+            <button className="font-semibold text-primary" aria-expanded={open} onClick={() => setOpen(!open)}>{tr('＋ Дуу нэмэх')}</button>
+            <button className="text-muted-foreground" onClick={() => void clear()}>{tr('Цэвэрлэх')}</button>
+          </div>
+        )}
+      </div>
+      {hasLibrary && (rows === null ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{tr('Ачаалж байна…')}</p>
+      ) : !tracks.length ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{tr('Таны сангаас «{0}» мэдрэмжид тохирох дуу олдсонгүй.', tr(mood.label))}</p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm">{tr('«{0}» үед таны сангаас {1} дуу:', tr(mood.label), tracks.length)}</p>
+          {tracks.map((t, i) => <SongRow key={t.id} t={t} onPlay={() => play.list(tracks, i)} />)}
+        </>
+      ))}
+      {(count === 0 || open) && (
+        <form className="mt-2" onSubmit={e => void submit(e)}>
+          <p className="text-sm">{tr('Playlist-ээ оруулбал дуунуудыг тань сэтгэл хөдлөлөөр ангилж, тухайн үед тохирохыг нь гаргана. Энд Spotify бүртгэлээр нэвтрэх шаардлагагүй.')}</p>
+          <ol className="my-2 list-decimal pl-5 text-sm text-muted-foreground">
+            <li>{tr('Spotify-ийн компьютерийн апп дээр playlist-ээ нээгээд нэг дууг дарна.')}</li>
+            <li>{tr('Ctrl+A, дараа нь Ctrl+C дарна (Mac: ⌘A, ⌘C).')}</li>
+            <li>{tr('Доорх хэсэгт буулгаж (Ctrl+V), «Сандаа нэмэх»-ийг дарна.')}</li>
+          </ol>
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={4} maxLength={100_000} aria-label={tr('Дууны холбоосууд')} placeholder="https://open.spotify.com/track/…"
+            className="w-full rounded-xl border-[1.5px] bg-background p-3 text-sm focus:border-primary focus:outline-none" />
+          <Button type="submit" size="xl" className="mt-2 w-full" disabled={busy || !text.trim()}>{busy ? tr('Оруулж байна…') : tr('Сандаа нэмэх')}</Button>
+        </form>
+      )}
+      <p className="mt-2 text-xs text-muted-foreground">{tr(META.note)}</p>
+      <button className="mt-2 text-xs font-semibold text-primary" onClick={() => musicConnect('spotify')}>{tr('Апп-ын жагсаалтад бүртгэлтэй бол Spotify холбох')}</button>
+    </section>
+  );
+}
+
 /* ---------- Хэрэглэгчийн өөрийн Spotify сан ---------- */
 export function MusicLibrary({ mood }: { mood: Mood }) {
   const tr = useT();
@@ -237,13 +327,7 @@ export function MusicLibrary({ mood }: { mood: Mood }) {
   if (!app.music.spotify) return null;
 
   const syncing = app.musicSyncing === provider;
-  if (!connected) return (
-    <section className="card-x">
-      <p className="mb-2 text-sm">{tr(meta.pitch)}</p>
-      <Button size="xl" className={meta.color} onClick={() => app.musicConnect(provider)}>{tr('{0} {1} холбох', meta.icon, meta.name)}</Button>
-      <p className="mt-2 text-xs text-muted-foreground">{tr(meta.note)}</p>
-    </section>
-  );
+  if (!connected) return <PlaylistImport mood={mood} rows={spRows} />;
 
   const tracks: Track[] | null = spRows === null ? null : spRows.map(r => spTrack(r, mood.id));
 

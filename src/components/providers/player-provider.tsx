@@ -3,7 +3,8 @@
 import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { hashStr, startMusic, stopMusic } from '@/lib/music';
-import { embed, embedPlay, initSdk, PremiumRequired, sdk, sdkPlay, type SpState } from '@/lib/spotify-playback';
+import { spotifyTrackUrl } from '@/lib/spotify-parse';
+import { embed, embedPlay, initSdk, playsViaEmbed, PremiumRequired, sdk, sdkPlay, type SpState } from '@/lib/spotify-playback';
 import { cn } from '@/lib/utils';
 import type { MoodId } from '@/lib/types';
 import { useApp } from './app-provider';
@@ -31,8 +32,6 @@ export const spTrack = (r: SpotifyRow, mood: MoodId, id = 'sp:' + r.track_id): T
 export type SongRowLike = { video_id: string; title: string; artist: string; thumbnail: string | null; duration_s: number };
 export const songTrack = (r: SongRowLike, mood: MoodId): Track =>
   ({ id: 'sp:' + r.video_id, title: r.title, artist: r.artist, mood, dur: r.duration_s, source: 'spotify', uri: 'spotify:track:' + r.video_id, image: r.thumbnail });
-
-type SpMode = 'sdk' | 'embed';
 
 type PlayerCtx = {
   queue: Track[];
@@ -76,7 +75,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [full, setFull] = useState(false);
-  const [spMode, setSpMode] = useState<SpMode>(() => (typeof localStorage !== 'undefined' && localStorage.getItem(MODE_KEY) === 'embed' ? 'embed' : 'sdk'));
+  const [spMode, setSpMode] = useState<'sdk' | 'embed'>(() => (typeof localStorage !== 'undefined' && localStorage.getItem(MODE_KEY) === 'embed' ? 'embed' : 'sdk'));
 
   const live = useRef({ queue, idx, playing, spMode });
   useEffect(() => { live.current = { queue, idx, playing, spMode }; });
@@ -108,24 +107,27 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return host.current!;
   }, []);
 
+  const viaEmbedNow = useCallback(() => playsViaEmbed(live.current.spMode, connected.current), []);
+
   const pauseExternal = useCallback((t: Track | undefined) => {
-    if (t?.source === 'spotify') { if (live.current.spMode === 'sdk') sdk.pause(); else embed.pause(); }
-  }, []);
+    if (t?.source === 'spotify') { if (viaEmbedNow()) embed.pause(); else sdk.pause(); }
+  }, [viaEmbedNow]);
 
   const playSpotify = useCallback((t: Track, at: number) => {
-    sp.current = { position: at, duration: t.dur, paused: false, at: performance.now() };
+    // Embed тоглож эхэлснээ playback_update-ээр мэдэгдэнэ: дуу гараагүй байхад явцын мөр гүйхгүй
+    sp.current = { position: at, duration: t.dur, paused: viaEmbedNow(), at: performance.now() };
     const viaEmbed = () => embedPlay(hostIn(embedWrap, embedHost), t.uri!, at, onSpState).catch(() => toast.error(tr('Spotify тоглуулагч ачаалагдсангүй')));
-    // Spotify холбоогүй хэрэглэгч SDK-гийн токенгүй: сонголтоо хадгалахгүй, дараа нь холбовол бүтэн тоглоно
-    if (live.current.spMode === 'embed' || !connected.current) return void viaEmbed();
+    if (viaEmbedNow()) return void viaEmbed();
     initSdk(onSpState).then(() => sdkPlay(t.uri!, at)).catch(e => {
       // Premium биш эсвэл браузер SDK дэмжихгүй → Embed руу шилжиж, дараа нь шууд Embed ашиглана
       localStorage.setItem(MODE_KEY, 'embed');
       live.current.spMode = 'embed';
       setSpMode('embed');
+      sp.current = { ...sp.current, paused: true, at: performance.now() };
       if (e instanceof PremiumRequired) toast(tr('Spotify Premium биш тул Spotify embed-ээр тоглуулж байна'));
       void viaEmbed();
     });
-  }, [onSpState, hostIn, tr]);
+  }, [onSpState, hostIn, tr, viaEmbedNow]);
 
   const startAt = useCallback((q: Track[], i: number, at: number) => {
     const t = q[i]; if (!t) return;
@@ -155,9 +157,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
     if (t.source === 'synth') return startAt(live.current.queue, live.current.idx, synth.current.pos);
     startedAt.current = performance.now();
-    sp.current = { ...sp.current, paused: false, at: performance.now() }; if (live.current.spMode === 'sdk') sdk.resume(); else embed.resume();
+    sp.current = { ...sp.current, paused: false, at: performance.now() }; if (viaEmbedNow()) embed.resume(); else sdk.resume();
     live.current.playing = true; setPlaying(true);
-  }, [cur, elapsed, pauseExternal, startAt]);
+  }, [cur, elapsed, pauseExternal, startAt, viaEmbedNow]);
 
   const skip = useCallback((d: number) => {
     const { queue: q, idx: i } = live.current; if (!q.length) return;
@@ -171,10 +173,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const t = cur(); if (!t) return;
     if (t.source === 'spotify') {
       sp.current = { ...sp.current, position: sec, at: performance.now() };
-      if (live.current.spMode === 'sdk') sdk.seek(sec); else embed.seek(sec);
+      if (viaEmbedNow()) embed.seek(sec); else sdk.seek(sec);
     } else if (live.current.playing) startAt(live.current.queue, live.current.idx, sec);
     else synth.current.pos = sec;
-  }, [cur, startAt]);
+  }, [cur, startAt, viaEmbedNow]);
 
   const stop = useCallback(() => {
     stopMusic(); pauseExternal(cur());
@@ -213,7 +215,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [profile.spotify_connected, spMode, onSpState]);
 
   const current = queue[idx];
-  const usesSpEmbed = current?.source === 'spotify' && spMode === 'embed';
+  // Embed-ийг дэлгэцээс гадна нуувал ачаалагдахгүй тул дуу гарахгүй: тоглох үед заавал харагдана
+  const usesSpEmbed = current?.source === 'spotify' && playsViaEmbed(spMode, profile.spotify_connected);
+  const nowUrl = spotifyTrackUrl(current?.uri);
 
   // Доод цэсний дээр тоглуулагч гарахад хуудасны доод зайг нэмнэ
   useEffect(() => {
@@ -236,7 +240,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           <button className="grid size-9 place-items-center text-white" aria-label={tr('Дараах')} onClick={() => skip(1)}>⏭</button>
           <button className="grid size-9 place-items-center text-white" aria-label={tr('Дараалал')} onClick={() => setFull(!full)}>☰</button>
         </div>
-        <button className="grid size-9 place-items-center self-start text-white/70" aria-label={tr('Хаах')} onClick={stop}>✕</button>
+        <div className="flex flex-col">
+          <button className="grid size-9 place-items-center text-white/70" aria-label={tr('Хаах')} onClick={stop}>✕</button>
+          {nowUrl && <a href={nowUrl} target="_blank" rel="noopener noreferrer" className="grid size-9 place-items-center text-white" aria-label={tr('Spotify-д бүтэн сонсох ↗')} title={tr('Spotify-д бүтэн сонсох ↗')}>↗</a>}
+        </div>
       </div>
     </Ctx>
   );

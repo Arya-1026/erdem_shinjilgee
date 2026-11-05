@@ -5,7 +5,35 @@ import { interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './
 import { balanceByGoal, MOOD_GOALS, parsePicks, parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
 import { CATEGORY_GENRES, GENRE_QUERY, tasteGenres, tasteRank, tasteReason } from './music-taste';
 import { GENRE_CAT, HOBBIES } from './data';
-import { songKey, spotifyTrackUrl } from './spotify-parse';
+import { oembedTrack, parseTrackIds, songKey, spotifyTrackUrl } from './spotify-parse';
+import { playsViaEmbed } from './spotify-playback';
+
+describe('Spotify тоглуулах горим', () => {
+  it('холбоогүй хэрэглэгч SDK сонголттой ч Embed-ээр тоглоно', () => {
+    expect(playsViaEmbed('sdk', false)).toBe(true);
+    expect(playsViaEmbed('embed', true)).toBe(true);
+    expect(playsViaEmbed('sdk', true)).toBe(false);
+  });
+});
+
+describe('дууны холбоос оруулах', () => {
+  const A = '3kZ6bCM4JaTGApkchBTrCP', B = '0gplL1WMoJ6iYaPgMCL0gX';
+  it('хуулсан холбоосуудаас id гаргаж, давхардлыг хасна', () => {
+    const text = `https://open.spotify.com/track/${A}\r\nhttps://open.spotify.com/intl-de/track/${B}?si=abc\nspotify:track:${A}\nюу ч биш`;
+    expect(parseTrackIds(text)).toEqual({ ids: [A, B], otherLinks: false });
+  });
+  it('playlist холбоосыг таньж, буруу id-г авахгүй', () => {
+    expect(parseTrackIds('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M')).toEqual({ ids: [], otherLinks: true });
+    expect(parseTrackIds(`https://open.spotify.com/track/short https://open.spotify.com/track/${A}x`)).toEqual({ ids: [], otherLinks: false });
+    expect(parseTrackIds(`https://evil.example/track/${A}`).ids).toEqual([]);
+  });
+  it('oEmbed хариуг дуу болгоно', () => {
+    expect(oembedTrack(A, { title: ' Өвөлжөө ', thumbnail_url: 'https://i.scdn.co/x' })).toEqual({ id: A, name: 'Өвөлжөө', artists: '', image: 'https://i.scdn.co/x', uri: `spotify:track:${A}`, duration_ms: 0 });
+    expect(oembedTrack(A, { title: 'X', thumbnail_url: 'javascript:alert(1)' })?.image).toBeNull();
+    expect(oembedTrack(A, { thumbnail_url: 'https://x' })).toBeNull();
+    expect(oembedTrack(A, null)).toBeNull();
+  });
+});
 
 describe('Spotify холбоос', () => {
   it('track uri-г вэб холбоос болгоно', () => {

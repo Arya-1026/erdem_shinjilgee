@@ -46,8 +46,9 @@ type AppCtx = Omit<AppData, 'restored'> & {
   musicSync: (p: MusicProvider) => Promise<void>;
   musicDisconnect: (p: MusicProvider) => Promise<void>;
   musicSyncing: MusicProvider | null;
-  /** Синк, салгах бүрт нэмэгдэнэ → хэрэглэгчийн сангийн дууг дахин татна */
+  /** Синк, салгах, холбоосоор оруулах бүрт нэмэгдэнэ → хэрэглэгчийн сангийн дууг дахин татна */
   libraryVersion: number;
+  bumpLibrary: () => void;
   dialog: DialogState;
   openDialog: (d: DialogState) => void;
   /** Хөвөгч чатын самбар */
@@ -86,6 +87,7 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [todos, setTodos] = useState(initial.todos);
   const [musicSyncing, setSyncing] = useState<MusicProvider | null>(null);
   const [libraryVersion, setLibraryVersion] = useState(0);
+  const bumpLibrary = useCallback(() => setLibraryVersion(v => v + 1), []);
 
   // Хэрэглэгчийн сонгосон өнгө (өөр төхөөрөмж дээр сонгосон байж болно → localStorage-тай тааруулна)
   useEffect(() => { applyPalette(isPaletteId(profile.theme) ? profile.theme : DEFAULT_PALETTE); }, [profile.theme]);
@@ -203,11 +205,11 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, spotify, likedSongs, todos, setTodos, toggleLike,
     activeMood: lastMood(entries),
     tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion,
+    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, bumpLibrary,
     dialog, openDialog, chatOpen, setChatOpen,
   }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, likedSongs, todos, toggleLike,
     tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog, chatOpen]);
+    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, bumpLibrary, dialog, chatOpen]);
 
   return <Ctx value={value}>{children}</Ctx>;
 }
