@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActionMenu, type MenuItem } from '@/components/action-menu';
+import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-actions';
 import { FriendsSheet, type SheetTab } from '@/components/friends-tile';
 import { PersonAvatar } from '@/components/person-avatar';
@@ -12,16 +13,16 @@ import { useApp } from '@/components/providers/app-provider';
 import { Chip } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
 import { moodById } from '@/lib/data';
-import { filterChats, isActive, shortAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow } from '@/lib/social';
+import { filterChats, isActive, shortAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow, type SearchRow } from '@/lib/social';
 import { cn } from '@/lib/utils';
 
 const preview = (s: string | null) => (s && s.length > 60 ? s.slice(0, 60) + '…' : s);
 const firstName = (n: string) => n.split(/[\s.]+/).filter(Boolean).pop() ?? n;
 
 /* Messenger шиг чатын жагсаалт: хайлт, идэвхтэй найзуудын эгнээ, яриа (сүүлийн зурвас, хугацаа, уншаагүй).
-   Найз нэмэх, хүсэлт, блок нь профайлын найзын цонхонд (FriendsSheet). */
+   Хайлт нь хүн ч олж нэмнэ. Хүсэлт, блок нь найзын цонхонд (FriendsSheet). */
 export default function ChatsPage() {
-  const { supabase } = useApp();
+  const { supabase, profile } = useApp();
   const params = useSearchParams();
   // Хуучин холбоос (/friends?tab=requests) ирвэл цонхыг тэр табаар нээнэ
   const initial = params.get('tab');
@@ -49,6 +50,24 @@ export default function ChatsPage() {
     return () => { clearTimeout(t); clearInterval(id); };
   }, [load]);
 
+  // Хайлт Messenger шиг хүн ч олно: бичиж зогсоход найз биш хүмүүсийг хайна
+  const [people, setPeople] = useState<SearchRow[] | null>(null);
+  useEffect(() => {
+    const term = q.trim();
+    const t = setTimeout(() => {
+      if (term.length < 2) return setPeople(null);
+      social.search(supabase, term).then(r => setPeople(r.filter(x => x.relation !== 'friend'))).catch(() => setPeople([]));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [q, supabase]);
+  const add = async (p: SearchRow) => {
+    const { data, error } = await supabase.rpc('send_friend_request', { target: p.id });
+    if (error) return void toast.error(socialError(error));
+    toast(data === 'friend' ? `${p.name} найз боллоо 🎉` : 'Найзын хүсэлт илгээлээ 📨');
+    setPeople(r => r?.map(x => (x.id === p.id ? { ...x, relation: data as SearchRow['relation'] } : x)) ?? null);
+    void load();
+  };
+
   const friendActions = useFriendActions(() => void load());
   const menu = (p: FriendRow, isFriend: boolean): MenuItem[] => friendActions(p, { isFriend, chat: true });
 
@@ -68,9 +87,16 @@ export default function ChatsPage() {
       <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="🔍 Хайх" aria-label="Чат хайх"
         className="min-h-11 w-full rounded-full border-0 bg-secondary px-4 focus:ring-2 focus:ring-primary focus:outline-none" />
 
-      {/* Идэвхтэй найзууд (Messenger-ийн дээд эгнээ) */}
-      {strip.length > 0 && (
+      {/* Идэвхтэй найзууд (Messenger-ийн дээд эгнээ): эхэнд өөрөө, дараа нь найзууд */}
+      {!q.trim() && (
         <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 no-scrollbar" aria-label="Найзууд">
+          <Link href="/profile#social" className="flex w-16 flex-none flex-col items-center gap-1 text-center">
+            <span className="relative">
+              <Avatar className="size-14 text-xl" />
+              {profile.show_active && <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Та идэвхтэй" />}
+            </span>
+            <span className="w-full truncate text-xs text-muted-foreground">Та</span>
+          </Link>
           {strip.map(f => {
             const on = isActive(f.active_at, now);
             return (
@@ -93,18 +119,15 @@ export default function ChatsPage() {
         <Chip on={filter === 'unread'} onClick={() => setFilter('unread')}>Уншаагүй{unreadN ? ` ${unreadN}` : ''}</Chip>
         <Chip on={filter === 'archived'} onClick={() => setFilter('archived')}>Архив{archivedN ? ` ${archivedN}` : ''}</Chip>
         <Chip onClick={() => setSheet('requests')} className={cn(incoming > 0 && 'border-primary')}>Хүсэлт{incoming ? ` ${incoming}` : ''}</Chip>
-        <Chip onClick={() => setSheet('friends')}>＋ Найз нэмэх</Chip>
       </div>
 
       <section className="flex flex-col">
         {friends === null ? <p className="py-10 text-center text-sm text-muted-foreground">Ачаалж байна…</p>
-          : !all.length ? (
-            <div className="py-10 text-center">
-              <p className="mb-3 text-sm text-muted-foreground">Одоогоор чат алга. Найзаа нэмээд бичиж эхлээрэй.</p>
-              <Button size="xl" onClick={() => setSheet('friends')}>＋ Найз нэмэх</Button>
-            </div>
-          ) : !list.length ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">{filter === 'archived' ? 'Архивласан чат алга.' : filter === 'unread' ? 'Уншаагүй зурвас алга 🎉' : 'Олдсонгүй.'}</p>
+          : !list.length ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {q.trim() ? (people?.length ? '' : 'Чат олдсонгүй.') : filter === 'archived' ? 'Архивласан чат алга.' : filter === 'unread' ? 'Уншаагүй зурвас алга 🎉'
+                : 'Одоогоор чат алга. Дээрх хайлтаар найзаа нэр, @нэр эсвэл ID-аар хайж нэмээрэй.'}
+            </p>
           ) : list.map(c => {
             const on = isActive(c.active_at, now), bold = c.unread > 0;
             return (
@@ -130,6 +153,28 @@ export default function ChatsPage() {
             );
           })}
       </section>
+
+      {/* Хайлтаар олдсон найз биш хүмүүс: шууд нэмнэ */}
+      {people && people.length > 0 && (
+        <section className="flex flex-col">
+          <h3 className="px-2 pb-1 text-sm font-semibold text-muted-foreground">Хүмүүс</h3>
+          {people.map(p => (
+            <div key={p.id} className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-secondary/60">
+              <Link href={`/friends/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <PersonAvatar name={p.name} avatar={p.avatar} className="size-14 text-xl" />
+                <span className="min-w-0">
+                  <b className="block truncate font-medium">{p.name}</b>
+                  {p.handle && <span className="block truncate text-sm text-muted-foreground">@{p.handle}</span>}
+                </span>
+              </Link>
+              {p.relation === 'none' ? <Button size="sm" className="h-9 px-4" onClick={() => void add(p)}>Нэмэх</Button>
+                : p.relation === 'incoming' ? <Button size="sm" className="h-9 px-4" onClick={() => void add(p)}>Зөвшөөрөх</Button>
+                : <span className="text-sm text-muted-foreground">Хүсэлт илгээсэн</span>}
+            </div>
+          ))}
+        </section>
+      )}
+      {q.trim().length >= 2 && people && !people.length && !list.length && <p className="text-center text-sm text-muted-foreground">Хүн олдсонгүй. Нууц профайлтай хүнийг яг @нэр эсвэл ID-аар нь хайна.</p>}
 
       <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => { if (!o) { setSheet(null); void load(); } }} />
     </div>
