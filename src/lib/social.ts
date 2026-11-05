@@ -56,7 +56,8 @@ export const social = {
   otherChats: (db: Db) => rows<ChatRow>(db.rpc('other_chats')),
   requests: (db: Db) => rows<RequestRow>(db.rpc('friend_requests')),
   blocked: (db: Db) => rows<Person>(db.rpc('blocked_users')),
-  search: (db: Db, q: string) => rows<SearchRow>(db.rpc('search_users', { q })),
+  // «#c4261898» гэж ID-аа бичвэл ч олно
+  search: (db: Db, q: string) => rows<SearchRow>(db.rpc('search_users', { q: q.trim().replace(/^#/, '') })),
   card: async (db: Db, target: string) => (await rows<UserCard>(db.rpc('user_card', { target })))[0] ?? null,
   userFriends: (db: Db, target: string) => rows<Person>(db.rpc('user_friends', { target })),
   messages: (db: Db, me: string, other: string) => rows<Message>(db.from('messages').select('id,sender,recipient,body,created_at,read_at')

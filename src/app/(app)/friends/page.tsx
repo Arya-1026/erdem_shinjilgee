@@ -126,7 +126,7 @@ export default function ChatsPage() {
           : !list.length ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {q.trim() ? (people?.length ? '' : 'Чат олдсонгүй.') : filter === 'archived' ? 'Архивласан чат алга.' : filter === 'unread' ? 'Уншаагүй зурвас алга 🎉'
-                : 'Одоогоор чат алга. Дээрх хайлтаар найзаа нэр, @нэр эсвэл ID-аар хайж нэмээрэй.'}
+                : 'Одоогоор чат алга. Дээрх хайлтаар найзаа нэр эсвэл ID-аар (жишээ нь #c4261898) хайж нэмээрэй.'}
             </p>
           ) : list.map(c => {
             const on = isActive(c.active_at, now), bold = c.unread > 0;
@@ -174,7 +174,7 @@ export default function ChatsPage() {
           ))}
         </section>
       )}
-      {q.trim().length >= 2 && people && !people.length && !list.length && <p className="text-center text-sm text-muted-foreground">Хүн олдсонгүй. Нууц профайлтай хүнийг яг @нэр эсвэл ID-аар нь хайна.</p>}
+      {q.trim().length >= 2 && people && !people.length && !list.length && <p className="text-center text-sm text-muted-foreground">Хүн олдсонгүй. Нууц профайлтай хүнийг ID-аар нь хайна.</p>}
 
       <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => { if (!o) { setSheet(null); void load(); } }} />
     </div>

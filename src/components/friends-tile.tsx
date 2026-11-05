@@ -79,7 +79,7 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends' }: {
             ['requests', `Хүсэлт${incoming.length ? ` ${incoming.length}` : ''}`],
             ['blocked', `Блок${blocked.length ? ` ${blocked.length}` : ''}`],
           ]} />
-          <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={tab === 'friends' ? '🔍 Хайх: нэр, @нэр, ID' : '🔍 Хайх'} aria-label="Хайх"
+          <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={tab === 'friends' ? '🔍 Хайх: нэр эсвэл ID' : '🔍 Хайх'} aria-label="Хайх"
             className="min-h-10 w-full rounded-xl border-0 bg-secondary px-3.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
         </div>
 
@@ -93,7 +93,7 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends' }: {
                   <ActionMenu items={actions(f, { isFriend: true })} label={`${f.name}: үйлдэл`} />
                 </Row>
               ))}
-              {!friends.filter(match).length && !t && <Empty>Одоогоор найз алга. Дээр нэр, @нэр эсвэл ID бичиж хайгаарай.</Empty>}
+              {!friends.filter(match).length && !t && <Empty>Одоогоор найз алга. Дээр нэр эсвэл ID бичиж хайгаарай.</Empty>}
               {found && found.length > 0 && <h3 className="mt-3 mb-1 text-xs font-semibold text-muted-foreground">Бусад хүмүүс</h3>}
               {found?.map(p => (
                 <Row key={p.id} p={p} href={`/friends/${p.id}`} onGo={close} title={p.name} sub={p.handle ? `@${p.handle}` : ''}>

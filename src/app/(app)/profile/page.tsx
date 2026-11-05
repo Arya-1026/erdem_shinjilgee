@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
-import { FriendsSheet, FriendsTile, type SheetTab } from '@/components/friends-tile';
+import { FriendsTile } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
 import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
-import { AUDIENCE, cleanHandle, HANDLE_RE, shortId, social, type SocialCounts } from '@/lib/social';
+import { AUDIENCE, shortId } from '@/lib/social';
 import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -73,7 +73,14 @@ export default function ProfilePage() {
       <section className="card-x">
         <div className="flex items-center gap-3.5">
           <AvatarEditor />
-          <div className="min-w-0"><h2 className="text-[1.15rem] font-bold">{u.name}</h2><p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p></div>
+          <div className="min-w-0">
+            <h2 className="flex flex-wrap items-baseline gap-x-2 text-[1.15rem] font-bold">{u.name}
+              {/* Бүртгүүлэхэд автоматаар олгогдсон ID: найзууд тань үүгээр хайж олно, дарвал хуулагдана */}
+              <button type="button" className="text-sm font-semibold text-muted-foreground hover:text-primary" title="ID хуулах"
+                onClick={() => void navigator.clipboard?.writeText(shortId(u.id)).then(() => toast('ID хуулагдлаа'))}>#{shortId(u.id)}</button>
+            </h2>
+            <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p>
+          </div>
         </div>
         <div className="my-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <FriendsTile />
@@ -231,26 +238,9 @@ function AccountSection() {
   );
 }
 
-/* Найзууд: тоо, хүсэлт, @нэр, ID, нууцлалын тохиргоо */
+/* Нууцлал: профайл, идэвхтэй байдал, mood, зурвас, найзуудын жагсаалтыг хэнд харуулах */
 function SocialSection() {
-  const { profile: u, updateProfile, supabase } = useApp();
-  const [counts, setCounts] = useState<SocialCounts | null>(null);
-  const [handle, setHandle] = useState(u.handle ?? '');
-  const [sheet, setSheet] = useState<SheetTab | null>(null);
-  useEffect(() => { social.counts(supabase).then(setCounts).catch(() => setCounts(null)); }, [supabase]);
-
-  async function saveHandle(e: React.FormEvent) {
-    e.preventDefault();
-    const h = cleanHandle(handle);
-    if (!HANDLE_RE.test(h)) return void toast('3–20 тэмдэгт: латин жижиг үсэг, тоо, _ эсвэл .');
-    if (h === u.handle) return;
-    const { error } = await supabase.from('profiles').update({ handle: h }).eq('id', u.id);
-    if (error) return void toast.error(error.code === '23505' ? `@${h} нэрийг өөр хүн авсан байна` : 'Хадгалж чадсангүй');
-    await updateProfile({ handle: h });
-    toast(`Таны нэр @${h} боллоо ✓`);
-  }
-
-  const copyId = () => { void navigator.clipboard?.writeText(u.id).then(() => toast('ID хуулагдлаа')); };
+  const { profile: u, updateProfile } = useApp();
   const pick = (key: 'mood_visibility' | 'message_permission' | 'friends_visibility', label: string, sub: string) => (
     <Setting title={label} sub={sub}>
       <select aria-label={label} value={u[key]} onChange={e => void updateProfile({ [key]: e.target.value as Audience })}
@@ -262,37 +252,8 @@ function SocialSection() {
 
   return (
     <section id="social" className="card-x desk:col-span-2">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold">👥 Найзууд</h3>
-        <Link href="/friends" className="text-sm font-semibold text-primary">💬 Зурвасууд →</Link>
-      </div>
-      {/* Найз, хүсэлт, блок нь профайл дээрээ цонхоор нээгдэнэ (Instagram шиг); зурвас нь Найзууд хуудсанд */}
-      <div className="mb-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {([['Найз', counts?.friends, 'friends'], ['Хүсэлт', counts?.incoming, 'requests'], ['Шинэ зурвас', counts?.unread, null], ['Блоклосон', counts?.blocked, 'blocked']] as const).map(([l, v, tab]) => {
-          const cls = cn('rounded-2xl border bg-card p-3.5 text-left transition hover:border-primary', (l === 'Хүсэлт' || l === 'Шинэ зурвас') && v ? 'border-primary' : '');
-          const inner = <><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v ?? '–'}</b></>;
-          return tab ? <button key={l} type="button" className={cls} onClick={() => setSheet(tab)}>{inner}</button>
-            : <Link key={l} href="/friends" className={cls}>{inner}</Link>;
-        })}
-      </div>
-      <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => {
-        if (o) return;
-        setSheet(null);
-        social.counts(supabase).then(setCounts).catch(() => {});
-      }} />
-
-      <form className="flex max-w-[460px] flex-col gap-1.5 border-b pb-3.5" onSubmit={e => void saveHandle(e)}>
-        <label htmlFor="acc-handle" className="text-sm font-semibold">Хэрэглэгчийн нэр (@)</label>
-        <div className="flex gap-2">
-          <input id="acc-handle" className="min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none"
-            placeholder="жишээ нь: tungalag_01" value={handle} maxLength={21} autoCapitalize="none" autoComplete="off" onChange={e => setHandle(e.target.value)} />
-          <Button type="submit" size="xl" variant="secondary" className="h-11 flex-none" disabled={!handle.trim() || cleanHandle(handle) === u.handle}>Хадгалах</Button>
-        </div>
-        <span className="text-xs text-muted-foreground">Найзууд тань @нэр эсвэл ID-аар чинь хайж олно. ID: <button type="button" className="font-semibold text-primary" onClick={copyId}>{shortId(u.id)} ⧉</button></span>
-      </form>
-
-      <h4 className="mt-3.5 text-sm font-semibold text-muted-foreground">Нууцлал</h4>
-      <Setting title="Профайл" sub="Нууц бол нэрээр хайхад олдохгүй, зөвхөн @нэр, ID-аар олдоно. Зураг тань зөвхөн найздаа харагдана.">
+      <h3 className="font-semibold">🔒 Нууцлал</h3>
+      <Setting title="Профайл" sub="Нууц бол нэрээр хайхад олдохгүй, зөвхөн ID-аар олдоно. Зураг тань зөвхөн найздаа харагдана.">
         <select aria-label="Профайл" value={u.profile_visibility} onChange={e => void updateProfile({ profile_visibility: e.target.value as 'public' | 'friends' })}
           className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
           <option value="public">🌐 Нээлттэй</option>
