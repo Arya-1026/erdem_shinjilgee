@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calendarTable, isFixed, parseExplain, parseTaskList, planTodos, supportHints, weekdayProfile } from './todo-plan';
+import { calendarTable, dayCapacity, isFixed, parseExplain, parseTaskList, planGentle, planTodos, recentState, supportHints, taskLoad, weekdayProfile } from './todo-plan';
 import type { Todo } from './types';
 
 // 2026-11-02 Даваа. Лхагва сайн, Даваа муу сэтгэл санаатай хүн
@@ -76,5 +76,52 @@ describe('төлөвлөгөө', () => {
   it('тайлбарын тоо зөрвөл хэрэглэхгүй', () => {
     expect(parseExplain('{"why":["a"],"summary":"s"}', 2)).toEqual({ why: [], summary: 's' });
     expect(parseExplain('биш', 1)).toBeNull();
+  });
+});
+
+describe('ачаалал багатай хуваарилалт', () => {
+  const none = { mood: null, sleep: null, n: 0 };
+  const load = (ps: { planned_date: string }[], minutes = 60) => { const l: Record<string, number> = {}; for (const p of ps) l[p.planned_date] = (l[p.planned_date] ?? 0) + minutes; return l; };
+
+  it('сэтгэл санаа унадаг өдөр багтаамж бага', () => {
+    expect(dayCapacity('2026-11-16', stats, TODAY, none)).toBeLessThan(dayCapacity('2026-11-18', stats, TODAY, none)); // Даваа, Лхагва
+  });
+  it('сүүлийн өдрүүдэд муу байвал ойрын өдрүүд хөнгөн, холын өдрүүд хэвийн', () => {
+    const r = recentState([{ entry_date: '2026-11-01', mood: 'sad', sleep: 5 }, { entry_date: TODAY, mood: 'anxious', sleep: 5 }], TODAY);
+    expect(r.n).toBe(2);
+    const empty = weekdayProfile([], []);
+    expect(dayCapacity(TODAY, empty, TODAY, r)).toBeLessThan(dayCapacity(TODAY, empty, TODAY, none));
+    expect(dayCapacity('2026-11-10', empty, TODAY, r)).toBe(dayCapacity('2026-11-10', empty, TODAY, none));
+  });
+  it('хуучин бүртгэл одоогийн байдалд орохгүй', () => {
+    expect(recentState([{ entry_date: '2026-10-20', mood: 'sad', sleep: 5 }], TODAY).n).toBe(0);
+  });
+  it('хүнд ажил нь жинтэй', () => {
+    expect(taskLoad({ minutes: 60, effort: 3 })).toBeGreaterThan(taskLoad({ minutes: 60, effort: 1 }));
+  });
+  it('ажлыг жигд тарааж, нэг өдөр овоолохгүй', () => {
+    const ps = planGentle(Array.from({ length: 10 }, (_, i) => task('t' + i)), weekdayProfile([], []), TODAY, none);
+    expect(Math.max(...Object.values(load(ps)))).toBe(60);
+    expect(planTodos(Array.from({ length: 10 }, (_, i) => task('t' + i)), weekdayProfile([], []), TODAY).length).toBe(10);
+  });
+  it('өдөрт нэгээс олон хүнд ажилгүй, сэтгэл санаа унадаг өдөр хүнд ажилгүй', () => {
+    const ps = planGentle(Array.from({ length: 5 }, (_, i) => task('h' + i, { effort: 3 })), stats, TODAY, none);
+    expect(new Set(ps.map(p => p.planned_date)).size).toBe(5);
+    expect(ps.some(p => new Date(p.planned_date + 'T12:00').getDay() === 1)).toBe(false);
+  });
+  it('цаг багатай бол эцсийн хугацааг сэтгэл санаанаас урьтална', () => {
+    const [p] = planGentle([task('a', { effort: 3, due_date: TODAY })], stats, TODAY, none);
+    expect(p.planned_date).toBe(TODAY);
+    expect(p.reason).toContain('эцсийн хугацаа');
+  });
+  it('хөдөлгөхгүй ажлын ачааллыг тооцно', () => {
+    const [p] = planGentle([task('a')], weekdayProfile([], []), TODAY, none, { [TODAY]: 200 });
+    expect(p.planned_date).not.toBe(TODAY);
+  });
+  it('шалтгааныг сэтгэл санаагаар тайлбарлана', () => {
+    const r = { mood: 2, sleep: null, n: 3 };
+    const [p] = planGentle([task('a', { due_date: TODAY })], weekdayProfile([], []), TODAY, r);
+    expect(p.reason).toContain('Сүүлийн өдрүүдэд');
+    expect(p.reason).toContain('минут');
   });
 });

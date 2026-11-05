@@ -84,6 +84,77 @@ export function planTodos(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'categ
   });
 }
 
+/* ---------- Ачаалал багатай хуваарилалт ----------
+   Өдрийн багтаамжийг сэтгэл санаагаар тооцож, ажлыг хамгийн сул өдрүүдэд жигд тараана. */
+const GENTLE_HORIZON = 21, GENTLE_MINUTES = 120, RECENT_DAYS = 3;
+const EFFORT_WEIGHT: Record<number, number> = { 1: 0.7, 2: 1, 3: 1.4 };
+
+/** Хүнд ажил нь адил хугацааны хөнгөн ажлаас илүү ядраадаг */
+export const taskLoad = (t: Pick<Todo, 'minutes' | 'effort'>) => Math.round(t.minutes * (EFFORT_WEIGHT[t.effort] ?? 1));
+
+export type RecentState = { mood: number | null; sleep: number | null; n: number };
+
+/** Сүүлийн 3 хоногийн сэтгэл санаа, нойр: гарагийн хэв маягаас гадна яг одоогийн байдал */
+export function recentState(entries: Pick<Entry, 'entry_date' | 'mood' | 'sleep'>[], today: string): RecentState {
+  const from = ymd(addDays(new Date(today + 'T12:00'), -(RECENT_DAYS - 1)));
+  const es = entries.filter(e => e.entry_date >= from && e.entry_date <= today);
+  return { n: es.length, mood: avg(es.map(e => moodScore(e.mood))), sleep: avg(es.flatMap(e => (e.sleep == null ? [] : [e.sleep]))) };
+}
+
+const daysFrom = (today: string, date: string) => Math.round((new Date(date + 'T12:00').getTime() - new Date(today + 'T12:00').getTime()) / 864e5);
+const recentLow = (date: string, today: string, r: RecentState) => daysFrom(today, date) < RECENT_DAYS && r.mood != null && r.mood < 3.2;
+
+/** Тухайн өдөр ачаалал мэдрэгдэхгүй хийж чадах хэмжээ (жинлэсэн минут) */
+export function dayCapacity(date: string, stats: DayStat[], today: string, recent: RecentState) {
+  const d = stats[weekdayOf(date)];
+  let c = GENTLE_MINUTES;
+  if (known(d)) c *= d.mood! < 2.5 ? 0.5 : d.mood! < 3 ? 0.7 : d.mood! >= 4 ? 1.15 : 1;
+  if (recentLow(date, today, recent)) c *= recent.mood! < 2.5 ? 0.5 : 0.75;
+  if (daysFrom(today, date) < RECENT_DAYS && recent.sleep != null && recent.sleep < 6) c *= 0.85;
+  return Math.round(c);
+}
+
+function explainGentle(date: string, t: Pick<Todo, 'effort' | 'due_date'>, stats: DayStat[], today: string, recent: RecentState, minutes: number) {
+  const d = stats[weekdayOf(date)], day = WD[d.w], bits: string[] = [];
+  if (recentLow(date, today, recent)) bits.push(`Сүүлийн өдрүүдэд сэтгэл санаа тань доогуур (${recent.mood!.toFixed(1)}/5) байгаа тул ойрын өдрүүдийг хөнгөвчиллөө`);
+  if (known(d)) {
+    if (d.mood! < 3) bits.push(`${day} гарагт сэтгэл санаа тань ихэвчлэн унадаг (${d.mood!.toFixed(1)}/5) тул энэ өдөр бага ажил тавилаа`);
+    else if (t.effort === 3) bits.push(`${day} гарагт сэтгэл санаа тань сайн (${d.mood!.toFixed(1)}/5) тул хүнд ажлыг энд тавилаа`);
+  }
+  if (t.due_date === date) bits.push('эцсийн хугацаа энэ өдөр');
+  bits.push(`Энэ өдрийн нийт ажил ${minutes} минут`);
+  return `${bits.join('. ')}.`;
+}
+
+/**
+ * Ачаалал багатай хуваарь: ажил бүрийг багтаамждаа хамгийн сул өдөрт тавина, өдөрт нэгээс олон хүнд ажил
+ * өгөхгүй, сэтгэл санаа унадаг өдөр хүнд ажил тавихгүй (хугацаа шаардахаас бусад үед). busy: хөдөлгөхгүй ажлууд.
+ */
+export function planGentle(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'due_date'>[], stats: DayStat[], today: string, recent: RecentState, busy: Record<string, number> = {}, busyLoad: Record<string, number> = busy): Placement[] {
+  const start = new Date(today + 'T12:00');
+  const days = Array.from({ length: GENTLE_HORIZON }, (_, i) => ymd(addDays(start, i)));
+  const cap = Object.fromEntries(days.map(d => [d, dayCapacity(d, stats, today, recent)]));
+  const load: Record<string, number> = { ...busyLoad }, minutes: Record<string, number> = { ...busy };
+  const heavy = new Set<string>();
+  const fill = (d: string, w: number) => ((load[d] ?? 0) + w) / cap[d];
+
+  const order = [...tasks].sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || b.effort - a.effort || b.minutes - a.minutes);
+  const placed = order.map(t => {
+    const open = days.filter(d => !t.due_date || d <= t.due_date);
+    const options = open.length ? open : [days[0]]; // Хугацаа нь өнгөрсөн бол өнөөдөр
+    const w = taskLoad(t);
+    const calm = t.effort === 3 ? options.filter(d => !heavy.has(d) && cap[d] >= GENTLE_MINUTES) : options;
+    const pool = calm.length ? calm : options;
+    // Хамгийн сул өдөр, тэнцвэл эртхэн нь
+    const date = pool.reduce((best, d) => (fill(d, w) + days.indexOf(d) * 0.002 < fill(best, w) + days.indexOf(best) * 0.002 ? d : best));
+    load[date] = (load[date] ?? 0) + w;
+    minutes[date] = (minutes[date] ?? 0) + t.minutes;
+    if (t.effort === 3) heavy.add(date);
+    return { t, date };
+  });
+  return placed.map(({ t, date }) => ({ id: t.id, planned_date: date, reason: explainGentle(date, t, stats, today, recent, minutes[date]) }));
+}
+
 export type SupportHint = { date: string; minutes: number; text: string };
 
 /** Ойрын 7 хоногт ачаалал их, эсвэл сэтгэл санаа ихэвчлэн унадаг өдөр ажил их байвал урьдчилан анхааруулна */

@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
+import { FriendsTile } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
@@ -18,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
 import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
+import { AUDIENCE, shortId } from '@/lib/social';
+import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // Сервер дээр theme тодорхойгүй тул hydration-ий дараа л switch-ийг харуулна
@@ -70,9 +73,17 @@ export default function ProfilePage() {
       <section className="card-x">
         <div className="flex items-center gap-3.5">
           <AvatarEditor />
-          <div className="min-w-0"><h2 className="text-[1.15rem] font-bold">{u.name}</h2><p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p></div>
+          <div className="min-w-0">
+            <h2 className="flex flex-wrap items-baseline gap-x-2 text-[1.15rem] font-bold">{u.name}
+              {/* Бүртгүүлэхэд автоматаар олгогдсон ID: найзууд тань үүгээр хайж олно, дарвал хуулагдана */}
+              <button type="button" className="text-sm font-semibold text-muted-foreground hover:text-primary" title="ID хуулах"
+                onClick={() => void navigator.clipboard?.writeText(shortId(u.id)).then(() => toast('ID хуулагдлаа'))}>#{shortId(u.id)}</button>
+            </h2>
+            <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p>
+          </div>
         </div>
-        <div className="my-3.5 grid grid-cols-3 gap-3">
+        <div className="my-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <FriendsTile />
           {[['Бүртгэл', entries.length], ['Дасгал', u.exercises_done], ['Streak', streak(entries)]].map(([l, v]) => (
             <div key={l} className="rounded-2xl border bg-card p-3.5"><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v}</b></div>
           ))}
@@ -134,6 +145,7 @@ export default function ProfilePage() {
         </Link>
       )}
 
+      <SocialSection />
       <AccountSection />
 
       <section className="card-x desk:col-span-2">
@@ -222,6 +234,38 @@ function AccountSection() {
         )}
         {mode === 'reset' && <div className="mt-2"><PasswordReset email={u.email} onDone={() => { setHasPassword(true); close(); }} onCancel={close} /></div>}
       </div>
+    </section>
+  );
+}
+
+/* Нууцлал: профайл, идэвхтэй байдал, mood, зурвас, найзуудын жагсаалтыг хэнд харуулах */
+function SocialSection() {
+  const { profile: u, updateProfile } = useApp();
+  const pick = (key: 'mood_visibility' | 'message_permission' | 'friends_visibility', label: string, sub: string) => (
+    <Setting title={label} sub={sub}>
+      <select aria-label={label} value={u[key]} onChange={e => void updateProfile({ [key]: e.target.value as Audience })}
+        className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
+        {AUDIENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </Setting>
+  );
+
+  return (
+    <section id="social" className="card-x desk:col-span-2">
+      <h3 className="font-semibold">🔒 Нууцлал</h3>
+      <Setting title="Профайл" sub="Нууц бол нэрээр хайхад олдохгүй, зөвхөн ID-аар олдоно. Зураг тань зөвхөн найздаа харагдана.">
+        <select aria-label="Профайл" value={u.profile_visibility} onChange={e => void updateProfile({ profile_visibility: e.target.value as 'public' | 'friends' })}
+          className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
+          <option value="public">🌐 Нээлттэй</option>
+          <option value="friends">🔒 Нууц</option>
+        </select>
+      </Setting>
+      <Setting title="Идэвхтэй байгаагаа харуулах" sub="Найзууд тань таныг онлайн үед ногоон цэг харна. Унтраавал та ч бусдынхыг харахгүй.">
+        <Switch checked={u.show_active} onCheckedChange={v => void updateProfile({ show_active: v })} aria-label="Идэвхтэй байгаагаа харуулах" />
+      </Setting>
+      {pick('mood_visibility', 'Сэтгэл санаагаа харуулах', 'Таны сүүлийн бүртгэлийн эможиг хэн харах вэ')}
+      {pick('message_permission', 'Надад зурвас бичих', 'Хэн танд зурвас бичиж болох вэ')}
+      {pick('friends_visibility', 'Найзуудаа харуулах', 'Таны найзуудын жагсаалтыг хэн харах вэ')}
     </section>
   );
 }

@@ -14,7 +14,13 @@ const nextConfig: NextConfig = {
     },
   },
   async redirects() {
-    return [{ source: "/", destination: "/home", permanent: false }];
+    return [
+      { source: "/", destination: "/home", permanent: false },
+      // Чат одоо хөвөгч цонх болсон
+      { source: "/chat", destination: "/home", permanent: false },
+      // Тайлан хуудас Хуваарь дотор «Миний тойм» болж нэгдсэн
+      { source: "/stats", destination: "/todo", permanent: false },
+    ];
   },
 };
 

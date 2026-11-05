@@ -70,6 +70,7 @@ export function useDailySupport() {
 
 /** Нүүр хуудасны «Өнөөдрийн дэмжлэг» карт, мөн «Бүртгэгдлээ» цонхонд */
 export function SupportBody({ compact }: { compact?: boolean }) {
+  const { setChatOpen } = useApp();
   const { state, refresh, busy } = useDailySupport();
 
   if (state.kind === 'none') return <p className="text-sm text-muted-foreground">Өнөөдрийн сэтгэл санаагаа бүртгэвэл танд зориулсан дэмжлэгийн үг, хийж болох жижиг алхмуудыг AI бэлдэж өгнө.</p>;
@@ -107,7 +108,7 @@ export function SupportBody({ compact }: { compact?: boolean }) {
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
         <button className="font-semibold text-primary disabled:opacity-50" disabled={busy} onClick={refresh}>{busy ? 'Бичиж байна…' : '↻ Өөр үгээр'}</button>
-        {!compact && <Link href="/chat" className="font-semibold text-primary">💬 Энэ талаар ярилцах</Link>}
+        {!compact && <button className="font-semibold text-primary" onClick={() => setChatOpen(true)}>💬 Энэ талаар ярилцах</button>}
         <span className="ml-auto text-xs text-muted-foreground">{state.ai ? '✨ AI · ' : ''}{moodById(state.mood).emoji} {moodById(state.mood).label}</span>
       </div>
     </div>

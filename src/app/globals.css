@@ -246,12 +246,10 @@ body.has-player .fp { padding-bottom: 110px; }
 .yt-dock.yt-small { left: auto; right: 8px; width: var(--yt-h); height: auto; flex-direction: column; }
 @media (min-width: 900px) { .yt-dock.yt-small { right: 16px; width: var(--yt-h); } }
 body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 48px); }
-body.has-yt .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - var(--yt-h) - 64px); }
 body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
 @media (min-width: 900px) {
   body.has-yt .app-main { padding-bottom: calc(var(--yt-h) + 40px); }
-  body.has-yt .chat { height: calc(100dvh - var(--head-h) - var(--yt-h) - 56px); }
-  body.has-yt .fp { bottom: calc(var(--yt-h) + 32px); max-height: calc(100dvh - var(--yt-h) - 56px); }
+    body.has-yt .fp { bottom: calc(var(--yt-h) + 32px); max-height: calc(100dvh - var(--yt-h) - 56px); }
 }
 .fp { padding: calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
   background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 70%, #1A1816) 0%, #1A1816 78%); animation: up .3s ease-out; }
@@ -262,11 +260,7 @@ body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } }
 
 /* ---------- Чат ---------- */
-.chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 36px); }
-body.has-player .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 108px); }
 @media (min-width: 900px) {
-  .chat { height: calc(100dvh - var(--head-h) - 48px); }
-  body.has-player .chat { height: calc(100dvh - var(--head-h) - 120px); }
 }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-foreground); animation: bounce 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
@@ -291,6 +285,19 @@ body.has-player .chat { height: calc(100dvh - var(--head-h) - var(--nav-h) - var
 @keyframes step-in { from { opacity: 0; transform: translateX(24px); } }
 @keyframes step-pop { from { transform: scale(.6); } }
 @keyframes step-float { 50% { transform: translateY(-7px); } }
+
+/* ---------- Хөвөгч чат: YouTube тоглуулагчаас доогуур z-index (түүн дээр юу ч давхарлаж болохгүй) ---------- */
+/* Байрлалыг use-drag тооцдог (цэс, толгой, тоглуулагчаас зайлсхийж буланд наалдана). Энд зөвхөн анхны цэг, хэмжээ. */
+.chat-bubble { right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); }
+.chat-panel { --chat-free: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 20px); right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); width: min(350px, calc(100vw - 20px)); height: min(540px, var(--chat-free)); }
+body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px)); }
+body.has-yt .chat-panel { height: min(540px, calc(var(--chat-free) - var(--yt-h) - 28px)); }
+@media (min-width: 900px) {
+  .chat-bubble { bottom: 10px; }
+  .chat-panel { --chat-free: calc(100dvh - var(--head-h) - 20px); bottom: 10px; width: 400px; height: min(640px, var(--chat-free)); }
+  body.has-player .chat-panel { height: min(640px, calc(var(--chat-free) - 84px)); }
+  body.has-yt .chat-panel { height: min(640px, calc(var(--chat-free) - var(--yt-h) - 40px)); }
+}
 
 /* ---------- Тайлангийн heatmap ---------- */
 .lvl-1 { background: var(--div-1); color: var(--div-1-ink); } .lvl-2 { background: var(--div-2); color: var(--div-2-ink); }

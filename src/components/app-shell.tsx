@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { streak } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { Avatar } from './avatar';
+import { ChatWidget } from './chat-widget';
 import { DialogHost } from './dialogs/dialog-host';
 import { Logo } from './logo';
 import { SantaHat, SeasonalNav } from './seasonal';
@@ -12,20 +13,21 @@ import { ThemeToggle } from './theme-toggle';
 import { useReminder } from './use-reminder';
 import { FullPlayer, MiniPlayer } from './player';
 import { useApp } from './providers/app-provider';
+import { useSocialBadge } from './use-social-badge';
 
 const NAV = [
   ['/home', '🏠', 'Нүүр', 'Өнөөдөр'],
-  ['/chat', '💬', 'Чат', 'AI туслах'],
   ['/recs', '✨', 'Зөвлөмж', 'Зөвлөмж'],
   ['/todo', '🗓️', 'Хуваарь', 'Төлөвлөгөө'],
-  ['/stats', '📊', 'Тайлан', 'Миний тайлан'],
   ['/experts', '🧑‍⚕️', 'Зөвлөгч', 'Сэтгэл зүйчид'],
+  ['/friends', '👥', 'Найзууд', 'Найзууд'],
   ['/profile', '👤', 'Профайл', 'Профайл'],
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { entries, tint, isExpert } = useApp();
+  const { entries, tint, isExpert, supabase } = useApp();
+  const badge = useSocialBadge(supabase);
   const active = NAV.find(([href]) => path.startsWith(href)) ?? NAV[0];
   useReminder();
 
@@ -42,7 +44,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 'desk:flex-none desk:flex-row desk:justify-start desk:gap-3 desk:rounded-xl desk:px-3.5 desk:py-3 desk:text-[.95rem]',
                 href === '/profile' && 'hidden desk:flex',
                 on && 'font-bold text-primary desk:bg-secondary')}>
-              <span className="relative text-[1.35rem] leading-none">{icon}<SantaHat /></span><span>{label}</span>
+              <span className="relative text-[1.35rem] leading-none">{icon}<SantaHat />
+                {href === '/friends' && badge > 0 && <b className="absolute -top-1.5 -right-2.5 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground" aria-label={`${badge} шинэ`}>{badge > 9 ? '9+' : badge}</b>}
+              </span><span>{label}</span>
             </Link>
           );
         })}
@@ -70,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <MiniPlayer />
       <FullPlayer />
+      <ChatWidget />
       <DialogHost />
     </>
   );

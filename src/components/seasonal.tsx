@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
+import { today } from '@/lib/date';
 import { loadSeasonPref, resolveSeason, SEASONS, type SeasonPref } from '@/lib/season';
 import { cn } from '@/lib/utils';
 import { useApp } from './providers/app-provider';
@@ -14,8 +15,9 @@ export const useSeasonPref = () => useSyncExternalStore<SeasonPref>(subscribe, l
 
 const useSeason = () => {
   const pref = useSeasonPref();
-  const [now] = useState(() => new Date());
-  return resolveSeason(pref, now);
+  // Prerender-т одоогийн цаг уншиж болохгүй (Cache Components): сервер дээр огноогүй, 'off' сонголттой
+  const date = useSyncExternalStore(() => () => {}, today, () => '1970-01-01');
+  return resolveSeason(pref, new Date(date + 'T12:00'));
 };
 
 // Цасан ширхэг: тогтмол утга (render бүрт солигдохгүй)

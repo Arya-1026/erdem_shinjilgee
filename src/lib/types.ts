@@ -57,7 +57,19 @@ export type Profile = {
   mood_images: Partial<Record<MoodId, string>>;
   /** Профайл зураг (data URL), байхгүй бол нэрийн эхний үсэг */
   avatar: string | null;
+  /** Бусад хүн хайж олох нэр (@handle) */
+  handle: string | null;
+  /** public: нэрээр хайхад олдоно; friends: зөвхөн @handle/ID-аар олдож, зураг нь найзад л харагдана */
+  profile_visibility: 'public' | 'friends';
+  mood_visibility: Audience;
+  message_permission: Audience;
+  friends_visibility: Audience;
+  /** Найзууддаа «идэвхтэй» ногоон цэгээ харуулах */
+  show_active: boolean;
 };
+
+/** Нууцлалын түвшин: хэнд зөвшөөрөх */
+export type Audience = 'everyone' | 'friends' | 'nobody';
 
 export type Entry = {
   id: string;

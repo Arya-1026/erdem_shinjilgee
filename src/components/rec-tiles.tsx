@@ -1,7 +1,8 @@
 'use client';
 
-import { moodById, REC_ICON } from '@/lib/data';
+import { moodById } from '@/lib/data';
 import type { Mood, ScoredRec } from '@/lib/types';
+import { ExerciseArt } from './exercise-art';
 import { Poster } from './poster';
 import { useApp } from './providers/app-provider';
 import { Button } from './ui/button';
@@ -23,7 +24,7 @@ export function RecTile({ r, m }: { r: ScoredRec; m: Mood }) {
   return (
     <button onClick={() => act(r, m)} className="htile flex w-[132px] flex-none snap-start flex-col self-start text-left">
       <div className={cn('tile-cover relative mb-1.5 grid w-[132px] place-items-center overflow-hidden rounded-2xl text-[2.4rem]', r.type === 'movie' ? 'h-[192px]' : 'h-[132px]')} style={{ '--tc': moodById(r.moods[0]).color } as React.CSSProperties}>
-        {r.type === 'movie' ? <Poster src={r.poster} title={r.title} className="size-full" /> : REC_ICON[r.type]}
+        {r.type === 'movie' ? <Poster src={r.poster} title={r.title} className="size-full" /> : <ExerciseArt id={r.id} className="size-full" />}
       </div>
       <b className="line-clamp-2 text-sm leading-tight">{r.title}</b>
       <span className="block truncate text-xs text-muted-foreground">{r.sub}</span>
@@ -39,7 +40,7 @@ export function RecCard({ r, m, onFeedback }: { r: ScoredRec; m: Mood; onFeedbac
       <div className="flex items-start gap-3">
         {r.type === 'movie'
           ? <Poster src={r.poster} title={r.title} className="h-[96px] w-16 flex-none rounded-lg bg-secondary text-xl" />
-          : <div className="grid size-11 flex-none place-items-center rounded-xl bg-secondary text-xl">{REC_ICON[r.type]}</div>}
+          : <ExerciseArt id={r.id} className="size-11 flex-none rounded-xl" />}
         <div className="min-w-0">
           <b>{r.title}</b>
           <div className="text-sm text-muted-foreground">{r.sub}</div>
