@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanHandle, filterChats, HANDLE_RE, moodAgo, shortId, socialError } from './social';
+import { cleanHandle, filterChats, HANDLE_RE, moodAgo, noteLive, shortId, socialError } from './social';
 
 describe('найз, зурвас', () => {
   it('@нэрийг цэвэрлэж шалгана', () => {
@@ -30,5 +30,14 @@ describe('найз, зурвас', () => {
     expect(socialError({ message: 'not allowed' })).toContain('зөвхөн найзаасаа');
     expect(socialError({ message: 'blocked' })).toContain('боломжгүй');
     expect(socialError(null)).toContain('Алдаа');
+  });
+});
+
+describe('бодол (note)', () => {
+  const now = Date.parse('2026-11-05T12:00:00Z');
+  it('24 цаг харагдаад алга болно', () => {
+    expect(noteLive('2026-11-05T01:00:00Z', now)).toBe(true);
+    expect(noteLive('2026-11-04T11:59:00Z', now)).toBe(false);
+    expect(noteLive(null, now)).toBe(false);
   });
 });

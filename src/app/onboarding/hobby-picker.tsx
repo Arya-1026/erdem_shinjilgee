@@ -46,6 +46,12 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
   const cats = Object.entries(HOBBIES)
     .map(([cat, items]) => [cat, q && !cat.toLowerCase().includes(q) ? items.filter(h => h.toLowerCase().includes(q)) : items] as const)
     .filter(([, items]) => items.length);
+  // Жагсаалтад байхгүй, хэрэглэгч өөрөө нэмсэн хоббиуд
+  const known = new Set(Object.values(HOBBIES).flat().map(h => h.toLowerCase()));
+  const mine = [...sel].filter(h => !known.has(h.toLowerCase()));
+  const newHobby = query.trim().replace(/\s+/g, ' ').slice(0, 40);
+  const canAdd = newHobby.length > 1 && !known.has(newHobby.toLowerCase()) && !mine.some(h => h.toLowerCase() === newHobby.toLowerCase());
+  const addHobby = () => { if (!canAdd) return; setSel(s => new Set(s).add(newHobby)); setQuery(''); };
 
   async function done() {
     setBusy(true);
@@ -97,8 +103,23 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
       </div>
       <h2 className="mb-1 text-[22px] leading-[30px] font-semibold">Таны сонирхол юу вэ?</h2>
       <p className="mb-4 text-muted-foreground">Хоббид тань тулгуурлан тохирох дасгал, дуу, ая, кино санал болгоно. Дор хаяж 1-ийг сонгоно уу.</p>
-      <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Хобби хайх (жишээ нь: гитар, йог)" aria-label="Хобби хайх"
-        className="mb-5 h-12 w-full rounded-xl border-[1.5px] bg-card px-3.5 focus:border-primary focus:outline-none" />
+      <div className="mb-5 flex gap-2">
+        <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Хайх эсвэл өөрийн хобби бичих" aria-label="Хобби хайх эсвэл нэмэх" maxLength={40}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addHobby(); } }}
+          className="h-12 min-w-0 flex-1 rounded-xl border-[1.5px] bg-card px-3.5 focus:border-primary focus:outline-none" />
+        <Button type="button" size="xl" variant="secondary" className="h-12 flex-none" disabled={!canAdd} onClick={addHobby} aria-label="Хобби нэмэх" title="Жагсаалтад байхгүй хоббиг нэмэх">＋</Button>
+      </div>
+      {canAdd && !cats.length && (
+        <button type="button" onClick={addHobby} className="mb-5 flex min-h-12 w-full items-center gap-2 rounded-xl border-[1.5px] border-dashed border-primary px-3.5 text-left font-semibold text-primary">
+          ＋ Жагсаалтад алга. «{newHobby}» хобби нэмэх
+        </button>
+      )}
+      {mine.length > 0 && (
+        <section className="mb-5">
+          <h3 className="mb-2 font-semibold">✨ Өөрийн нэмсэн<span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{mine.length}</span></h3>
+          <div className="flex flex-wrap gap-2">{mine.map(h => <Chip key={h} on onClick={() => toggle(h)}>{h} ✕</Chip>)}</div>
+        </section>
+      )}
       {cats.map(([cat, items]) => {
         const n = HOBBIES[cat].filter(h => sel.has(h)).length;
         return (
@@ -109,7 +130,7 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
           </section>
         );
       })}
-      {!cats.length && <p className="mb-5 text-sm text-muted-foreground">«{query}» олдсонгүй.</p>}
+      {!cats.length && !canAdd && <p className="mb-5 text-sm text-muted-foreground">«{query}» олдсонгүй.</p>}
       <section className="mb-5">
         <h3 className="mb-1 font-semibold">🎤 Дуртай дуучин{artists.length > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{artists.length}</span>}</h3>
         <p className="mb-2 text-sm text-muted-foreground">Эдгээрийн дууг YouTube-ээс хайж санал болгоно. Жагсаалт таны нас, төрлөөр өөрчлөгдөнө.</p>

@@ -65,7 +65,7 @@ export default function PersonPage() {
       <section className="card-x flex flex-col gap-3">
         <Link href="/friends" className="text-sm font-semibold text-primary">← Найзууд</Link>
         <div className="flex items-center gap-3.5">
-          <PersonAvatar name={card.name} avatar={card.avatar} className="size-16 text-2xl" />
+          <PersonAvatar name={card.name} avatar={card.avatar} mood={card.mood} className="size-16 text-2xl" />
           <div className="min-w-0">
             <h2 className="truncate text-[1.15rem] font-bold">{card.name}</h2>
             <p className="text-sm text-muted-foreground">{card.handle ? `@${card.handle} · ` : ''}ID {shortId(card.id)}{card.is_private ? ' · 🔒' : ''}</p>

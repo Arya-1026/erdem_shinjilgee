@@ -3,6 +3,9 @@
 import { useRef } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { today } from '@/lib/date';
+import { moodAgo } from '@/lib/social';
+import { MoodHalo, NoteBubble } from './note-bubble';
 import { squareThumb } from './mood-images';
 import { useApp } from './providers/app-provider';
 
@@ -21,7 +24,8 @@ export function Avatar({ className }: { className?: string }) {
 
 /* Профайл хуудас: зураг дээр дарж солих, хасах */
 export function AvatarEditor() {
-  const { profile, updateProfile } = useApp();
+  const { profile, entries, updateProfile } = useApp();
+  const last = entries.at(-1), mood = last?.mood;
   const input = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -38,11 +42,13 @@ export function AvatarEditor() {
   }
 
   return (
-    <div className="flex flex-none flex-col items-center gap-1">
+    <div className="mt-12 flex flex-none flex-col items-center gap-1">
       <input ref={input} type="file" accept="image/*" className="hidden" aria-label="Профайл зураг сонгох" onChange={e => void onFile(e)} />
       <button type="button" className="group relative rounded-full" aria-label="Профайл зураг солих" onClick={() => input.current?.click()}>
-        <Avatar className="size-16 text-2xl" />
-        <span className="absolute -right-0.5 -bottom-0.5 grid size-6 place-items-center rounded-full border-2 border-card bg-primary text-xs text-primary-foreground" aria-hidden="true">📷</span>
+        {/* Одоогийн сэтгэл санаа (сүүлийн бүртгэл) бөмбөлөгт: найзууд тань нууцлалын тохиргооны дагуу харна */}
+        <NoteBubble mood={mood} sub={last ? moodAgo(last.entry_date, today()) : null} placeholder="Бүртгэл алга" />
+        <MoodHalo mood={mood} className="size-[84px]"><Avatar className="size-16 text-2xl ring-2 ring-card" /></MoodHalo>
+        <span className="absolute right-1 bottom-1 grid size-6 place-items-center rounded-full border-2 border-card bg-primary text-xs text-primary-foreground" aria-hidden="true">📷</span>
       </button>
       {profile.avatar && <button type="button" className="min-h-6 text-xs text-primary" onClick={() => void updateProfile({ avatar: null })}>Хасах</button>}
     </div>

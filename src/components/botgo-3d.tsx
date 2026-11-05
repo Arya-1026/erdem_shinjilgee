@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
    iframe-ээр харуулж, window.Botgo.setMood-оор апп-ын mood-ыг дамжуулна.
    Зөвхөн хэрэгцээгүй хэсгүүдийг (тайлбар мөр, mood товчнууд) эцэг хуудаснаас нууна. */
 const TO_BOTGO: Record<MoodId, string> = { happy: 'happy', calm: 'calm', neutral: 'bored', tired: 'tired', anxious: 'anxious', sad: 'sad', angry: 'angry' };
-const EMBED_CSS = '.top,.hint,.moods{display:none!important} body{padding-inline:0!important}';
+// canvas{touch-action:pan-y}: утсан дээр Ботгоо дээгүүр доош гүйлгэхэд хуудас гүйлгэгдэнэ (эргээд, хэлбэрээ хувиргахгүй). Хэвтээ чирвэл эргэнэ.
+const EMBED_CSS = '.top,.hint,.moods{display:none!important} body{padding-inline:0!important} canvas{touch-action:pan-y!important}';
 
 type BotgoWin = Window & { Botgo?: { setMood: (id: string) => void } };
 

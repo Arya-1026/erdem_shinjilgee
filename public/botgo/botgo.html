@@ -87,7 +87,7 @@ const MOODS=[
 
 /* ---------- renderer / scene ---------- */
 const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia("(pointer: coarse)").matches?1.5:2));
 const scene=new T.Scene();
 const camera=new T.PerspectiveCamera(30,1,.1,50);
 camera.position.set(0,1.55,7.6); camera.lookAt(0,1.22,0);
@@ -425,7 +425,7 @@ canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect()
 function up(){clearTimeout(holdTimer);canvas.classList.remove('grab');
   if(down&&down.hit&&!down.moved&&!pet) tap(down.hit);
   if(pet){pet=false} down=null}
-canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',()=>{clearTimeout(holdTimer);canvas.classList.remove('grab');pet=false;down=null});
 
 function tap(h){
   const part=h.object.userData.part;

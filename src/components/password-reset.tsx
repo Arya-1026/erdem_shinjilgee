@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/password-input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 
@@ -68,11 +69,11 @@ export function PasswordReset({ email: fixedEmail, onDone, onCancel }: { email?:
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="reset-pw" className="font-semibold">Шинэ нууц үг</Label>
-        <Input id="reset-pw" type="password" autoComplete="new-password" placeholder="Хамгийн багадаа 6 тэмдэгт" className="h-12 rounded-xl" value={pw} onChange={e => setPw(e.target.value)} />
+        <PasswordInput id="reset-pw" autoComplete="new-password" placeholder="Хамгийн багадаа 6 тэмдэгт" className="h-12 rounded-xl" value={pw} onChange={e => setPw(e.target.value)} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="reset-pw2" className="font-semibold">Шинэ нууц үг дахин</Label>
-        <Input id="reset-pw2" type="password" autoComplete="new-password" className="h-12 rounded-xl" value={pw2} onChange={e => setPw2(e.target.value)} />
+        <PasswordInput id="reset-pw2" autoComplete="new-password" className="h-12 rounded-xl" value={pw2} onChange={e => setPw2(e.target.value)} />
       </div>
       <Button type="submit" size="xl" className="w-full" disabled={busy || code.length < 6}>{busy ? 'Шалгаж байна…' : 'Нууц үг солих'}</Button>
       <Button type="button" size="xl" variant="ghost" className="w-full" disabled={busy} onClick={() => void send()}>↻ Код дахин илгээх</Button>
