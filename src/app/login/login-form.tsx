@@ -10,8 +10,20 @@ import { Label } from '@/components/ui/label';
 import { PasswordReset } from '@/components/password-reset';
 import { Segmented } from '@/components/segmented';
 import { createClient } from '@/lib/supabase/client';
+import { LanguageSwitch, useT } from '@/components/providers/locale-provider';
+
+export function LoginIntro() {
+  const tr = useT();
+  return (
+    <>
+      <p>{tr('Өдөр бүрийн сэтгэл санаагаа тэмдэглэж, өөрийгөө илүү сайн ойлгоорой. AI туслах, хувийн зөвлөмж, сэтгэл зүйчийн дэмжлэг нэг дор.')}</p>
+      <LanguageSwitch className="mt-3" />
+    </>
+  );
+}
 
 export function LoginForm() {
+  const tr = useT();
   const router = useRouter();
   const [tab, setTab] = useState<'register' | 'login'>('register');
   const [busy, setBusy] = useState(false);
@@ -24,9 +36,9 @@ export function LoginForm() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const name = String(f.get('name') ?? '').trim(), email = String(f.get('email') ?? '').trim(), password = String(f.get('password') ?? '');
-    if (reg && !name) return toast('Нэрээ оруулна уу');
-    if (!/^\S+@\S+\.\S+$/.test(email)) return toast('Имэйл хаяг буруу байна');
-    if (password.length < 6) return toast('Нууц үг хамгийн багадаа 6 тэмдэгт');
+    if (reg && !name) return toast(tr('Нэрээ оруулна уу'));
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast(tr('Имэйл хаяг буруу байна'));
+    if (password.length < 6) return toast(tr('Нууц үг хамгийн багадаа 6 тэмдэгт'));
 
     setBusy(true);
     const supabase = createClient();
@@ -35,7 +47,7 @@ export function LoginForm() {
       : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
 
-    if (error) return toast.error(error.message === 'Invalid login credentials' ? 'Имэйл эсвэл нууц үг буруу байна' : error.message);
+    if (error) return toast.error(error.message === 'Invalid login credentials' ? tr('Имэйл эсвэл нууц үг буруу байна') : error.message);
     // Supabase-д имэйл баталгаажуулалт асаалттай бол session шууд үүсэхгүй
     if (!data.session) return setSentTo(email);
     router.replace(reg ? '/onboarding' : '/home');
@@ -50,31 +62,31 @@ export function LoginForm() {
   if (sentTo) return (
     <div className="card-x w-full max-w-[420px] text-center">
       <div className="text-4xl">📬</div>
-      <h2 className="my-2 text-lg font-semibold">Имэйлээ шалгана уу</h2>
-      <p className="text-sm text-muted-foreground"><b>{sentTo}</b> хаяг руу баталгаажуулах холбоос илгээлээ. Холбоос дээр дарахад бүртгэл идэвхжинэ.</p>
-      <Button variant="secondary" size="xl" className="mt-4 w-full" onClick={() => { setSentTo(null); setTab('login'); }}>Нэвтрэх хуудас руу</Button>
+      <h2 className="my-2 text-lg font-semibold">{tr('Имэйлээ шалгана уу')}</h2>
+      <p className="text-sm text-muted-foreground"><b>{sentTo}</b>{' '}{tr('хаяг руу баталгаажуулах холбоос илгээлээ. Холбоос дээр дарахад бүртгэл идэвхжинэ.')}</p>
+      <Button variant="secondary" size="xl" className="mt-4 w-full" onClick={() => { setSentTo(null); setTab('login'); }}>{tr('Нэвтрэх хуудас руу')}</Button>
     </div>
   );
 
   // Код баталгаажмагц session үүссэн тул шууд апп руу орно
   if (forgot) return (
     <div className="card-x w-full max-w-[420px]">
-      <h2 className="mb-2 text-lg font-semibold">🔑 Нууц үг сэргээх</h2>
+      <h2 className="mb-2 text-lg font-semibold">{tr('🔑 Нууц үг сэргээх')}</h2>
       <PasswordReset onDone={() => { router.replace('/home'); router.refresh(); }} onCancel={() => setForgot(false)} />
     </div>
   );
 
   return (
     <form className="card-x w-full max-w-[420px]" onSubmit={onSubmit} noValidate>
-      <Segmented full className="mb-4.5" value={tab} onChange={setTab} options={[['register', 'Бүртгүүлэх'], ['login', 'Нэвтрэх']]} />
-      {reg && <Field id="name" label="Нэр"><Input id="name" name="name" autoComplete="given-name" placeholder="Таны нэр" className="h-12 rounded-xl" required /></Field>}
-      <Field id="email" label="Имэйл"><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl" required /></Field>
-      <Field id="password" label="Нууц үг"><PasswordInput id="password" name="password" autoComplete={reg ? 'new-password' : 'current-password'} placeholder="Хамгийн багадаа 6 тэмдэгт" minLength={6} className="h-12 rounded-xl" required /></Field>
-      {!reg && <button type="button" className="-mt-1.5 mb-3 min-h-9 text-sm font-semibold text-primary" onClick={() => setForgot(true)}>Нууц үгээ мартсан уу?</button>}
-      <Button type="submit" size="xl" className="w-full" disabled={busy}>{busy ? '…' : reg ? 'Бүртгүүлэх' : 'Нэвтрэх'}</Button>
-      <div className="my-3.5 flex items-center gap-2.5 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">эсвэл</div>
-      <Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b> Google-ээр үргэлжлүүлэх</Button>
-      <p className="mt-4 text-center text-xs text-muted-foreground">Үргэлжлүүлснээр та үйлчилгээний нөхцөл болон нууцлалын бодлогыг зөвшөөрч байна.</p>
+      <Segmented full className="mb-4.5" value={tab} onChange={setTab} options={[['register', tr('Бүртгүүлэх')], ['login', tr('Нэвтрэх')]]} />
+      {reg && <Field id="name" label={tr('Нэр')}><Input id="name" name="name" autoComplete="given-name" placeholder={tr('Таны нэр')} className="h-12 rounded-xl" required /></Field>}
+      <Field id="email" label={tr('Имэйл')}><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl" required /></Field>
+      <Field id="password" label={tr('Нууц үг')}><PasswordInput id="password" name="password" autoComplete={reg ? 'new-password' : 'current-password'} placeholder={tr('Хамгийн багадаа 6 тэмдэгт')} minLength={6} className="h-12 rounded-xl" required /></Field>
+      {!reg && <button type="button" className="-mt-1.5 mb-3 min-h-9 text-sm font-semibold text-primary" onClick={() => setForgot(true)}>{tr('Нууц үгээ мартсан уу?')}</button>}
+      <Button type="submit" size="xl" className="w-full" disabled={busy}>{busy ? '…' : reg ? tr('Бүртгүүлэх') : tr('Нэвтрэх')}</Button>
+      <div className="my-3.5 flex items-center gap-2.5 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">{tr('эсвэл')}</div>
+      <Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b>{' '}{tr('Google-ээр үргэлжлүүлэх')}</Button>
+      <p className="mt-4 text-center text-xs text-muted-foreground">{tr('Үргэлжлүүлснээр та үйлчилгээний нөхцөл болон нууцлалын бодлогыг зөвшөөрч байна.')}</p>
     </form>
   );
 }

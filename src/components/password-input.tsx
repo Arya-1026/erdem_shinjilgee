@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from 'cn';
+import { useT } from '@/components/providers/locale-provider';
 
 /** Нүдэн товчтой нууц үгийн талбар: дарахад бичсэн нууц үгээ харж болно */
 export function PasswordInput({ className, ...props }: Omit<React.ComponentProps<'input'>, 'type'>) {
+  const tr = useT();
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
       <Input {...props} type={show ? 'text' : 'password'} className={cn('pr-12', className)} />
-      <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Нууц үгийг нуух' : 'Нууц үгийг харуулах'} aria-pressed={show}
+      <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? tr('Нууц үгийг нуух') : tr('Нууц үгийг харуулах')} aria-pressed={show}
         className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-muted-foreground hover:text-foreground focus-visible:text-primary focus-visible:outline-none">
         {show ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

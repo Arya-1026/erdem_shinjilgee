@@ -1303,4 +1303,11 @@ alter table public.profiles drop constraint if exists profiles_theme_check;
 alter table public.profiles add constraint profiles_theme_check
   check (theme ~ '^([a-z]{3,20}|custom:#[0-9a-f]{6}(:#[0-9a-f]{6})?)$');
 
+-- >>>>>>>>>> 0018_language.sql
+-- =========================================================
+-- 0018: Апп-ын хэл (mn, en). Имэйл, push зэрэг серверээс илгээх бичвэрт хэрэглэнэ.
+-- null: хэрэглэгч хэлээ хараахан сонгоогүй.
+-- =========================================================
+alter table public.profiles add column if not exists language text check (language in ('mn', 'en'));
+
 commit;

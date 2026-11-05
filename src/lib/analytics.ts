@@ -1,6 +1,7 @@
 /* ---------- Шинжилгээ: entries дээр ажилладаг цэвэр функцууд (клиент, сервер хоёуланд) ---------- */
 import { MOODS, WD, moodById } from './data';
 import { addDays, today, weekdayOf, ymd } from './date';
+import { translator, type Translate } from './i18n';
 import type { Entry, Mood } from './types';
 
 export const mean = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : null);
@@ -35,33 +36,33 @@ export function topTag(entries: Entry[]) {
 export type Prediction = { level: 'none' | 'low' | 'mid' | 'high'; title: string; text: string };
 
 // Маргаашийн таамаглал: тухайн гаригийн дундажийг нийт дундажтай харьцуулна (ML хэрэггүй, статистик).
-export function prediction(entries: Entry[], hobby?: string): Prediction {
+export function prediction(entries: Entry[], hobby?: string, tr: Translate = translator('mn')): Prediction {
   const w = addDays(new Date(), 1).getDay();
   const ws = weekdayStats(entries)[w], all = overallAvg(entries);
-  if (ws.avg == null || ws.n < 2) return { level: 'none', title: 'Өгөгдөл хуримтлагдаж байна', text: '2–3 долоо хоног тогтмол бүртгэвэл таны гаригийн хэв маягийг таамаглаж эхэлнэ.' };
+  if (ws.avg == null || ws.n < 2) return { level: 'none', title: tr('Өгөгдөл хуримтлагдаж байна'), text: tr('2–3 долоо хоног тогтмол бүртгэвэл таны гаригийн хэв маягийг таамаглаж эхэлнэ.') };
   const diff = ws.avg - all;
   if (diff <= -0.4) {
     const tag = topTag(entries.filter(e => weekdayOf(e.entry_date) === w && scoreOf(e) <= 2));
-    return { level: 'low', title: `Маргааш ${WD[w]} гараг: анхаарах өдөр`, text: `Өмнөх ${ws.n} ${WD[w]} гарагт таны сэтгэл санаа дунджаас ${Math.abs(diff).toFixed(1)} оноогоор доогуур байсан${tag ? ` (ихэвчлэн «${tag}»-тай холбоотой)` : ''}. Өглөө 10 минут алхаж, өдрийн дундуур 4-7-8 амьсгалын дасгал хийхийг зөвлөж байна. Өнөө орой эрт унтаарай. 🌙` };
+    return { level: 'low', title: tr('Маргааш {0} гараг: анхаарах өдөр', tr(WD[w])), text: tr('Өмнөх {0} {1} гарагт таны сэтгэл санаа дунджаас {2} оноогоор доогуур байсан{3}. Өглөө 10 минут алхаж, өдрийн дундуур 4-7-8 амьсгалын дасгал хийхийг зөвлөж байна. Өнөө орой эрт унтаарай. 🌙', ws.n, tr(WD[w]), Math.abs(diff).toFixed(1), tag ? tr(' (ихэвчлэн «{0}»-тай холбоотой)', tr(tag)) : '') };
   }
-  if (diff >= 0.4) return { level: 'high', title: `Маргааш ${WD[w]} гараг: сайхан өдөр 🌤️`, text: `${WD[w]} гарагт та ихэвчлэн сайхан байдаг. Энэ эрч хүчээ ${hobby ? `«${hobby}»` : 'дуртай зүйлдээ'} зарцуулаарай!` };
-  return { level: 'mid', title: `Маргааш ${WD[w]} гараг: тогтвортой өдөр`, text: 'Таны сэтгэл санаа энэ гарагт ихэвчлэн тогтвортой байдаг. Өдрөө жижиг зорилгоор эхлүүлээрэй.' };
+  if (diff >= 0.4) return { level: 'high', title: tr('Маргааш {0} гараг: сайхан өдөр 🌤️', tr(WD[w])), text: tr('{0} гарагт та ихэвчлэн сайхан байдаг. Энэ эрч хүчээ {1} зарцуулаарай!', tr(WD[w]), hobby ? `«${tr(hobby)}»` : tr('дуртай зүйлдээ')) };
+  return { level: 'mid', title: tr('Маргааш {0} гараг: тогтвортой өдөр', tr(WD[w])), text: tr('Таны сэтгэл санаа энэ гарагт ихэвчлэн тогтвортой байдаг. Өдрөө жижиг зорилгоор эхлүүлээрэй.') };
 }
 
-export function insights(entries: Entry[]) {
+export function insights(entries: Entry[], tr: Translate = translator('mn')) {
   const out: string[] = [];
   const lo = mean(entries.filter(e => e.sleep != null && e.sleep < 6).map(scoreOf));
   const hi = mean(entries.filter(e => e.sleep != null && e.sleep >= 7).map(scoreOf));
   const nLo = entries.filter(e => e.sleep != null && e.sleep < 6).length, nHi = entries.filter(e => e.sleep != null && e.sleep >= 7).length;
   if (lo != null && hi != null && nLo >= 3 && nHi >= 3 && hi - lo >= 0.5)
-    out.push(`😴 6 цагаас бага унтсан өдрүүдэд таны сэтгэл санаа ${Math.round(((hi - lo) / hi) * 100)}% доогуур байна.`);
+    out.push(tr('😴 6 цагаас бага унтсан өдрүүдэд таны сэтгэл санаа {0}% доогуур байна.', Math.round(((hi - lo) / hi) * 100)));
   const tag = topTag(entries.filter(e => scoreOf(e) <= 2));
-  if (tag) out.push(`🏷️ Хэцүү өдрүүдэд хамгийн их давтагдсан шалтгаан: «${tag}».`);
+  if (tag) out.push(tr('🏷️ Хэцүү өдрүүдэд хамгийн их давтагдсан шалтгаан: «{0}».', tr(tag)));
   const isWeekend = (e: Entry) => [0, 6].includes(weekdayOf(e.entry_date));
   const wk = entries.filter(isWeekend).map(scoreOf), wd = entries.filter(e => !isWeekend(e)).map(scoreOf);
-  if (wk.length >= 2 && wd.length >= 2 && mean(wk)! - mean(wd)! >= 0.5) out.push('📅 Амралтын өдрүүдэд та илүү сайхан байдаг. Ажлын өдрүүдэд жижиг амралт товлоорой.');
-  const s = streak(entries); if (s >= 3) out.push(`🔥 ${s} өдөр дараалан бүртгэлээ. Гайхалтай зуршил байна!`);
-  if (!out.length) out.push('Илүү их бүртгэл хийх тусам ажиглалт нарийвчлагдана.');
+  if (wk.length >= 2 && wd.length >= 2 && mean(wk)! - mean(wd)! >= 0.5) out.push(tr('📅 Амралтын өдрүүдэд та илүү сайхан байдаг. Ажлын өдрүүдэд жижиг амралт товлоорой.'));
+  const s = streak(entries); if (s >= 3) out.push(tr('🔥 {0} өдөр дараалан бүртгэлээ. Гайхалтай зуршил байна!', s));
+  if (!out.length) out.push(tr('Илүү их бүртгэл хийх тусам ажиглалт нарийвчлагдана.'));
   return out;
 }
 

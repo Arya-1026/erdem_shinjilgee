@@ -14,6 +14,7 @@ import { useReminder } from './use-reminder';
 import { FullPlayer, MiniPlayer } from './player';
 import { useApp } from './providers/app-provider';
 import { useSocialBadge } from './use-social-badge';
+import { useT } from '@/components/providers/locale-provider';
 
 const NAV = [
   ['/home', '🏠', 'Нүүр', 'Өнөөдөр'],
@@ -25,6 +26,7 @@ const NAV = [
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const tr = useT();
   const path = usePathname();
   const { entries, tint, isExpert, supabase } = useApp();
   const badge = useSocialBadge(supabase);
@@ -33,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <nav aria-label="Үндсэн цэс"
+      <nav aria-label={tr('Үндсэн цэс')}
         className="app-nav fixed inset-x-0 bottom-0 z-30 flex border-t bg-card desk:top-0 desk:right-auto desk:w-60 desk:flex-col desk:gap-1 desk:border-t-0 desk:border-r desk:px-3 desk:pt-5">
         <Link href="/home" className="hidden px-3 pt-2 pb-5 text-[1.6rem] desk:block"><Logo /></Link>
         {NAV.map(([href, icon, label]) => {
@@ -45,14 +47,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href === '/profile' && 'hidden desk:flex',
                 on && 'font-bold text-primary desk:bg-secondary')}>
               <span className="relative text-[1.35rem] leading-none">{icon}<SantaHat />
-                {href === '/friends' && badge > 0 && <b className="absolute -top-1.5 -right-2.5 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground" aria-label={`${badge} шинэ`}>{badge > 9 ? '9+' : badge}</b>}
-              </span><span>{label}</span>
+                {href === '/friends' && badge > 0 && <b className="absolute -top-1.5 -right-2.5 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground" aria-label={tr('{0} шинэ', badge)}>{badge > 9 ? '9+' : badge}</b>}
+              </span><span>{tr(label)}</span>
             </Link>
           );
         })}
         {isExpert && (
           <Link href="/expert" className="hidden items-center gap-3 rounded-xl px-3.5 py-3 text-[.95rem] text-muted-foreground desk:mt-auto desk:flex">
-            <span className="text-[1.35rem] leading-none">🗂️</span><span>Сэтгэл зүйчийн портал</span>
+            <span className="text-[1.35rem] leading-none">🗂️</span><span>{tr('Сэтгэл зүйчийн портал')}</span>
           </Link>
         )}
         <SeasonalNav />
@@ -60,11 +62,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')} style={{ '--mc': tint } as React.CSSProperties}>
         <header className="topbar sticky top-0 z-20 flex items-center justify-between px-4 desk:px-8">
-          <h1 className="m-0 text-xl font-bold">{active[3]}</h1>
+          <h1 className="m-0 text-xl font-bold">{tr(active[3])}</h1>
           <div className="topbar-actions flex items-center gap-2">
             <ThemeToggle />
-            <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title="Тасралтгүй бүртгэсэн өдөр">🔥 {streak(entries)}</span>
-            <Link href="/profile" aria-label="Профайл" className="rounded-full desk:hidden">
+            <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title={tr('Тасралтгүй бүртгэсэн өдөр')}>🔥 {streak(entries)}</span>
+            <Link href="/profile" aria-label={tr('Профайл')} className="rounded-full desk:hidden">
               <Avatar className="size-10" />
             </Link>
           </div>

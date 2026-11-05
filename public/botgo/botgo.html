@@ -61,7 +61,7 @@ canvas.grab{cursor:grabbing}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-if(!window.THREE){document.getElementById('stage').innerHTML='<div class="err">3D хөдөлгүүр ачаалагдсангүй.</div>';return}
+if(!window.THREE){document.getElementById('stage').innerHTML='<div class="err">3D хөдөлгүүр ачаалагдсангүй. / The 3D engine failed to load.</div>';return}
 const T=THREE, PI=Math.PI;
 const stage=document.getElementById('stage'), canvas=document.getElementById('c'), bubbleEl=document.getElementById('bubble');
 
@@ -398,7 +398,8 @@ MOODS.forEach(m=>{const b=document.createElement('button');b.type='button';b.dat
   b.addEventListener('click',()=>{setMood(m);chirp(m.id==='sad'||m.id==='tired'||m.id==='lonely'?330:620,.12)});nav.appendChild(b)});
 
 let bubbleT=0;
-function say(t){bubbleEl.textContent=t;bubbleEl.classList.add('on');bubbleT=2.2}
+// Апп (components/botgo-3d.tsx) Botgo.translate-аар сонгосон хэлний орчуулгыг өгнө
+function say(t){const tr=window.Botgo&&window.Botgo.translate;bubbleEl.textContent=tr?tr(t):t;bubbleEl.classList.add('on');bubbleT=2.2}
 
 /* ---------- sound (after first tap) ---------- */
 let ac=null;

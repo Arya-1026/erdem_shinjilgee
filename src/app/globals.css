@@ -141,6 +141,7 @@
 :root { --grad: linear-gradient(135deg, var(--primary), var(--primary-2)); --wash: none; --nav-bg: var(--card); }
 body { background-image: var(--wash); background-attachment: fixed; }
 .bg-primary { background-image: var(--grad); }
+.bg-spotify { background-image: none; } /* Spotify-ийн брэнд өнгө сонгосон өнгөөр солигдохгүй */
 .app-nav { background: var(--nav-bg); }
 .app-nav a[aria-current="page"] { position: relative; }
 ::selection { background: color-mix(in srgb, var(--primary) 28%, transparent); }

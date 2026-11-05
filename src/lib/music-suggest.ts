@@ -1,6 +1,8 @@
 /* ---------- Хүн бүрт тохирсон дууны санал (LLM) ----------
+   Дууг AI шалгасан сангаас л сонгоно (ая нь нэрээр санал болгож, Spotify-аас хайгдана).
    Хэрэглэгчийн сонсдог уран бүтээлчид, хобби, 👍/👎, тухайн mood-оос хамаарч өөр өөр дуу гарна. */
 import { ageLabel, hardAllowed, type AgeGroup } from './artists';
+import type { Locale } from './i18n';
 import { GENRE_EN, type Genre } from './mn-songs';
 import type { MoodId } from './types';
 
@@ -9,6 +11,8 @@ export type MusicKind = 'song' | 'ambient';
 export const isMusicKind = (v: unknown): v is MusicKind => v === 'song' || v === 'ambient';
 
 export type Taste = {
+  /** Ая-ны тайлбарын хэл */
+  locale?: Locale;
   mood: MoodId;
   kind?: MusicKind;
   /** Өнөөдрийн бүртгэлээс: юутай холбоотой (таг), эрчим. Тэмдэглэлийн текстийг явуулахгүй. */
@@ -19,9 +23,8 @@ export type Taste = {
   age?: AgeGroup | null;
   /** Хэрэглэгчийн сонгосон дуртай дуучид */
   favArtists?: string[];
-  /** Spotify дээр байгаа нь шалгагдсан дуунууд: AI эндээс `pick` дууг сонгоно */
-  pool?: { title: string; artist: string; fav: boolean; goal?: string }[];
-  pick?: number;
+  /** Spotify дээр байгаа нь шалгагдсан дуунууд: AI зөвхөн эндээс `count` дууг сонгоно */
+  pool?: { title: string; artist: string; fav: boolean; intl: boolean; moods: MoodId[] }[];
   /** Хэрэглэгчийн Spotify сангаас хамгийн их давтагдсан уран бүтээлчид */
   artists: string[];
   liked: string[];
@@ -101,24 +104,24 @@ export function suggestPrompt(t: Taste) {
   const genres = (t.genres ?? []).filter(g => g !== 'Метал' || hardAllowed(t.mood));
   const pool = t.pool ?? [], goals = MOOD_GOALS[t.mood];
   const lines = [
-    `The listener is ${MOOD_EN[t.mood]}. Suggest ${t.count} real, existing international songs that would genuinely help or fit them right now.`,
+    `The listener is ${MOOD_EN[t.mood]}. From the numbered list of real songs below, choose the ${t.count} that would genuinely help or fit them right now: about half Mongolian [MN] and half international [INTL].`,
     `What fits this mood: ${MOOD_GUIDE[t.mood]}`,
     `Split your picks evenly between these goals and tag each song with its goal: ${goals.map(g => `"${g.key}" = ${g.en}`).join('; ')}.`,
     t.age ? `They are ${ageLabel(t.age)} years old: prefer what people of this age actually listen to.` : '',
-    t.favArtists?.length ? `Their favorite artists: ${t.favArtists.join(', ')}. At least half of your songs must be by these artists, when they fit a goal.` : '',
-    t.artists.length ? `Artists they already listen to: ${t.artists.join(', ')}. Mostly suggest songs in a similar style (by these or similar artists), plus 1-2 discoveries.` : 'Their taste is unknown: suggest well-known, widely loved songs with variety.',
-    genres.length ? `Genres they chose: ${genres.map(g => GENRE_EN[g]).join(', ')}. All other songs must be in these genres. Only the mood rule above may override this.` : '',
-    t.hobbies.length ? `Their hobbies: ${t.hobbies.join(', ')}.` : '',
+    t.favArtists?.length ? `Their favorite artists: ${t.favArtists.join(', ')}. Prefer their songs (marked *) when they fit a goal.` : '',
+    t.artists.length ? `Artists they already listen to: ${t.artists.join(', ')}. Prefer a similar style, plus 1-2 discoveries.` : 'Their taste is unknown: prefer well-known, widely loved songs with variety.',
+    genres.length ? `Genres they chose: ${genres.map(g => GENRE_EN[g]).join(', ')}. Prefer these genres. Only the mood rule above may override this.` : '',
+    t.hobbies.length ? `Their hobbies: ${t.hobbies.join(', ')}. Prefer songs that suit these activities.` : '',
     t.today?.tags.length ? `Today their mood is related to: ${t.today.tags.join(', ')} (intensity ${t.today.intensity}/5).` : '',
     t.liked.length ? `Songs they liked: ${t.liked.join('; ')}.` : '',
     t.disliked.length ? `Songs they disliked (avoid similar): ${t.disliked.join('; ')}.` : '',
     t.exclude.length ? `Do NOT suggest any of these: ${t.exclude.join('; ')}.` : '',
-    pool.length ? `The listener lives in Mongolia. From this verified list choose the ${t.pick ?? 4} songs that best fit their mood, age and taste (* = their favorite artist). Skip any that do not fit the mood:\n${pool.map((c, i) => `${i}. ${c.artist} - ${c.title}${c.fav ? ' *' : ''}${c.goal ? ` (found as ${c.goal})` : ''}`).join('\n')}` : '',
+    `The listener lives in Mongolia. The songs, with the listener moods each one suits. Skip any that do not fit the mood:\n${pool.map((c, i) => `${i}. ${c.artist} - ${c.title} [${c.intl ? 'INTL' : 'MN'}; ${c.moods.join(', ')}]${c.fav ? ' *' : ''}`).join('\n')}`,
     'For sad/anxious/angry moods prefer comforting or gently uplifting songs, never songs that glorify self-harm.',
-    pool.length ? 'Reply with JSON only: {"mn":[{"i":0,"goal":"..."}],"s":[{"t":"Song title","a":"Artist","goal":"..."}]}. "mn" holds your picks from the verified list by number. "s" holds only international songs by non-Mongolian artists, never songs from the list.' : 'Reply with JSON only: {"s":[{"t":"Song title","a":"Artist","goal":"..."}]}',
+    'Reply with JSON only: {"picks":[{"i":0,"goal":"..."}]}. Use only numbers from the list.',
   ];
   return [
-    { role: 'system' as const, content: 'You are a thoughtful music curator. Only suggest songs that really exist; never invent titles.' },
+    { role: 'system' as const, content: 'You are a thoughtful music curator. Choose only from the given list; never invent songs.' },
     { role: 'user' as const, content: lines.filter(Boolean).join('\n') },
   ];
 }
@@ -132,7 +135,7 @@ function ambientPrompt(t: Taste) {
     t.disliked.length ? `They disliked (avoid similar): ${t.disliked.join('; ')}.` : '',
     t.exclude.length ? `Do NOT suggest any of these: ${t.exclude.join('; ')}.` : '',
     'Include 1-2 Mongolian instrumentals (morin khuur, yatga, tsuur) when they fit. Prefer well-known pieces/composers/channels so a Spotify search finds them (e.g. "Marconi Union - Weightless", "Ludovico Einaudi - Nuvole Bianche").',
-    'For each give a short reason in Mongolian (max 12 words) how it helps now.',
+    `For each give a short reason in ${t.locale === 'en' ? 'English' : 'Mongolian'} (max 12 words) how it helps now.`,
     'Reply with JSON only: {"s":[{"t":"Track title","a":"Artist, composer or channel","why":"..."}]}',
   ];
   return [
@@ -175,7 +178,7 @@ export function parsePicks(text: string, count: number) {
   const json = text.match(/\{[\s\S]*\}/)?.[0];
   if (!json) return [];
   try {
-    const rows = (JSON.parse(json) as { mn?: { i?: unknown; why?: unknown; goal?: unknown }[] }).mn ?? [];
+    const rows = (JSON.parse(json) as { picks?: { i?: unknown; why?: unknown; goal?: unknown }[] }).picks ?? [];
     const seen = new Set<number>();
     return rows.flatMap(r => {
       const i = Number(r.i);

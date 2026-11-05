@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { applyPalette, customPalette, paletteColors, PALETTE_GROUPS, PALETTES, type PaletteId } from '@/lib/palettes';
 import { cn } from '@/lib/utils';
 import { Switch } from './ui/switch';
+import { useT } from '@/components/providers/locale-provider';
 
 const swatch = (from: string, to: string, kind?: string) => (kind === 'bold' ? from : `linear-gradient(135deg, ${from}, ${to})`);
 
 /* Апп-ын өнгө сонгох: зөөлөн, градиент, гүн тод, өөрийн өнгө. Сонгосон даруйд бүх системд хэрэглэгдэнэ. */
 export function PalettePicker({ value, onChange }: { value: PaletteId; onChange: (id: PaletteId) => void }) {
+  const tr = useT();
   const isCustom = value.startsWith('custom:');
   const cur = paletteColors(value);
   const [from, setFrom] = useState(isCustom ? cur.from : '#6a4fd8');
@@ -30,15 +32,15 @@ export function PalettePicker({ value, onChange }: { value: PaletteId; onChange:
     <div className="flex flex-col gap-4">
       {PALETTE_GROUPS.map(([kind, title]) => (
         <section key={kind}>
-          <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-          <div role="radiogroup" aria-label={`${title} өнгө`} className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+          <h3 className="mb-2 text-sm font-semibold">{tr(title)}</h3>
+          <div role="radiogroup" aria-label={tr('{0} өнгө', tr(title))} className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
             {PALETTES.filter(p => p.kind === kind).map(p => {
               const on = value === p.id;
               return (
-                <button key={p.id} type="button" role="radio" aria-checked={on} title={p.desc} onClick={() => onChange(p.id)}
+                <button key={p.id} type="button" role="radio" aria-checked={on} title={tr(p.desc)} onClick={() => onChange(p.id)}
                   className={cn('flex min-w-0 flex-col items-center gap-1 rounded-2xl border bg-card p-2 text-xs transition', on ? 'border-2 border-foreground' : 'hover:border-foreground/40')}>
                   <span className="grid h-11 w-full place-items-center rounded-xl text-sm font-bold text-white" style={{ background: swatch(p.from, p.to, kind) }}>{on ? '✓' : ''}</span>
-                  <span className="w-full truncate text-center">{p.label}</span>
+                  <span className="w-full truncate text-center">{tr(p.label)}</span>
                 </button>
               );
             })}
@@ -47,24 +49,24 @@ export function PalettePicker({ value, onChange }: { value: PaletteId; onChange:
       ))}
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold">Өөрийн өнгө</h3>
+        <h3 className="mb-2 text-sm font-semibold">{tr('Өөрийн өнгө')}</h3>
         <div className={cn('rounded-2xl border bg-card p-3', isCustom && 'border-2 border-foreground')}>
           <div className="flex flex-wrap items-center gap-3">
             <span className="h-11 min-w-16 flex-1 rounded-xl" style={{ background: two ? swatch(from, to) : from }} aria-hidden="true" />
             <label className="flex flex-col items-center gap-1 text-xs">
-              <input type="color" value={from} onChange={e => pick(e.target.value, to, two)} aria-label="Үндсэн өнгө" className="size-11 cursor-pointer rounded-lg border bg-transparent p-0.5" />
-              Үндсэн
+              <input type="color" value={from} onChange={e => pick(e.target.value, to, two)} aria-label={tr('Үндсэн өнгө')} className="size-11 cursor-pointer rounded-lg border bg-transparent p-0.5" />
+              {tr('Үндсэн')}
             </label>
             {two && (
               <label className="flex flex-col items-center gap-1 text-xs">
-                <input type="color" value={to} onChange={e => pick(from, e.target.value, two)} aria-label="Хоёр дахь өнгө" className="size-11 cursor-pointer rounded-lg border bg-transparent p-0.5" />
-                Хоёр дахь
+                <input type="color" value={to} onChange={e => pick(from, e.target.value, two)} aria-label={tr('Хоёр дахь өнгө')} className="size-11 cursor-pointer rounded-lg border bg-transparent p-0.5" />
+                {tr('Хоёр дахь')}
               </label>
             )}
           </div>
           <label className="mt-3 flex items-center justify-between gap-3 text-sm">
-            Градиент болгох
-            <Switch checked={two} onCheckedChange={v => pick(from, to, v)} aria-label="Градиент болгох" />
+            {tr('Градиент болгох')}
+            <Switch checked={two} onCheckedChange={v => pick(from, to, v)} aria-label={tr('Градиент болгох')} />
           </label>
         </div>
       </section>

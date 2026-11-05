@@ -5,6 +5,7 @@ import { today } from '@/lib/date';
 import { loadSeasonPref, resolveSeason, SEASONS, type SeasonPref } from '@/lib/season';
 import { cn } from '@/lib/utils';
 import { useApp } from './providers/app-provider';
+import { useT } from '@/components/providers/locale-provider';
 
 const subscribe = (cb: () => void) => {
   addEventListener('setgel-season', cb); addEventListener('storage', cb);
@@ -85,7 +86,8 @@ export function SeasonalCorner({ items = ['❄️', '🎄'] }: { items?: string[
 
 /* Нүүр хуудсанд улирлын мэндчилгээ */
 export function SeasonalGreeting() {
+  const tr = useT();
   const season = useSeason();
   if (!season) return null;
-  return <p className="seasonal-greet mt-2 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold">{SEASONS[season].greeting}</p>;
+  return <p className="seasonal-greet mt-2 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold">{tr(SEASONS[season].greeting)}</p>;
 }
