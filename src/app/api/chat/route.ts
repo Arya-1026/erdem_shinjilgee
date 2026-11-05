@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fallbackReply } from '@/lib/chat-fallback';
-import { isCrisisText } from '@/lib/crisis';
 import { asksForExercise, asksForExpert, chatSystemPrompt, extractInlineActions, guessActions, splitActions } from '@/lib/chat-prompt';
 import { ENTRY_COLS, EXPERT_COLS, normalizeEntry, toExpert } from '@/lib/db';
+import { detectCrisis } from '@/lib/server/crisis-check';
 import { llmReply, polishMongolian } from '@/lib/server/llm';
-import { flagsSelfHarm } from '@/lib/server/moderation';
 import { createClient } from '@/lib/supabase/server';
 import type { ChatMode, Entry } from '@/lib/types';
 
@@ -32,8 +31,8 @@ export async function POST(req: Request) {
 
   await supabase.from('chat_messages').insert({ role: 'user', content: message });
 
-  // 1) Crisis: түлхүүр үг (шууд) → Moderation API. Аль нэг нь илэрвэл LLM-ийг огт дуудахгүй.
-  if (isCrisisText(message) || (await flagsSelfHarm(message))) {
+  // 1) Crisis: түлхүүр үг → Moderation ба утгын ангилал. Аль нэг нь илэрвэл хариу бичихгүй, тусламжийн утас харуулна.
+  if (await detectCrisis(message, history.filter(m => m.role === 'user').slice(-2).map(m => m.content))) {
     await supabase.from('chat_messages').insert({ role: 'assistant', content: '', crisis: true });
     return NextResponse.json({ crisis: true });
   }

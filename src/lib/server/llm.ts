@@ -90,6 +90,15 @@ export async function polishMongolian(text: string) {
   return ratio > 0.7 && ratio < 1.4 ? out : text;
 }
 
+/**
+ * Хямралын ангилал: хэрэглэгч хариу хүлээж байгаа тул богино хугацаатай, тогтвортой (temperature 0).
+ * max_tokens нь reasoning-ийг ч багтаадаг ба минутын хязгаарт тооцогддог тул бага байлгана.
+ */
+export async function llmClassify(messages: Msg[]) {
+  const opts: Opts = { temperature: 0, maxTokens: 200, timeoutMs: 5_000, reasoning: 'low' };
+  return (await callProvider(PROVIDERS[0], process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b', messages, opts)) ?? llmChat(messages, opts);
+}
+
 /** Монгол хэлээр бичих шаардлагатай ажил: том загвар → бүтэхгүй бол ердийн загвар */
 export async function llmSmart(messages: Msg[], opts: Opts = {}) {
   return (await callProvider(PROVIDERS[0], process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b', messages, opts)) ?? llmChat(messages, opts);

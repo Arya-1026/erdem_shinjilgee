@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampOffset } from '@/components/use-drag';
+import { clampOffset, nearestCorner } from '@/components/use-drag';
 import { ageGroup, artistOptions, hardAllowed, MN_ARTISTS, rankArtists } from './artists';
 import { interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './mn-songs';
 import { parseVideoClassification, videoClassifyPrompt } from './mood-classify';
@@ -154,5 +154,23 @@ describe('тоглуулагч зөөх', () => {
   });
   it('өргөн элемент хажуу тийш бараг шилжихгүй', () => {
     expect(clampOffset({ x: 50, y: 0 }, { left: 8, top: 0, right: 367, bottom: 100 }, 375, 812).x).toBe(4);
+  });
+});
+
+describe('чат буланд наалдах', () => {
+  const area = { left: 0, top: 60, right: 375, bottom: 744 }; // Толгой, доод цэсийн хоорондох хэсэг
+  const box = { left: 300, top: 660, right: 356, bottom: 716 };
+  it('хамгийн ойрын буланг сонгож, цэсийг дарахгүй', () => {
+    expect(nearestCorner({ x: 0, y: 0 }, box, area)).toEqual({ x: 9, y: 18 });
+    expect(nearestCorner({ x: -250, y: 0 }, box, area)).toEqual({ x: -290, y: 18 });
+    expect(nearestCorner({ x: 0, y: -500 }, box, area)).toEqual({ x: 9, y: -590 });
+    expect(nearestCorner({ x: -250, y: -500 }, box, area)).toEqual({ x: -290, y: -590 });
+  });
+  it('хаана ч тавьсан доод хил нь цэсээс дээр', () => {
+    for (const x of [-300, -100, 0]) for (const y of [-600, -200, 0, 200]) {
+      const o = nearestCorner({ x, y }, box, area);
+      expect(box.bottom + o.y).toBeLessThanOrEqual(area.bottom);
+      expect(box.top + o.y).toBeGreaterThanOrEqual(area.top);
+    }
   });
 });

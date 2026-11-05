@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type CalendarMark, MoodCalendar } from '@/components/charts';
+import { DayMood, MoodOverview } from '@/components/mood-overview';
 import { useApp } from '@/components/providers/app-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { dayAvg } from '@/lib/analytics';
-import { WD } from '@/lib/data';
+import { WD, WD_SHORT } from '@/lib/data';
 import { TODO_COLS } from '@/lib/db';
 import { today as todayStr, weekdayOf } from '@/lib/date';
-import { EFFORT, effortLabel, FIXED, hhmm, supportHints, TODO_CATEGORIES, TODO_EMOJIS, weekdayProfile } from '@/lib/todo-plan';
+import { addDays, ymd } from '@/lib/date';
+import { dayCapacity, EFFORT, effortLabel, FIXED, hhmm, recentState, supportHints, taskLoad, TODO_CATEGORIES, TODO_EMOJIS, weekdayProfile } from '@/lib/todo-plan';
 import { cn } from '@/lib/utils';
 import type { Todo } from '@/lib/types';
 
@@ -39,7 +41,7 @@ export default function TodoPage() {
   for (const t of [...todos].sort(byTime)) {
     if (!t.planned_date) continue;
     if (!t.done) counts[t.planned_date] = (counts[t.planned_date] ?? 0) + 1;
-    // Эможигүй ажил 📌-ээр харагдана (Тайлан хуудастай адил)
+    // Эможигүй ажил 📌-ээр харагдана
     (marks[t.planned_date] ??= []).push({ id: t.id, emoji: t.emoji ?? '📌', title: [hhmm(t.planned_time), t.title].filter(Boolean).join(' · ') });
   }
   const dayTodos = todos.filter(t => t.planned_date === day).sort(byTime);
@@ -47,10 +49,10 @@ export default function TodoPage() {
   const stats = weekdayProfile(entries, todos.filter(t => t.done));
   const hints = supportHints(todos, stats, today);
 
-  async function plan(replan = false) {
+  async function plan(mode?: 'replan' | 'gentle') {
     setBusy(true);
     try {
-      const res = await fetch('/api/todos/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, today, replan }) });
+      const res = await fetch('/api/todos/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, today, replan: mode === 'replan', gentle: mode === 'gentle' }) });
       const j: { todos?: Todo[]; summary?: string; error?: string } = await res.json();
       if (!res.ok || !j.todos) throw new Error(j.error);
       setTodos(j.todos);
@@ -101,7 +103,9 @@ export default function TodoPage() {
   const shift = (d: number) => setMonth(({ y, m }) => { const x = new Date(y, m + d, 1); return { y: x.getFullYear(), m: x.getMonth() }; });
 
   return (
-    <div className="grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
+    <>
+    <MoodOverview />
+    <div className="no-print grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
       <aside className="card-x flex flex-col gap-2.5 desk:sticky desk:top-[calc(var(--head-h)+12px)] desk:order-2">
         <h2 className="font-bold">🤖 AI туслах</h2>
         <p className="text-sm text-muted-foreground">Хийх ажлаа чөлөөтэй бичээрэй. Таны сэтгэл санаа, эрч хүч, дуусгасан ажлын түүхэд тулгуурлан хамгийн тохирох өдөрт байрлуулна.</p>
@@ -110,12 +114,14 @@ export default function TodoPage() {
           placeholder="Жишээ нь: Баасан гараг гэхэд тайлангаа дуусгах, өрөөгөө цэвэрлэх, 3 удаа гүйх"
           className="w-full resize-y rounded-xl border-[1.5px] bg-background px-3 py-2.5 focus:border-primary focus:outline-none" />
         <Button size="xl" className="w-full" disabled={busy || (!text.trim() && !waiting.length)} onClick={() => void plan()}>{busy ? 'Хуваарилж байна…' : '✨ Календарьт хуваарилах'}</Button>
-        {todos.some(t => !t.done) && <Button size="xl" variant="outline" className="w-full" disabled={busy} onClick={() => void plan(true)}>↻ Бүх ажлыг дахин хуваарилах</Button>}
+        {todos.some(t => !t.done) && <Button size="xl" variant="secondary" className="w-full" disabled={busy} onClick={() => void plan('gentle')}>🌿 Ачааллаа бууруулах</Button>}
+        {todos.some(t => !t.done) && <Button size="xl" variant="outline" className="w-full" disabled={busy} onClick={() => void plan('replan')}>↻ Бүх ажлыг дахин хуваарилах</Button>}
         {summary && <p className="rounded-xl bg-secondary p-3 text-sm" aria-live="polite">{summary}</p>}
         {waiting.length > 0 && <p className="text-xs text-muted-foreground">{waiting.length} ажил хуваарилагдаагүй байна.</p>}
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
+        <LoadStrip today={today} selected={day} onPick={setDay} />
         {hints.slice(0, 2).map(h => (
           <section key={h.date} className="card-x grad-dawn border-0">
             <h3 className="mb-1 font-semibold">Урьдчилан бэлдье 💜</h3>
@@ -138,6 +144,7 @@ export default function TodoPage() {
 
         <section className="card-x">
           <h2 className="mb-1 font-bold">{day === today ? 'Өнөөдөр' : dayName(day)}</h2>
+          <DayMood date={day} />
           {dayTodos.length ? dayTodos.map(t => editing === t.id
             ? <div key={t.id} id={`todo-${t.id}`} className="border-b py-2.5 last:border-0"><TodoForm initial={t} submitLabel="✓ Хадгалах" onSubmit={p => save(t, { ...p, planned_date: p.planned_date ?? t.planned_date ?? day })} onCancel={() => setEditing(null)} /></div>
             : <TodoRow key={t.id} t={t} onToggle={toggle} onRemove={remove} onEdit={() => setEditing(t.id)} />)
@@ -146,6 +153,37 @@ export default function TodoPage() {
         </section>
       </div>
     </div>
+    </>
+  );
+}
+
+/* Ойрын 7 хоногийн ачаалал: өдөр бүрийн багтаамжийг сэтгэл санаагаар тооцно */
+function LoadStrip({ today, selected, onPick }: { today: string; selected: string; onPick: (d: string) => void }) {
+  const { todos, entries } = useApp();
+  const stats = weekdayProfile(entries, todos.filter(t => t.done)), recent = recentState(entries, today);
+  const days = Array.from({ length: 7 }, (_, i) => ymd(addDays(new Date(today + 'T12:00'), i)));
+  return (
+    <section className="card-x">
+      <h2 className="font-bold">Ойрын 7 хоногийн ачаалал</h2>
+      <p className="mb-2 text-xs text-muted-foreground">Сэтгэл санаа тань унадаг өдөр багтаамж бага тооцогдоно.</p>
+      <div className="grid grid-cols-7 gap-1.5">
+        {days.map(d => {
+          const list = todos.filter(t => !t.done && t.planned_date === d);
+          const ratio = list.reduce((s, t) => s + taskLoad(t), 0) / dayCapacity(d, stats, today, recent);
+          const state = ratio > 1 ? ['bg-destructive', 'их'] : ratio > 0.7 ? ['bg-warm', 'дунд'] : ['bg-emerald-500', 'бага'];
+          return (
+            <button key={d} type="button" onClick={() => onPick(d)} aria-label={`${dayName(d)}: ачаалал ${state[1]}, ${list.length} ажил`}
+              className={cn('flex min-w-0 flex-col items-center gap-1 rounded-xl p-1 text-xs', d === selected && 'bg-secondary')}>
+              <span className="relative h-16 w-3 overflow-hidden rounded-full bg-muted">
+                <i className={cn('absolute inset-x-0 bottom-0 block rounded-full', state[0])} style={{ height: `${Math.min(100, ratio * 100)}%` }} />
+              </span>
+              <span className="font-semibold">{WD_SHORT[weekdayOf(d)]}</span>
+              <span className="text-muted-foreground">{list.length}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

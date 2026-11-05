@@ -48,6 +48,9 @@ type AppCtx = Omit<AppData, 'restored'> & {
   libraryVersion: number;
   dialog: DialogState;
   openDialog: (d: DialogState) => void;
+  /** Хөвөгч чатын самбар */
+  chatOpen: boolean;
+  setChatOpen: (b: boolean) => void;
 };
 
 export type MusicProvider = 'spotify' | 'youtube';
@@ -73,6 +76,7 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [bookings, setBookings] = useState(initial.bookings);
   const [tint, setTint] = useState(moodById('neutral').color);
   const [dialog, openDialog] = useState<DialogState>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [spotify, setSpotify] = useState(initial.spotify);
   const [youtube, setYoutube] = useState(initial.youtube);
   const [likedSongs, setLiked] = useState(initial.likedSongs);
@@ -195,10 +199,10 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     activeMood: lastMood(entries),
     tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion,
-    dialog, openDialog,
+    dialog, openDialog, chatOpen, setChatOpen,
   }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, youtube, likedSongs, todos, toggleLike,
     tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog]);
+    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog, chatOpen]);
 
   return <Ctx value={value}>{children}</Ctx>;
 }

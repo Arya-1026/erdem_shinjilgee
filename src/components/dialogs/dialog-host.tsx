@@ -45,7 +45,7 @@ const Title = ({ children, className }: { children: React.ReactNode; className?:
   <DialogTitle className={cn('mb-2 pr-11 text-[1.15rem] leading-tight font-bold', className)}>{children}</DialogTitle>;
 
 function Saved({ mood }: { mood: Parameters<typeof moodById>[0] }) {
-  const { openDialog } = useApp();
+  const { openDialog, setChatOpen } = useApp();
   const play = usePlay();
   const router = useRouter();
   const m = moodById(mood);
@@ -64,7 +64,7 @@ function Saved({ mood }: { mood: Parameters<typeof moodById>[0] }) {
         {['anxious', 'angry', 'sad'].includes(m.id) && <Button size="xl" onClick={() => openDialog({ kind: 'breath' })}>🫁 Амьсгалын дасгал хийх</Button>}
         <Button size="xl" className="bg-spotify hover:bg-spotify/85" onClick={() => { openDialog(null); play.mood(m.id); }}>▶ Тохирох дуу сонсох</Button>
         <Button size="xl" variant="secondary" onClick={() => go('/recs')}>✨ Зөвлөмж харах</Button>
-        <Button size="xl" variant="outline" onClick={() => go('/chat')}>💬 AI-тай ярилцах</Button>
+        <Button size="xl" variant="outline" onClick={() => { openDialog(null); setChatOpen(true); }}>💬 AI-тай ярилцах</Button>
       </div>
     </>
   );
