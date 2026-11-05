@@ -3,13 +3,15 @@
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 import { SantaHat } from './seasonal';
+import { useT } from '@/components/providers/locale-provider';
 
 /* «Сэтгэл» лого: эхний «С» үсэг нь хавирган сар, нээлттэй талд нь жижиг од анивчина.
    Хэмжээ нь font-size-аар (em) тохирно. Шинэ жилийн үеэр сар малгай өмсөнө. */
 export function Logo({ className }: { className?: string }) {
+  const tr = useT();
   const id = useId().replace(/:/g, '');
   return (
-    <span role="img" aria-label="Сэтгэл" className={cn('logo inline-flex items-baseline font-extrabold leading-none tracking-tight', className)}>
+    <span role="img" aria-label={tr('Сэтгэл')} className={cn('logo inline-flex items-baseline font-extrabold leading-none tracking-tight', className)}>
       <span className="logo-moon relative mr-[.04em] inline-block h-[.98em] w-[.84em] translate-y-[.1em]" aria-hidden>
         <svg viewBox="0 0 24 26" className="size-full overflow-visible">
           <defs>
@@ -27,7 +29,7 @@ export function Logo({ className }: { className?: string }) {
         </svg>
         <SantaHat style={{ top: '-.3em', left: '-.14em', width: '.6em', height: '.5em' }} />
       </span>
-      <span aria-hidden>этгэл</span>
+      <span aria-hidden>{tr('этгэл')}</span>
     </span>
   );
 }

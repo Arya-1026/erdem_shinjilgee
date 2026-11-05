@@ -14,7 +14,8 @@ export async function requireUser() {
   await connection();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  // reauth: session цуцлагдсан ч JWT хүчинтэй хэвээр бол proxy /login-оос /home руу буцаах тул эцэс төгсгөлгүй эргэлдэнэ
+  if (!user) redirect('/login?reauth=1');
   // Устгах хүсэлт гаргасан хүн 30 хоногийн дотор буцаж нэвтэрвэл бүртгэл нь сэргээгдэнэ
   const { data: back } = await supabase.from('profiles').update({ deletion_requested_at: null })
     .eq('id', user.id).not('deletion_requested_at', 'is', null).select('id');

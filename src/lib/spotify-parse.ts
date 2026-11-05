@@ -34,6 +34,12 @@ export function playlistEntryTrack(entry: unknown): SpotifyTrack | null {
   return toTrack(typeof e.item === 'object' ? e.item : typeof e.track === 'object' ? e.track : null);
 }
 
+/** spotify:track:ID хаягийг вэб холбоос болгоно: утсан дээр Spotify апп, бусад үед вэб тоглуулагчаар нээгдэнэ */
+export function spotifyTrackUrl(uri: string | null | undefined) {
+  const id = uri?.match(/^spotify:track:([A-Za-z0-9]+)$/)?.[1];
+  return id ? `https://open.spotify.com/track/${id}` : null;
+}
+
 /** Cache-ийн түлхүүр: том жижиг үсэг, цэг таслал, илүү зайг үл тооно */
 export const songKey = (artist: string, title: string) =>
   `${artist} ${title}`.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();

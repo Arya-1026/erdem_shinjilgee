@@ -34,5 +34,5 @@ async function AppData({ children }: { children: React.ReactNode }) {
 }
 
 function Splash() {
-  return <div className="grid min-h-dvh place-items-center text-5xl" aria-label="Ачаалж байна">🌙</div>;
+  return <div className="grid min-h-dvh place-items-center text-5xl" aria-label="Loading · Ачаалж байна">🌙</div>;
 }

@@ -9,6 +9,7 @@ import { today } from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { useApp } from './providers/app-provider';
 import { buttonVariants } from './ui/button';
+import { useT } from '@/components/providers/locale-provider';
 
 type State =
   | { kind: 'loading' }
@@ -37,6 +38,7 @@ const toState = (j: Record<string, unknown>): State =>
 
 /** Өнөөдрийн бүртгэлд тулгуурласан AI-ийн дэмжлэг. Шинэ бүртгэл нэмэгдэхэд өөрөө шинэчлэгдэнэ. */
 export function useDailySupport() {
+  const tr = useT();
   const { entries } = useApp();
   const latest = todaysEntries(entries)[0]?.id ?? null;
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -59,36 +61,37 @@ export function useDailySupport() {
       inflight.clear(); // шинэ үгийг бусад газар ч харуулна
       setState(toState(j));
     } catch {
-      toast.error('Шинэчилж чадсангүй');
+      toast.error(tr('Шинэчилж чадсангүй'));
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [tr]);
 
   return { state: latest ? state : ({ kind: 'none' } as State), refresh, busy };
 }
 
 /** Нүүр хуудасны «Өнөөдрийн дэмжлэг» карт, мөн «Бүртгэгдлээ» цонхонд */
 export function SupportBody({ compact }: { compact?: boolean }) {
+  const tr = useT();
   const { setChatOpen } = useApp();
   const { state, refresh, busy } = useDailySupport();
 
-  if (state.kind === 'none') return <p className="text-sm text-muted-foreground">Өнөөдрийн сэтгэл санаагаа бүртгэвэл танд зориулсан дэмжлэгийн үг, хийж болох жижиг алхмуудыг AI бэлдэж өгнө.</p>;
+  if (state.kind === 'none') return <p className="text-sm text-muted-foreground">{tr('Өнөөдрийн сэтгэл санаагаа бүртгэвэл танд зориулсан дэмжлэгийн үг, хийж болох жижиг алхмуудыг AI бэлдэж өгнө.')}</p>;
   if (state.kind === 'loading') return (
-    <div className="space-y-2" aria-label="Бэлдэж байна">
-      <p className="text-sm text-muted-foreground">💭 Таны өнөөдрийн бүртгэлийг уншиж, дэмжлэг бэлдэж байна…</p>
+    <div className="space-y-2" aria-label={tr('Бэлдэж байна')}>
+      <p className="text-sm text-muted-foreground">{tr('💭 Таны өнөөдрийн бүртгэлийг уншиж, дэмжлэг бэлдэж байна…')}</p>
       <div className="h-3 w-11/12 animate-pulse rounded bg-muted" /><div className="h-3 w-4/5 animate-pulse rounded bg-muted" /><div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
     </div>
   );
-  if (state.kind === 'error') return <p className="text-sm text-muted-foreground">Одоогоор дэмжлэг гаргаж чадсангүй. <button className="font-semibold text-primary" onClick={refresh}>Дахин оролдох</button></p>;
+  if (state.kind === 'error') return <p className="text-sm text-muted-foreground">{tr('Одоогоор дэмжлэг гаргаж чадсангүй.')}{' '}<button className="font-semibold text-primary" onClick={refresh}>{tr('Дахин оролдох')}</button></p>;
   if (state.kind === 'crisis') return (
     <div role="alert" className="rounded-2xl bg-destructive/10 p-3.5">
-      <b>Та ганцаараа биш 💜</b>
-      <p className="my-1.5 text-sm">Таны бичсэн зүйл надад санаа зовоож байна. Яг одоо мэргэжлийн хүнтэй ярилцахыг хүсч байна.</p>
+      <b>{tr('Та ганцаараа биш 💜')}</b>
+      <p className="my-1.5 text-sm">{tr('Таны бичсэн зүйл надад санаа зовоож байна. Яг одоо мэргэжлийн хүнтэй ярилцахыг хүсч байна.')}</p>
       <div className="flex flex-wrap gap-2">
         <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:103">📞 103</a>
-        <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:108">📞 108 Тусламжийн утас</a>
-        <Link className={buttonVariants({ size: 'xl' })} href="/experts">Сэтгэл зүйч</Link>
+        <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:108">{tr('📞 108 Тусламжийн утас')}</a>
+        <Link className={buttonVariants({ size: 'xl' })} href="/experts">{tr('Сэтгэл зүйч')}</Link>
       </div>
     </div>
   );
@@ -107,18 +110,19 @@ export function SupportBody({ compact }: { compact?: boolean }) {
         </ol>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-        <button className="font-semibold text-primary disabled:opacity-50" disabled={busy} onClick={refresh}>{busy ? 'Бичиж байна…' : '↻ Өөр үгээр'}</button>
-        {!compact && <button className="font-semibold text-primary" onClick={() => setChatOpen(true)}>💬 Энэ талаар ярилцах</button>}
-        <span className="ml-auto text-xs text-muted-foreground">{state.ai ? '✨ AI · ' : ''}{moodById(state.mood).emoji} {moodById(state.mood).label}</span>
+        <button className="font-semibold text-primary disabled:opacity-50" disabled={busy} onClick={refresh}>{busy ? tr('Бичиж байна…') : tr('↻ Өөр үгээр')}</button>
+        {!compact && <button className="font-semibold text-primary" onClick={() => setChatOpen(true)}>{tr('💬 Энэ талаар ярилцах')}</button>}
+        <span className="ml-auto text-xs text-muted-foreground">{state.ai ? '✨ AI · ' : ''}{moodById(state.mood).emoji} {tr(moodById(state.mood).label)}</span>
       </div>
     </div>
   );
 }
 
 export function DailySupportCard() {
+  const tr = useT();
   return (
     <section className="card-x grad-meadow border-border" aria-live="polite">
-      <h3 className="mb-2 font-semibold">💚 Өнөөдрийн дэмжлэг</h3>
+      <h3 className="mb-2 font-semibold">{tr('💚 Өнөөдрийн дэмжлэг')}</h3>
       <SupportBody />
     </section>
   );

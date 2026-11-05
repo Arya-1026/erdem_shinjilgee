@@ -8,6 +8,7 @@ import type { MusicKind } from '@/lib/music-suggest';
 import type { MoodId, SongRec, SpotifyTrackRow } from '@/lib/types';
 import { useApp } from './providers/app-provider';
 import { songTrack, spTrack, usePlayer, type Track } from './providers/player-provider';
+import { useT } from '@/components/providers/locale-provider';
 
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
@@ -29,6 +30,7 @@ type RecsState = { recs: SongRec[] | null; loading: boolean; reason?: string };
 
 /** Тухайн хүнд, тухайн mood-д зориулж AI-ийн санал болгосон дуунууд (сервер 7 хоног хадгална) */
 export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
+  const tr = useT();
   const { music, libraryVersion } = useApp();
   const [state, setState] = useState<RecsState & { mood?: MoodId; kind?: MusicKind }>({ recs: null, loading: false });
 
@@ -38,11 +40,12 @@ export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
       const res = await fetch(`/api/music/recs?mood=${moodId}&kind=${kind}${refresh ? '&refresh=1' : ''}`, { cache: 'no-store' });
       const j: { recs?: SongRec[]; reason?: string; cached?: boolean } = await res.json();
       setState({ mood: moodId, kind, recs: j.recs ?? [], loading: false, reason: j.reason });
-      if (refresh && j.cached) toast('Саяхан шинэчилсэн байна. Түр хүлээгээд дахин оролдоорой.');
+      if (refresh && j.reason === 'quota') toast(tr('Spotify-ийн хайлтын хязгаарт хүрсэн тул одоо шинэчлэх боломжгүй.'));
+      else if (refresh && j.cached) toast(tr('Саяхан шинэчилсэн байна. Түр хүлээгээд дахин оролдоорой.'));
     } catch {
       setState({ mood: moodId, kind, recs: [], loading: false, reason: 'error' });
     }
-  }, [moodId, kind]);
+  }, [moodId, kind, tr]);
 
   // Carousel-аар mood-уудыг гүйлгэх үед хүсэлт бүрт дуу үүсгэхгүйн тулд түр хүлээнэ (YouTube хайлтын квот)
   useEffect(() => {
@@ -57,6 +60,7 @@ export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
 
 // Зөвлөмж, хэрэглэгчийн сангаас дараалал үүсгэж тоглуулах үйлдлүүд
 export function usePlay() {
+  const tr = useT();
   const { supabase, profile, music, likedSongs } = useApp();
   const player = usePlayer();
 
@@ -82,9 +86,9 @@ export function usePlay() {
       const mixed: Track[] = [];
       for (let i = 0; i < Math.max(own.length, forYou.length); i++) { if (own[i]) mixed.push(own[i]); if (forYou[i]) mixed.push(forYou[i]); }
       const q = mixed.length ? mixed : likedSongs.map(r => songTrack(r, moodId));
-      if (!q.length) return void toast('Энэ мэдрэмжид тохирох дуу олдсонгүй');
+      if (!q.length) return void toast(tr('Энэ мэдрэмжид тохирох дуу олдсонгүй'));
       player.play(q, 0);
-      toast(`«${m.label}» үед танд зориулсан ${q.length} дуу 🎧`);
+      toast(tr('«{0}» үед танд зориулсан {1} дуу 🎧', tr(m.label), q.length));
     },
   };
 }

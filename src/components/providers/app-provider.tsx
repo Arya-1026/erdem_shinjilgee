@@ -6,10 +6,12 @@ import { lastMood } from '@/lib/analytics';
 import { moodById } from '@/lib/data';
 import { ENTRY_COLS, normalizeEntry } from '@/lib/db';
 import { hhmm, today } from '@/lib/date';
+import { languageSync } from '@/lib/i18n';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
 import { createClient } from '@/lib/supabase/client';
 import type { AppData } from '@/lib/server/dal';
 import type { Booking, Entry, EntryDraft, LikedSong, Mood, MoodId, Profile, Todo } from '@/lib/types';
+import { useLocale, useT } from '@/components/providers/locale-provider';
 
 // Нээгдэх цонхнууд (хуучин showModal-ын оронд)
 export type DialogState =
@@ -68,6 +70,8 @@ export function useApp() {
 }
 
 export function AppProvider({ initial, children }: { initial: AppData; children: React.ReactNode }) {
+  const tr = useT();
+  const { locale, picked, setLocale } = useLocale();
   const [supabase] = useState(createClient);
   const [profile, setProfile] = useState(initial.profile);
   const [entries, setEntries] = useState(initial.entries);
@@ -86,8 +90,17 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   // Хэрэглэгчийн сонгосон өнгө (өөр төхөөрөмж дээр сонгосон байж болно → localStorage-тай тааруулна)
   useEffect(() => { applyPalette(isPaletteId(profile.theme) ? profile.theme : DEFAULT_PALETTE); }, [profile.theme]);
 
+  // Энэ төхөөрөмж дээр сонгосон хэлийг профайлд хадгална (имэйл, сануулга энэ хэлээр очно).
+  // Сонголт хийгээгүй төхөөрөмж дээр профайлын хэлийг ашиглана.
+  useEffect(() => {
+    const { use, save } = languageSync(picked, profile.language, locale);
+    if (use) setLocale(use);
+    // Supabase-ийн query нь .then() дуудагдах үед л явна
+    if (save) void supabase.from('profiles').update({ language: save }).eq('id', profile.id).then(() => {});
+  }, [profile.language, profile.id, locale, picked, setLocale, supabase]);
+
   // Устгах хүсэлт гаргасан бүртгэлээр 30 хоногийн дотор нэвтэрвэл сэргээгдсэнийг мэдэгдэнэ
-  useEffect(() => { if (initial.restored) toast('Тавтай морил! Таны бүртгэл сэргээгдлээ, устгах хүсэлт цуцлагдсан 💜'); }, [initial.restored]);
+  useEffect(() => { if (initial.restored) toast(tr('Тавтай морил! Таны бүртгэл сэргээгдлээ, устгах хүсэлт цуцлагдсан 💜')); }, [initial.restored, tr]);
 
   // API route нь Google/Spotify руу redirect хийдэг тул client navigation биш, бүтэн хуудсаар шилжинэ
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -96,7 +109,7 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const musicSync = useCallback(async (p: MusicProvider) => {
     const name = PROVIDER_NAME[p];
     setSyncing(p);
-    const t = toast.loading(`${name}-аас дуунуудыг татаж, сэтгэл хөдлөлөөр ангилж байна…`);
+    const t = toast.loading(tr('{0}-аас дуунуудыг татаж, сэтгэл хөдлөлөөр ангилж байна…', name));
     try {
       const res = await fetch(`/api/${p}/sync`, { method: 'POST' });
       const j = await res.json().catch(() => ({ error: 'sync-failed' }));
@@ -104,47 +117,47 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
       const { data: st } = await supabase.rpc('spotify_status');
       setSpotify((st as AppData['spotify'][])?.[0] ?? null);
       setProfile(x => ({ ...x, spotify_connected: true }));
-      toast.success(`${j.tracks} дуу ${j.playlists} playlist-ээс бэлэн боллоо 🎧`, { id: t });
+      toast.success(tr('{0} дуу {1} playlist-ээс бэлэн боллоо 🎧', j.tracks, j.playlists), { id: t });
       setLibraryVersion(v => v + 1);
     } catch (e) {
       const lost = e instanceof Error && e.message === 'not-connected';
       if (lost) { setProfile(x => ({ ...x, [`${p}_connected`]: false })); setSpotify(null); }
-      toast.error(lost ? `${name} холболт салсан байна. Дахин холбоно уу.` : 'Синк амжилтгүй боллоо. Дахин оролдоно уу.', { id: t });
+      toast.error(lost ? tr('{0} холболт салсан байна. Дахин холбоно уу.', name) : tr('Синк амжилтгүй боллоо. Дахин оролдоно уу.'), { id: t });
     } finally {
       setSyncing(null);
     }
-  }, [supabase]);
+  }, [supabase, tr]);
 
   const musicDisconnect = useCallback(async (p: MusicProvider) => {
     const res = await fetch(`/api/${p}/disconnect`, { method: 'POST' });
-    if (!res.ok) return void toast.error('Салгаж чадсангүй');
+    if (!res.ok) return void toast.error(tr('Салгаж чадсангүй'));
     setSpotify(null);
     setProfile(x => ({ ...x, [`${p}_connected`]: false }));
     setLibraryVersion(v => v + 1);
-    toast(`${PROVIDER_NAME[p]} салгагдлаа`);
-  }, []);
+    toast(tr('{0} салгагдлаа', PROVIDER_NAME[p]));
+  }, [tr]);
   const updateProfile = useCallback(async (patch: Partial<Profile>) => {
     const prev = profile;
     setProfile(p => ({ ...p, ...patch }));
     const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id);
-    if (fail('Тохиргоо хадгалагдсангүй')(error)) setProfile(prev);
-  }, [profile, supabase]);
+    if (fail(tr('Тохиргоо хадгалагдсангүй'))(error)) setProfile(prev);
+  }, [profile, supabase, tr]);
 
   const addEntry = useCallback(async (d: EntryDraft) => {
     const { data, error } = await supabase.from('mood_entries')
       .insert({ ...d, entry_date: today(), entry_time: hhmm(new Date()) })
       .select(ENTRY_COLS).single<Entry>();
-    if (fail('Бүртгэл хадгалагдсангүй')(error) || !data) return null;
+    if (fail(tr('Бүртгэл хадгалагдсангүй'))(error) || !data) return null;
     const e = normalizeEntry(data);
     setEntries(list => [...list, e]);
     return e;
-  }, [supabase]);
+  }, [supabase, tr]);
 
   const setFeedback = useCallback((recId: string, value: number) => {
     setFb(f => ({ ...f, [recId]: value }));
     void supabase.from('rec_feedback').upsert({ user_id: profile.id, rec_id: recId, value }, { onConflict: 'user_id,rec_id' })
-      .then(({ error }) => fail('Үнэлгээ хадгалагдсангүй')(error));
-  }, [profile.id, supabase]);
+      .then(({ error }) => fail(tr('Үнэлгээ хадгалагдсангүй'))(error));
+  }, [profile.id, supabase, tr]);
 
   const toggleWatch = useCallback(async (recId: string) => {
     const has = watchlist.includes(recId);
@@ -152,28 +165,28 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     const { error } = has
       ? await supabase.from('watchlist').delete().eq('rec_id', recId)
       : await supabase.from('watchlist').insert({ rec_id: recId });
-    if (fail('Жагсаалт шинэчлэгдсэнгүй')(error)) setWatch(w => (has ? [...w, recId] : w.filter(x => x !== recId)));
+    if (fail(tr('Жагсаалт шинэчлэгдсэнгүй'))(error)) setWatch(w => (has ? [...w, recId] : w.filter(x => x !== recId)));
     return !has;
-  }, [watchlist, supabase]);
+  }, [watchlist, supabase, tr]);
 
   const addBooking: AppCtx['addBooking'] = useCallback(async b => {
     const res = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
-    if (res.status === 409) { toast.error('Энэ цаг дөнгөж захиалагдлаа. Өөр цаг сонгоно уу.'); return 'taken'; }
-    if (!res.ok) { toast.error('Захиалга амжилтгүй боллоо'); return false; }
+    if (res.status === 409) { toast.error(tr('Энэ цаг дөнгөж захиалагдлаа. Өөр цаг сонгоно уу.')); return 'taken'; }
+    if (!res.ok) { toast.error(tr('Захиалга амжилтгүй боллоо')); return false; }
     const row: Booking = await res.json();
     setBookings(list => [...list, row].sort((x, y) => x.booking_date.localeCompare(y.booking_date)));
     return true;
-  }, []);
+  }, [tr]);
 
   const cancelBooking = useCallback(async (id: string) => {
     const { error } = await supabase.from('bookings').delete().eq('id', id);
-    if (!fail('Цуцалж чадсангүй')(error)) setBookings(list => list.filter(b => b.id !== id));
-  }, [supabase]);
+    if (!fail(tr('Цуцалж чадсангүй'))(error)) setBookings(list => list.filter(b => b.id !== id));
+  }, [supabase, tr]);
 
   const bumpExercises = useCallback(() => {
     setProfile(p => ({ ...p, exercises_done: p.exercises_done + 1 }));
-    void supabase.rpc('increment_exercises').then(({ error }) => fail('Дасгал бүртгэгдсэнгүй')(error));
-  }, [supabase]);
+    void supabase.rpc('increment_exercises').then(({ error }) => fail(tr('Дасгал бүртгэгдсэнгүй'))(error));
+  }, [supabase, tr]);
 
   const toggleLike = useCallback((s: LikedSong) => {
     const has = likedSongs.some(x => x.video_id === s.video_id);
@@ -182,8 +195,8 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     setFeedback(id, has ? 0 : 1);
     const { video_id, title, artist, thumbnail, duration_s } = s;
     void (has ? supabase.from('liked_songs').delete().eq('video_id', video_id) : supabase.from('liked_songs').insert({ video_id, title, artist, thumbnail, duration_s }))
-      .then(({ error }) => fail('Дуу хадгалагдсангүй')(error));
-  }, [likedSongs, setFeedback, supabase]);
+      .then(({ error }) => fail(tr('Дуу хадгалагдсангүй'))(error));
+  }, [likedSongs, setFeedback, supabase, tr]);
 
   const value = useMemo<AppCtx>(() => ({
     supabase, profile, entries, feedback, watchlist, bookings,

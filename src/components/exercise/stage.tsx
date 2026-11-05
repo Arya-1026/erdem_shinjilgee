@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { ANIM_REGION, ANIMS, mixPose, type AnimId, type View } from '@/lib/exercise-moves';
 import { buildMannequin } from './mannequin';
+import { useT } from '@/components/providers/locale-provider';
 
 /** cycle: өөрчлөгдөхөд хөдөлгөөн эхнээсээ эхэлнэ (ижил анимацитай дараагийн алхамд ч) */
 export type StageProps = { anim: AnimId; period: number; running: boolean; cycle: number; view?: View; onFail?: () => void };
@@ -16,6 +17,7 @@ const BLEND_S = 0.7;
 
 /* 3D тайз: загвар анимацийг дагаж, камер дасгал бүрт тохирох өнцгөөс харуулна. Хуруугаар эргүүлж болно. */
 export default function ExerciseStage({ anim, period, running, cycle, view = 'front', onFail }: StageProps) {
+  const tr = useT();
   const host = useRef<HTMLDivElement>(null);
   // Render loop нь нэг удаа үүсдэг тул сүүлийн утгуудыг ref-ээс уншина
   const live = useRef({ anim, period, running, cycle, view });
@@ -146,5 +148,5 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     };
   }, []);
 
-  return <div ref={host} className="size-full cursor-grab touch-pan-y active:cursor-grabbing" role="img" aria-label="Дасгал үзүүлж буй 3D загвар. Чирж эргүүлнэ." />;
+  return <div ref={host} className="size-full cursor-grab touch-pan-y active:cursor-grabbing" role="img" aria-label={tr('Дасгал үзүүлж буй 3D загвар. Чирж эргүүлнэ.')} />;
 }

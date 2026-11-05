@@ -3,6 +3,11 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "cn"
+import { useT } from '@/components/providers/locale-provider';
+
+function CloseLabel() {
+  return useT()('Хаах');
+}
 
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
@@ -71,7 +76,7 @@ function DialogContent({
             }
           >
             <XIcon className="size-5" />
-            <span className="sr-only">Хаах</span>
+            <span className="sr-only"><CloseLabel /></span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

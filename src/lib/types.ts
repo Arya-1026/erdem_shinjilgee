@@ -1,4 +1,5 @@
 import type { Move } from './exercise-moves';
+import type { Locale } from './i18n';
 
 import type { PaletteId } from './palettes';
 
@@ -44,6 +45,8 @@ export type Profile = {
   hobbies: string[];
   /** Апп-ын үндсэн өнгө (lib/palettes.ts) */
   theme: PaletteId;
+  /** Апп-ын хэл. null: хэрэглэгч хараахан сонгоогүй */
+  language: Locale | null;
   reminder_time: string;
   reminder_enabled: boolean;
   art_mode: 'emoji' | 'art';

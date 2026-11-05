@@ -12,6 +12,7 @@ import { useApp } from './providers/app-provider';
 import { Segmented } from './segmented';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
+import { useT } from '@/components/providers/locale-provider';
 
 export type SheetTab = 'friends' | 'requests' | 'blocked';
 
@@ -20,6 +21,7 @@ const SHEET = 'top-auto bottom-0 left-0 h-[80dvh] max-w-full translate-x-0 trans
 
 /* Профайл дээрх найзын цонх: хайх (найзаа шүүх + шинэ хүн олж нэмэх), хүсэлт, блок */
 export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends' }: { open: boolean; onOpenChange: (o: boolean) => void; tab?: SheetTab }) {
+  const tr = useT();
   const { supabase } = useApp();
   const [tab, setTab] = useState<SheetTab>(initial);
   const [q, setQ] = useState('');
@@ -50,14 +52,14 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends' }: {
   const actions = useFriendActions(load);
   const act = async (p: PromiseLike<{ data?: unknown; error: unknown }>, ok: string) => {
     const { error } = await p;
-    if (error) return void toast.error(socialError(error as Error));
+    if (error) return void toast.error(tr(socialError(error as Error)));
     toast(ok);
     load();
   };
   const add = async (p: SearchRow) => {
     const { data, error } = await supabase.rpc('send_friend_request', { target: p.id });
-    if (error) return void toast.error(socialError(error));
-    toast(data === 'friend' ? `${p.name} найз боллоо 🎉` : 'Найзын хүсэлт илгээлээ 📨');
+    if (error) return void toast.error(tr(socialError(error)));
+    toast(data === 'friend' ? tr('{0} найз боллоо 🎉', p.name) : tr('Найзын хүсэлт илгээлээ 📨'));
     setFound(r => r?.map(x => (x.id === p.id ? { ...x, relation: data as SearchRow['relation'] } : x)) ?? null);
     load();
   };
@@ -71,58 +73,58 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends' }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={SHEET}>
         <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/30 sm:hidden" aria-hidden />
-        <DialogTitle className="text-center text-base font-bold">Найзууд</DialogTitle>
-        <DialogDescription className="sr-only">Найзаа хайх, хүсэлт, блоклосон хүмүүс</DialogDescription>
+        <DialogTitle className="text-center text-base font-bold">{tr('Найзууд')}</DialogTitle>
+        <DialogDescription className="sr-only">{tr('Найзаа хайх, хүсэлт, блоклосон хүмүүс')}</DialogDescription>
         <div className="flex flex-col gap-2">
-          <Segmented full label="Хэсэг" value={tab} onChange={setTab} options={[
-            ['friends', `Найзууд${friends?.length ? ` ${friends.length}` : ''}`],
-            ['requests', `Хүсэлт${incoming.length ? ` ${incoming.length}` : ''}`],
-            ['blocked', `Блок${blocked.length ? ` ${blocked.length}` : ''}`],
+          <Segmented full label={tr('Хэсэг')} value={tab} onChange={setTab} options={[
+            ['friends', tr('Найзууд{0}', friends?.length ? ` ${friends.length}` : '')],
+            ['requests', tr('Хүсэлт{0}', incoming.length ? ` ${incoming.length}` : '')],
+            ['blocked', tr('Блок{0}', blocked.length ? ` ${blocked.length}` : '')],
           ]} />
-          <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={tab === 'friends' ? '🔍 Хайх: нэр эсвэл ID' : '🔍 Хайх'} aria-label="Хайх"
+          <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder={tab === 'friends' ? tr('🔍 Хайх: нэр эсвэл ID') : tr('🔍 Хайх')} aria-label={tr('Хайх')}
             className="min-h-10 w-full rounded-xl border-0 bg-secondary px-3.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
         </div>
 
         <div className="min-h-0 overflow-y-auto overscroll-contain">
           {tab === 'friends' && (
-            friends === null ? <Empty>Ачаалж байна…</Empty> : <>
+            friends === null ? <Empty>{tr('Ачаалж байна…')}</Empty> : <>
               {friends.filter(match).map(f => (
                 <Row key={f.id} p={f} mood={f.mood} href={`/friends/${f.id}`} onGo={close}
-                  title={<>{f.favorite && '⭐ '}{f.name}{f.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}</>}
-                  sub={[f.handle && `@${f.handle}`, f.mood && `${moodById(f.mood).emoji} ${moodById(f.mood).label}`].filter(Boolean).join(' · ')}>
-                  <ActionMenu items={actions(f, { isFriend: true })} label={`${f.name}: үйлдэл`} />
+                  title={<>{f.favorite && '⭐ '}{f.name}{f.mood_hidden && <span className="ml-1 text-xs" title={tr('Та энэ хүнээс сэтгэл санаагаа нуусан')}>🙈</span>}</>}
+                  sub={[f.handle && `@${f.handle}`, f.mood && `${moodById(f.mood).emoji} ${tr(moodById(f.mood).label)}`].filter(Boolean).join(' · ')}>
+                  <ActionMenu items={actions(f, { isFriend: true })} label={tr('{0}: үйлдэл', f.name)} />
                 </Row>
               ))}
-              {!friends.filter(match).length && !t && <Empty>Одоогоор найз алга. Дээр нэр эсвэл ID бичиж хайгаарай.</Empty>}
-              {found && found.length > 0 && <h3 className="mt-3 mb-1 text-xs font-semibold text-muted-foreground">Бусад хүмүүс</h3>}
+              {!friends.filter(match).length && !t && <Empty>{tr('Одоогоор найз алга. Дээр нэр эсвэл ID бичиж хайгаарай.')}</Empty>}
+              {found && found.length > 0 && <h3 className="mt-3 mb-1 text-xs font-semibold text-muted-foreground">{tr('Бусад хүмүүс')}</h3>}
               {found?.map(p => (
                 <Row key={p.id} p={p} href={`/friends/${p.id}`} onGo={close} title={p.name} sub={p.handle ? `@${p.handle}` : ''}>
-                  {p.relation === 'none' ? <Button size="sm" className="h-8 px-3" onClick={() => void add(p)}>Нэмэх</Button>
-                    : p.relation === 'incoming' ? <Button size="sm" className="h-8 px-3" onClick={() => void add(p)}>Зөвшөөрөх</Button>
-                    : <span className="text-xs text-muted-foreground">Илгээсэн</span>}
+                  {p.relation === 'none' ? <Button size="sm" className="h-8 px-3" onClick={() => void add(p)}>{tr('Нэмэх')}</Button>
+                    : p.relation === 'incoming' ? <Button size="sm" className="h-8 px-3" onClick={() => void add(p)}>{tr('Зөвшөөрөх')}</Button>
+                    : <span className="text-xs text-muted-foreground">{tr('Илгээсэн')}</span>}
                 </Row>
               ))}
-              {t.length >= 2 && found && !found.length && !friends.filter(match).length && <Empty>Хүн олдсонгүй</Empty>}
+              {t.length >= 2 && found && !found.length && !friends.filter(match).length && <Empty>{tr('Хүн олдсонгүй')}</Empty>}
             </>
           )}
 
           {tab === 'requests' && <>
-            {!requests.filter(match).length && <Empty>Хүсэлт алга</Empty>}
+            {!requests.filter(match).length && <Empty>{tr('Хүсэлт алга')}</Empty>}
             {requests.filter(match).map(r => (
-              <Row key={r.id} p={r} href={`/friends/${r.id}`} onGo={close} title={r.name} sub={r.direction === 'incoming' ? 'Танд хүсэлт илгээсэн' : 'Хариу хүлээж байна'}>
+              <Row key={r.id} p={r} href={`/friends/${r.id}`} onGo={close} title={r.name} sub={r.direction === 'incoming' ? tr('Танд хүсэлт илгээсэн') : tr('Хариу хүлээж байна')}>
                 {r.direction === 'incoming' ? <>
-                  <Button size="sm" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: true }), `${r.name} найз боллоо 🎉`)}>Зөвшөөрөх</Button>
-                  <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: false }), 'Татгалзлаа')}>Устгах</Button>
-                </> : <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('remove_friend', { target: r.id }), 'Хүсэлтээ цуцаллаа')}>Цуцлах</Button>}
+                  <Button size="sm" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: true }), tr('{0} найз боллоо 🎉', r.name))}>{tr('Зөвшөөрөх')}</Button>
+                  <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: false }), tr('Татгалзлаа'))}>{tr('Устгах')}</Button>
+                </> : <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('remove_friend', { target: r.id }), tr('Хүсэлтээ цуцаллаа'))}>{tr('Цуцлах')}</Button>}
               </Row>
             ))}
           </>}
 
           {tab === 'blocked' && <>
-            {!blocked.filter(match).length && <Empty>Блоклосон хүн алга</Empty>}
+            {!blocked.filter(match).length && <Empty>{tr('Блоклосон хүн алга')}</Empty>}
             {blocked.filter(match).map(b => (
               <Row key={b.id} p={b} title={b.name} sub={b.handle ? `@${b.handle}` : ''}>
-                <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('unblock_user', { target: b.id }), 'Блокоос гаргалаа')}>Блок цуцлах</Button>
+                <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('unblock_user', { target: b.id }), tr('Блокоос гаргалаа'))}>{tr('Блок цуцлах')}</Button>
               </Row>
             ))}
           </>}
@@ -157,6 +159,7 @@ const Empty = ({ children }: { children: React.ReactNode }) => <p className="py-
 
 /* Профайлын Бүртгэл/Дасгал/Streak-ийн хажууд «Найзууд» тоо: дарахад найзын цонх гарна */
 export function FriendsTile() {
+  const tr = useT();
   const { supabase } = useApp();
   const [n, setN] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -168,7 +171,7 @@ export function FriendsTile() {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className="rounded-2xl border bg-card p-3.5 text-left transition hover:border-primary">
-        <span className="text-xs text-muted-foreground">Найзууд</span>
+        <span className="text-xs text-muted-foreground">{tr('Найзууд')}</span>
         <b className="block text-[1.4rem]">{n ?? '–'}</b>
       </button>
       <FriendsSheet open={open} onOpenChange={setOpen} />

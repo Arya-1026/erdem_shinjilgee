@@ -3,6 +3,7 @@
    ингэснээр огноо нь үргэлж хугацаанд багтаж, ачаалал хэтрэхгүй. */
 import { MOODS, WD } from './data';
 import { addDays, weekdayOf, ymd } from './date';
+import { translator, type Locale, type Translate } from './i18n';
 import type { Entry, Todo } from './types';
 
 export const TODO_CATEGORIES = ['Ажил', 'Хичээл', 'Гэр', 'Эрүүл мэнд', 'Хувийн', 'Бүтээлч'];
@@ -46,24 +47,24 @@ function dayScore(d: DayStat, t: Pick<Todo, 'effort' | 'category'>, offset: numb
   return fit + Math.min(3, d.done[t.category] ?? 0) * 0.4 - offset * 0.06;
 }
 
-function explain(d: DayStat, t: Pick<Todo, 'effort' | 'category'>, due: string | null, date: string) {
-  const day = WD[d.w], bits: string[] = [];
+function explain(d: DayStat, t: Pick<Todo, 'effort' | 'category'>, due: string | null, date: string, tr: Translate) {
+  const day = tr(WD[d.w]), bits: string[] = [];
   const count = d.done[t.category] ?? 0;
-  if (count >= 2) bits.push(`${day} гарагт та «${t.category}» төрлийн ${count} ажил дуусгаж байсан`);
+  if (count >= 2) bits.push(tr('{0} гарагт та «{1}» төрлийн {2} ажил дуусгаж байсан', day, tr(t.category), count));
   if (known(d)) {
     const mood = d.mood!.toFixed(1);
-    if (t.effort === 3) bits.push(`${day} гарагт сэтгэл санаа тань дунджаар ${mood}/5${d.energy != null ? `, эрч хүч ${d.energy.toFixed(1)}/5` : ''} байдаг тул хүнд ажилд тохиромжтой`);
-    else if (t.effort === 1 && d.mood! < 3) bits.push(`${day} гарагт сэтгэл санаа тань дунджаар ${mood}/5 байдаг тул хөнгөн ажил тавилаа`);
-    else bits.push(`${day} гарагийн дундаж сэтгэл санаа ${mood}/5`);
+    if (t.effort === 3) bits.push(tr('{0} гарагт сэтгэл санаа тань дунджаар {1}/5{2} байдаг тул хүнд ажилд тохиромжтой', day, mood, d.energy != null ? tr(', эрч хүч {0}/5', d.energy.toFixed(1)) : ''));
+    else if (t.effort === 1 && d.mood! < 3) bits.push(tr('{0} гарагт сэтгэл санаа тань дунджаар {1}/5 байдаг тул хөнгөн ажил тавилаа', day, mood));
+    else bits.push(tr('{0} гарагийн дундаж сэтгэл санаа {1}/5', day, mood));
   }
-  if (due && due === date) bits.push('эцсийн хугацаа энэ өдөр');
-  return bits.length ? `${bits.join('. ')}.` : 'Энэ гарагийн бүртгэл хараахан цөөн тул ачааллыг жигд хуваарилав. Бүртгэл нэмэгдэх тусам илүү оновчтой болно.';
+  if (due && due === date) bits.push(tr('эцсийн хугацаа энэ өдөр'));
+  return bits.length ? `${bits.join('. ')}.` : tr('Энэ гарагийн бүртгэл хараахан цөөн тул ачааллыг жигд хуваарилав. Бүртгэл нэмэгдэх тусам илүү оновчтой болно.');
 }
 
 export type Placement = { id: string; planned_date: string; reason: string };
 
 /** Хүнд, хугацаа ойртсон ажлыг эхэлж байрлуулна. Өдрийн ачаалал хэтэрвэл дараагийн тохирох өдөр рүү шилжинэ. */
-export function planTodos(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'category' | 'due_date'>[], stats: DayStat[], today: string, busy: Record<string, number> = {}): Placement[] {
+export function planTodos(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'category' | 'due_date'>[], stats: DayStat[], today: string, busy: Record<string, number> = {}, tr: Translate = translator('mn')): Placement[] {
   const start = new Date(today + 'T12:00');
   const days = Array.from({ length: HORIZON }, (_, i) => ymd(addDays(start, i)));
   const load: Record<string, number> = { ...busy };
@@ -80,7 +81,7 @@ export function planTodos(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'categ
       return s(d) > s(best) ? d : best;
     });
     load[date] = (load[date] ?? 0) + t.minutes;
-    return { id: t.id, planned_date: date, reason: explain(stats[weekdayOf(date)], t, t.due_date, date) };
+    return { id: t.id, planned_date: date, reason: explain(stats[weekdayOf(date)], t, t.due_date, date, tr) };
   });
 }
 
@@ -114,15 +115,15 @@ export function dayCapacity(date: string, stats: DayStat[], today: string, recen
   return Math.round(c);
 }
 
-function explainGentle(date: string, t: Pick<Todo, 'effort' | 'due_date'>, stats: DayStat[], today: string, recent: RecentState, minutes: number) {
-  const d = stats[weekdayOf(date)], day = WD[d.w], bits: string[] = [];
-  if (recentLow(date, today, recent)) bits.push(`Сүүлийн өдрүүдэд сэтгэл санаа тань доогуур (${recent.mood!.toFixed(1)}/5) байгаа тул ойрын өдрүүдийг хөнгөвчиллөө`);
+function explainGentle(date: string, t: Pick<Todo, 'effort' | 'due_date'>, stats: DayStat[], today: string, recent: RecentState, minutes: number, tr: Translate) {
+  const d = stats[weekdayOf(date)], day = tr(WD[d.w]), bits: string[] = [];
+  if (recentLow(date, today, recent)) bits.push(tr('Сүүлийн өдрүүдэд сэтгэл санаа тань доогуур ({0}/5) байгаа тул ойрын өдрүүдийг хөнгөвчиллөө', recent.mood!.toFixed(1)));
   if (known(d)) {
-    if (d.mood! < 3) bits.push(`${day} гарагт сэтгэл санаа тань ихэвчлэн унадаг (${d.mood!.toFixed(1)}/5) тул энэ өдөр бага ажил тавилаа`);
-    else if (t.effort === 3) bits.push(`${day} гарагт сэтгэл санаа тань сайн (${d.mood!.toFixed(1)}/5) тул хүнд ажлыг энд тавилаа`);
+    if (d.mood! < 3) bits.push(tr('{0} гарагт сэтгэл санаа тань ихэвчлэн унадаг ({1}/5) тул энэ өдөр бага ажил тавилаа', day, d.mood!.toFixed(1)));
+    else if (t.effort === 3) bits.push(tr('{0} гарагт сэтгэл санаа тань сайн ({1}/5) тул хүнд ажлыг энд тавилаа', day, d.mood!.toFixed(1)));
   }
-  if (t.due_date === date) bits.push('эцсийн хугацаа энэ өдөр');
-  bits.push(`Энэ өдрийн нийт ажил ${minutes} минут`);
+  if (t.due_date === date) bits.push(tr('эцсийн хугацаа энэ өдөр'));
+  bits.push(tr('Энэ өдрийн нийт ажил {0} минут', minutes));
   return `${bits.join('. ')}.`;
 }
 
@@ -130,7 +131,7 @@ function explainGentle(date: string, t: Pick<Todo, 'effort' | 'due_date'>, stats
  * Ачаалал багатай хуваарь: ажил бүрийг багтаамждаа хамгийн сул өдөрт тавина, өдөрт нэгээс олон хүнд ажил
  * өгөхгүй, сэтгэл санаа унадаг өдөр хүнд ажил тавихгүй (хугацаа шаардахаас бусад үед). busy: хөдөлгөхгүй ажлууд.
  */
-export function planGentle(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'due_date'>[], stats: DayStat[], today: string, recent: RecentState, busy: Record<string, number> = {}, busyLoad: Record<string, number> = busy): Placement[] {
+export function planGentle(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'due_date'>[], stats: DayStat[], today: string, recent: RecentState, busy: Record<string, number> = {}, busyLoad: Record<string, number> = busy, tr: Translate = translator('mn')): Placement[] {
   const start = new Date(today + 'T12:00');
   const days = Array.from({ length: GENTLE_HORIZON }, (_, i) => ymd(addDays(start, i)));
   const cap = Object.fromEntries(days.map(d => [d, dayCapacity(d, stats, today, recent)]));
@@ -152,22 +153,22 @@ export function planGentle(tasks: Pick<Todo, 'id' | 'effort' | 'minutes' | 'due_
     if (t.effort === 3) heavy.add(date);
     return { t, date };
   });
-  return placed.map(({ t, date }) => ({ id: t.id, planned_date: date, reason: explainGentle(date, t, stats, today, recent, minutes[date]) }));
+  return placed.map(({ t, date }) => ({ id: t.id, planned_date: date, reason: explainGentle(date, t, stats, today, recent, minutes[date], tr) }));
 }
 
 export type SupportHint = { date: string; minutes: number; text: string };
 
 /** Ойрын 7 хоногт ачаалал их, эсвэл сэтгэл санаа ихэвчлэн унадаг өдөр ажил их байвал урьдчилан анхааруулна */
-export function supportHints(todos: Pick<Todo, 'planned_date' | 'minutes' | 'done'>[], stats: DayStat[], today: string): SupportHint[] {
+export function supportHints(todos: Pick<Todo, 'planned_date' | 'minutes' | 'done'>[], stats: DayStat[], today: string, tr: Translate = translator('mn')): SupportHint[] {
   const start = new Date(today + 'T12:00');
   return Array.from({ length: 7 }, (_, i) => ymd(addDays(start, i))).flatMap(date => {
     const minutes = todos.filter(t => !t.done && t.planned_date === date).reduce((s, t) => s + t.minutes, 0);
     const d = stats[weekdayOf(date)], low = known(d) && d.mood! < 3;
     if (minutes < (low ? 60 : 240)) return [];
-    const day = WD[d.w];
+    const day = tr(WD[d.w]);
     return [{ date, minutes, text: low
-      ? `${day} гарагт сэтгэл санаа тань ихэвчлэн унадаг (${d.mood!.toFixed(1)}/5), гэтэл ${minutes} минутын ажил төлөвлөгдсөн байна. Завсарлага, амьсгалын дасгал товлоорой.`
-      : `${day} гарагт ${minutes} минутын ажил төлөвлөгдсөн байна. Ачаалал ихтэй тул завсарлагаа урьдчилан бодоорой.` }];
+      ? tr('{0} гарагт сэтгэл санаа тань ихэвчлэн унадаг ({1}/5), гэтэл {2} минутын ажил төлөвлөгдсөн байна. Завсарлага, амьсгалын дасгал товлоорой.', day, d.mood!.toFixed(1), minutes)
+      : tr('{0} гарагт {1} минутын ажил төлөвлөгдсөн байна. Ачаалал ихтэй тул завсарлагаа урьдчилан бодоорой.', day, minutes) }];
   });
 }
 
@@ -178,7 +179,7 @@ export function statsSummary(stats: DayStat[]) {
 
 const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
-export function parseTaskList(text: string, today: string) {
+export function parseTaskList(text: string, today: string, tr: Translate = translator('mn')) {
   const json = text.match(/\{[\s\S]*\}/)?.[0];
   if (!json) return [];
   const last = ymd(addDays(new Date(today + 'T12:00'), 90));
@@ -193,7 +194,7 @@ export function parseTaskList(text: string, today: string) {
       const time = typeof r.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) ? r.time : null;
       return [{
         title, due_date: due, planned_date: on, planned_time: time,
-        reason: on ? `${FIXED}Та энэ өдрийг өөрөө заасан.` : '',
+        reason: on ? tr('{0}Та энэ өдрийг өөрөө заасан.', FIXED) : '',
         category: TODO_CATEGORIES.includes(r.category as string) ? (r.category as string) : 'Ажил',
         effort: [1, 2, 3].includes(Number(r.effort)) ? Number(r.effort) : 2,
         minutes: Math.min(600, Math.max(5, Math.round(Number(r.minutes)) || 30)),
@@ -220,7 +221,7 @@ export function calendarTable(today: string, days = 21) {
 
 export function taskPrompt(text: string, today: string) {
   return [
-    { role: 'system' as const, content: `You turn a Mongolian-speaking person's free text into a task list. Today is ${today}, ${WEEKDAY_EN[weekdayOf(today)]}.
+    { role: 'system' as const, content: `You turn a person's free text (Mongolian or English) into a task list. Today is ${today}, ${WEEKDAY_EN[weekdayOf(today)]}.
 Use ONLY this calendar to pick dates, never count days yourself:
 ${calendarTable(today)}
 
@@ -228,17 +229,19 @@ Mongolian day words:
 - "<weekday> гарагт", "<weekday>", "дараагийн <weekday>", "ирэх <weekday>" = the FIRST such weekday after today in the calendar.
 - "дараа долоо хоногийн <weekday>" = that weekday in the rows marked "next week".
 - "маргааш" = tomorrow, "нөгөөдөр" = day after tomorrow, "өнөөдөр" = today.
+- English day words work the same way ("on Friday", "next Monday", "tomorrow"). "by Friday" or "before Friday" is a deadline.
 - If the task happens ON a day, put that date in "on". If they say "гэхэд" or "-аас өмнө" (by / before), it is a deadline: put it in "due" and leave "on" null.
 - "time": HH:MM (24h) only if a clock time is given ("10 цагт" -> "10:00", "оройн 7-д" -> "19:00"), else null.
-Keep titles in Mongolian, short, without the date words. category is one of: ${TODO_CATEGORIES.join(', ')}. effort: 1 light, 2 medium, 3 heavy. minutes: realistic estimate.
+Keep titles in the language the person wrote in, short, without the date words. category is exactly one of these values, copied as written: ${TODO_CATEGORIES.join(', ')} (work, study, home, health, personal, creative). effort: 1 light, 2 medium, 3 heavy. minutes: realistic estimate.
 Reply with JSON only: {"t":[{"title":"...","category":"...","effort":2,"minutes":60,"on":null,"due":null,"time":null}]}` },
     { role: 'user' as const, content: text.slice(0, 2000) },
   ];
 }
 
-export function explainPrompt(rows: { title: string; date: string; day: string; effort: number; note: string }[], stats: string) {
+export function explainPrompt(rows: { title: string; date: string; day: string; effort: number; note: string }[], stats: string, locale: Locale = 'mn') {
+  const lang = locale === 'en' ? 'English' : 'Mongolian';
   return [
-    { role: 'system' as const, content: 'You are a warm Mongolian planning assistant. A scheduler already chose the dates; do not change them. For each task write one or two short Mongolian sentences explaining why that day suits this person, using only the facts given. Then write a 2-sentence Mongolian summary of the plan. Reply with JSON only: {"why":["..."],"summary":"..."} with why in the same order as the tasks.' },
+    { role: 'system' as const, content: `You are a warm ${lang}-speaking planning assistant. A scheduler already chose the dates; do not change them. For each task write one or two short ${lang} sentences explaining why that day suits this person, using only the facts given. Then write a 2-sentence ${lang} summary of the plan. Reply with JSON only: {"why":["..."],"summary":"..."} with why in the same order as the tasks.` },
     { role: 'user' as const, content: `Their weekly pattern:\n${stats}\n\nPlan:\n${rows.map((r, i) => `${i}. ${r.title} → ${r.day} ${r.date}, effort ${r.effort}/3. Facts: ${r.note}`).join('\n')}` },
   ];
 }

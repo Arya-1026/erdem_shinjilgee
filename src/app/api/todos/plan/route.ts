@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { WD } from '@/lib/data';
 import { TODO_COLS } from '@/lib/db';
 import { weekdayOf } from '@/lib/date';
+import { matchesLocale, translator } from '@/lib/i18n';
 import { llmConfigured, llmSmart } from '@/lib/server/llm';
+import { requestLocale } from '@/lib/server/locale';
 import { createClient } from '@/lib/supabase/server';
 import { explainPrompt, isFixed, parseExplain, parseTaskList, planGentle, planTodos, recentState, statsSummary, taskLoad, taskPrompt, weekdayProfile } from '@/lib/todo-plan';
 import type { Todo } from '@/lib/types';
@@ -21,11 +23,12 @@ export async function POST(req: Request) {
   const today = typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today) ? body.today : null;
   if (!today) return NextResponse.json({ error: 'invalid today' }, { status: 400 });
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
+  const locale = await requestLocale(), tr = translator(locale);
 
   // Хэрэглэгчийн заасан өдөрт шууд тавьсан ажлууд (хуваарилагч хөдөлгөхгүй)
   let pinned: { title: string; planned_date: string | null; planned_time: string | null }[] = [];
   if (text) {
-    const parsed = llmConfigured() ? parseTaskList((await llmSmart(taskPrompt(text, today), { temperature: 0.2, maxTokens: 1200, timeoutMs: 25_000 }))?.text ?? '', today) : [];
+    const parsed = llmConfigured() ? parseTaskList((await llmSmart(taskPrompt(text, today), { temperature: 0.2, maxTokens: 1200, timeoutMs: 25_000 }))?.text ?? '', today, tr) : [];
     // AI байхгүй/бүтэхгүй бол мөр бүрийг нэг ажил гэж үзнэ
     const rows = parsed.length ? parsed : text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 20).map(title => ({ title: title.slice(0, 200) }));
     const { error } = await supabase.from('todos').insert(rows);
@@ -55,9 +58,9 @@ export async function POST(req: Request) {
     busyLoad[t.planned_date] = (busyLoad[t.planned_date] ?? 0) + taskLoad(t);
   }
 
-  const plan = gentle ? planGentle(tasks, stats, today, recentState(entries.data ?? [], today), busy, busyLoad) : planTodos(tasks, stats, today, busy);
+  const plan = gentle ? planGentle(tasks, stats, today, recentState(entries.data ?? [], today), busy, busyLoad, tr) : planTodos(tasks, stats, today, busy, tr);
   const byId = new Map(tasks.map(t => [t.id, t]));
-  let summary = plan.length ? `${plan.length} ажлыг таны сэтгэл санаа, эрч хүч сайн өдрүүдэд тааруулж хуваариллаа.` : 'Хуваарилах шинэ ажил алга.';
+  let summary = plan.length ? tr('{0} ажлыг таны сэтгэл санаа, эрч хүч сайн өдрүүдэд тааруулж хуваариллаа.', plan.length) : tr('Хуваарилах шинэ ажил алга.');
   if (gentle) {
     const peak = (rows: { planned_date: string | null; minutes: number }[]) => {
       const sum: Record<string, number> = {};
@@ -67,20 +70,20 @@ export async function POST(req: Request) {
     const where = new Map(plan.map(p => [p.id, p.planned_date]));
     const before = peak(open), after = peak(open.map(t => ({ planned_date: where.get(t.id) ?? t.planned_date, minutes: t.minutes })));
     summary = plan.length
-      ? `${plan.length} ажлыг сэтгэл санаанд тань тааруулж тараалаа. Хамгийн ачаалалтай өдөр ${before} минутаас ${after} минут болсон.`
-      : 'Дахин тараах ажил алга. Таны өөрөө өдрийг нь заасан ажлууд хэвээр үлдэнэ.';
+      ? tr('{0} ажлыг сэтгэл санаанд тань тааруулж тараалаа. Хамгийн ачаалалтай өдөр {1} минутаас {2} минут болсон.', plan.length, before, after)
+      : tr('Дахин тараах ажил алга. Таны өөрөө өдрийг нь заасан ажлууд хэвээр үлдэнэ.');
   }
 
   if (plan.length && llmConfigured()) {
-    const rows = plan.map(p => { const t = byId.get(p.id)!; return { title: t.title, date: p.planned_date, day: WD[weekdayOf(p.planned_date)], effort: t.effort, note: p.reason }; });
-    const r = parseExplain((await llmSmart(explainPrompt(rows, statsSummary(stats)), { temperature: 0.5, maxTokens: 1600, timeoutMs: 25_000 }))?.text ?? '', plan.length);
-    r?.why.forEach((w, i) => { if (w) plan[i].reason = w; });
-    if (r?.summary && !gentle) summary = r.summary;
+    const rows = plan.map(p => { const t = byId.get(p.id)!; return { title: t.title, date: p.planned_date, day: tr(WD[weekdayOf(p.planned_date)]), effort: t.effort, note: p.reason }; });
+    const r = parseExplain((await llmSmart(explainPrompt(rows, statsSummary(stats), locale), { temperature: 0.5, maxTokens: 1600, timeoutMs: 25_000 }))?.text ?? '', plan.length);
+    r?.why.forEach((w, i) => { if (w && matchesLocale(w, locale)) plan[i].reason = w; });
+    if (r?.summary && !gentle && matchesLocale(r.summary, locale)) summary = r.summary;
   }
 
   if (pinned.length) {
-    const said = pinned.map(p => `«${p.title}» → ${WD[weekdayOf(p.planned_date!)]} ${p.planned_date!.slice(5).replace('-', '/')}${p.planned_time ? ` ${p.planned_time}` : ''}`).join(', ');
-    summary = `Таны заасан өдөрт тэмдэглэлээ: ${said}.${plan.length ? ` ${summary}` : ''}`;
+    const said = pinned.map(p => `«${p.title}» → ${tr(WD[weekdayOf(p.planned_date!)])} ${p.planned_date!.slice(5).replace('-', '/')}${p.planned_time ? ` ${p.planned_time}` : ''}`).join(', ');
+    summary = tr('Таны заасан өдөрт тэмдэглэлээ: {0}.{1}', said, plan.length ? ` ${summary}` : '');
   }
 
   const results = await Promise.all(plan.map(p => supabase.from('todos').update({ planned_date: p.planned_date, reason: p.reason }).eq('id', p.id)));
