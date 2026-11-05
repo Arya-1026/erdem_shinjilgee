@@ -127,11 +127,6 @@ export default function ProfilePage() {
         <Setting title="2D дүр ашиглах" sub="Emoji-ийн оронд">
           <Switch checked={u.art_mode === 'art'} onCheckedChange={v => updateProfile({ art_mode: v ? 'art' : 'emoji' })} aria-label="2D дүр" />
         </Setting>
-        {app.music.youtube && (
-          <Setting title="YouTube" sub={u.youtube_connected ? `Холбогдсон ✓ ${app.youtube?.channel_title ?? ''}` : 'Өөрийн playlist-ээс дуу санал болгоно'}>
-            <Switch checked={u.youtube_connected} onCheckedChange={v => (v ? app.musicConnect('youtube') : void app.musicDisconnect('youtube'))} aria-label="YouTube" />
-          </Setting>
-        )}
         {app.music.spotify && (
           <Setting title="Spotify" sub={u.spotify_connected ? `Холбогдсон ✓ ${app.spotify?.display_name ?? ''}` : 'Өөрийн playlist-ээс дуу санал болгоно'}>
             <Switch checked={u.spotify_connected} onCheckedChange={v => (v ? app.musicConnect('spotify') : void app.musicDisconnect('spotify'))} aria-label="Spotify" />

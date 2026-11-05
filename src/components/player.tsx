@@ -22,10 +22,11 @@ function Cover({ t, className }: { t: Track; className?: string }) {
 function useLike() {
   const { feedback, setFeedback, likedSongs, toggleLike } = useApp();
   const { nowId, current: t } = usePlayer();
-  const liked = t?.videoId ? likedSongs.some(s => s.video_id === t.videoId) : nowId ? feedback[nowId] === 1 : false;
+  const songId = t?.uri?.split(':')[2];
+  const liked = songId ? likedSongs.some(s => s.video_id === songId) : nowId ? feedback[nowId] === 1 : false;
   const toggle = () => {
     if (!nowId || !t) return;
-    if (t.videoId) toggleLike({ video_id: t.videoId, title: t.title, artist: t.artist, thumbnail: t.image ?? null, duration_s: Math.round(t.dur) });
+    if (songId) toggleLike({ video_id: songId, title: t.title, artist: t.artist, thumbnail: t.image ?? null, duration_s: Math.round(t.dur) });
     else setFeedback(nowId, liked ? 0 : 1);
     toast(liked ? 'Хасагдлаа' : 'Таалагдсан дуунд нэмэгдлээ 💚');
   };
@@ -117,8 +118,7 @@ export function FullPlayer() {
         })}
       </div>
       <p className="mt-3 text-center text-[.72rem] opacity-55">
-        {t.source === 'youtube' ? 'YouTube-ээс тоглож байна.'
-          : t.source === 'spotify'
+        {t.source === 'spotify'
             ? p.usesEmbed ? 'Spotify embed-ээр тоглож байна. Spotify-д нэвтрээгүй бол 30 секундийн хэсэг тоглоно.' : 'Spotify Premium-ээр апп дотроо тоглож байна.'
             : 'Демо: дууны оронд тухайн mood-ийн аялгууг браузер дээр үүсгэж тоглуулж байна.'}
       </p>

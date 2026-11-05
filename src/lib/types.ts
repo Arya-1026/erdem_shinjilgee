@@ -49,7 +49,6 @@ export type Profile = {
   art_mode: 'emoji' | 'art';
   chat_mode: ChatMode;
   spotify_connected: boolean;
-  youtube_connected: boolean;
   exercises_done: number;
   birth_year: number | null;
   fav_artists: string[];
@@ -98,16 +97,16 @@ export type Booking = {
 export type ExpertSlots = Record<string, Record<number, string[]>>;
 
 export type SpotifyStatus = { display_name: string; synced_at: string | null; track_count: number };
-export type YouTubeStatus = { channel_title: string; synced_at: string | null; track_count: number };
 /** Сервер дээр аль хөгжмийн үйлчилгээ тохируулагдсан бэ (түлхүүр байгаа эсэх) */
-export type MusicConfig = { spotify: boolean; youtube: boolean; discovery: boolean };
-export type YouTubeTrackRow = { video_id: string; title: string; artist: string; thumbnail: string | null; duration_s: number };
-export type SongRec = YouTubeTrackRow & { reason: string };
+export type MusicConfig = { spotify: boolean; discovery: boolean };
+/** video_id: Spotify track id. Өгөгдлийн сангийн баганын нэрийг хадгалсан. */
+export type SongRow = { video_id: string; title: string; artist: string; thumbnail: string | null; duration_s: number };
+export type SongRec = SongRow & { reason: string };
 export type SpotifyTrackRow = { track_id: string; name: string; artists: string; uri: string; duration_ms: number; image: string | null };
 
 export type ChatMessage = { id: number | string; role: 'user' | 'assistant'; content: string; crisis: boolean };
 
-export type LikedSong = YouTubeTrackRow;
+export type LikedSong = SongRow;
 
 export type Todo = {
   id: string;

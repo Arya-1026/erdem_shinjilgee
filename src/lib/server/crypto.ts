@@ -1,7 +1,7 @@
 import 'server-only';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
-// Spotify, YouTube-ийн OAuth token-уудыг өгөгдлийн санд AES-256-GCM-ээр шифрлэж хадгална.
+// Spotify-ийн OAuth token-уудыг өгөгдлийн санд AES-256-GCM-ээр шифрлэж хадгална.
 // TOKEN_ENCRYPTION_KEY: 32 байтын base64 түлхүүр (`npm run keys`). SPOTIFY_TOKEN_KEY нь хуучин нэр.
 export const tokenKeyConfigured = () => Boolean(process.env.TOKEN_ENCRYPTION_KEY || process.env.SPOTIFY_TOKEN_KEY);
 

@@ -112,7 +112,7 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
       {!cats.length && <p className="mb-5 text-sm text-muted-foreground">«{query}» олдсонгүй.</p>}
       <section className="mb-5">
         <h3 className="mb-1 font-semibold">🎤 Дуртай дуучин{artists.length > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{artists.length}</span>}</h3>
-        <p className="mb-2 text-sm text-muted-foreground">Эдгээрийн дууг YouTube-ээс хайж санал болгоно. Жагсаалт таны нас, төрлөөр өөрчлөгдөнө.</p>
+        <p className="mb-2 text-sm text-muted-foreground">Эдгээрийн дууг Spotify-аас хайж санал болгоно. Жагсаалт таны нас, төрлөөр өөрчлөгдөнө.</p>
         <div className="mb-1.5 text-sm font-semibold">Монгол</div>
         <div className="mb-3 flex flex-wrap gap-2">{options.mongolian.map(a => <Chip key={a} on={artists.includes(a)} onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
         <div className="mb-1.5 text-sm font-semibold">Олон улсын</div>

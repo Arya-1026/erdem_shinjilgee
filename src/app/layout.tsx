@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
-          {/* Дээд талд: доод хэсэгт байрлах YouTube тоглуулагчийг дарахгүйн тулд */}
+          {/* Дээд талд: доод хэсэгт байрлах тоглуулагчийг дарахгүйн тулд */}
           <Toaster position="top-center" />
         </ThemeProvider>
       </body>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useApp } from './providers/app-provider';
-import { ytTrack } from './providers/player-provider';
+import { songTrack } from './providers/player-provider';
 import { Chip, Segmented } from './segmented';
 import { Button, buttonVariants } from './ui/button';
 import { useDrag } from './use-drag';
@@ -101,7 +101,7 @@ function ChatBody() {
     if (a === 'music') return void play.mood(activeMood.id);
     if (a === 'ambient') {
       fetch(`/api/music/recs?mood=${activeMood.id}&kind=ambient`).then(r => r.json())
-        .then((j: { recs?: SongRec[] }) => j.recs?.length ? play.list(j.recs.map(r => ytTrack(r, activeMood.id)), 0) : play.mood(activeMood.id))
+        .then((j: { recs?: SongRec[] }) => j.recs?.length ? play.list(j.recs.map(r => songTrack(r, activeMood.id)), 0) : play.mood(activeMood.id))
         .catch(() => play.mood(activeMood.id));
     }
   }

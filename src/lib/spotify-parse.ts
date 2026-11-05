@@ -33,3 +33,7 @@ export function playlistEntryTrack(entry: unknown): SpotifyTrack | null {
   if (e.is_local) return null;
   return toTrack(typeof e.item === 'object' ? e.item : typeof e.track === 'object' ? e.track : null);
 }
+
+/** Cache-ийн түлхүүр: том жижиг үсэг, цэг таслал, илүү зайг үл тооно */
+export const songKey = (artist: string, title: string) =>
+  `${artist} ${title}`.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();

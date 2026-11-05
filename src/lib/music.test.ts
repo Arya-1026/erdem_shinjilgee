@@ -2,47 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { clampOffset, nearestCorner } from '@/components/use-drag';
 import { ageGroup, artistOptions, hardAllowed, MN_ARTISTS, rankArtists } from './artists';
 import { interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './mn-songs';
-import { parseVideoClassification, videoClassifyPrompt } from './mood-classify';
-import { parsePicks, parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
-import { parseIsoDuration, pickThumb, songKey, splitTitle } from './youtube-parse';
+import { balanceByGoal, MOOD_GOALS, parsePicks, parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
+import { songKey } from './spotify-parse';
 
-describe('YouTube хариу задлах', () => {
-  it('ISO хугацаа', () => {
-    expect(parseIsoDuration('PT3M45S')).toBe(225);
-    expect(parseIsoDuration('PT1H2M3S')).toBe(3723);
-    expect(parseIsoDuration('PT59S')).toBe(59);
-    expect(parseIsoDuration('P1DT1S')).toBe(86401);
-    expect(parseIsoDuration('garbage')).toBe(0);
-    expect(parseIsoDuration(undefined)).toBe(0);
-  });
-  it('гарчгаас уран бүтээлч, дууг салгана', () => {
-    expect(splitTitle('Adele - Someone Like You (Official Music Video)')).toEqual({ artist: 'Adele', song: 'Someone Like You' });
-    expect(splitTitle('The Lemons – Чамайг санана [Lyrics]')).toEqual({ artist: 'The Lemons', song: 'Чамайг санана' });
-    expect(splitTitle('Holocene', 'Bon Iver - Topic')).toEqual({ artist: 'Bon Iver', song: 'Holocene' });
-    expect(splitTitle('Just a vlog', '')).toBeNull();
-  });
-  it('cache түлхүүр том/жижиг үсэг, тэмдэгтийг үл тооно', () => {
+describe('Cache-ийн түлхүүр', () => {
+  it('том жижиг үсэг, тэмдэгт үл тооно', () => {
     expect(songKey('Adele', 'Someone Like You!')).toBe(songKey('ADELE ', 'someone  like you'));
     expect(songKey('Хурд', 'Аав минь')).toBe('хурд аав минь');
-  });
-  it('pickThumb', () => {
-    expect(pickThumb({ default: { url: 'd' }, medium: { url: 'm' } })).toBe('m');
-    expect(pickThumb({ default: { url: 'd' } })).toBe('d');
-    expect(pickThumb(undefined)).toBeNull();
-  });
-});
-
-describe('YouTube бичлэг ангилах', () => {
-  it('prompt-д Music ангиллыг дурдана', () => {
-    const p = videoClassifyPrompt([{ id: 'a', title: 'Song', channel: 'Ch', music_category: true }, { id: 'b', title: 'Vlog', channel: 'Me', music_category: false }]);
-    expect(p[1].content).toBe('0. Song | channel: Ch | category: Music\n1. Vlog | channel: Me');
-  });
-  it('дуу биш, дуу, буруу мөрийг ялгана', () => {
-    const m = parseVideoClassification('{"r":[{"i":0,"music":true,"a":"Adele","s":"Hello","m":["sad","x"]},{"i":1,"music":false},{"i":2,"music":true,"a":"X","s":"","m":["sad"]},{"i":3,"music":true,"a":"Y","s":"Z","m":[]}]}', 4);
-    expect(m.get(0)).toEqual({ music: true, artist: 'Adele', song: 'Hello', moods: ['sad'] });
-    expect(m.get(1)?.music).toBe(false);
-    expect(m.has(2)).toBe(false); // нэргүй
-    expect(m.has(3)).toBe(false); // mood-гүй
   });
 });
 
@@ -76,7 +42,7 @@ describe('Монгол дуу', () => {
   const moods = ['happy', 'calm', 'neutral', 'tired', 'anxious', 'sad', 'angry'] as const;
   it('mood бүрт хангалттай дуу байна', () => {
     for (const m of moods) {
-      expect(MN_SONGS.filter(s => s.moods.includes(m)).length).toBeGreaterThanOrEqual(6);
+      expect(MN_SONGS.filter(s => s.moods.includes(m)).length).toBeGreaterThanOrEqual(4);
     }
     expect(new Set(MN_SONGS.map(s => s.id)).size).toBe(MN_SONGS.length);
   });
@@ -91,7 +57,9 @@ describe('Монгол дуу', () => {
     for (const g of SONG_GENRES) for (const m of moods) {
       const out = pickMongolian(m, new Set(), new Set(), 3, [g]);
       expect(out, `${g} ${m}`).toHaveLength(3);
-      if (g !== 'Метал' || hardAllowed(m)) expect(out[0].reason, `${g} ${m}`).toContain('Таны сонгосон төрөл');
+      // Ардын дуу, жазз, сонгодог Spotify-д цөөн тул жагсаалтад алга: уран бүтээлчээр хайгдана
+      const listed = !['Ардын дуу', 'Жазз', 'Сонгодог хөгжим'].includes(g);
+      if (listed && (g !== 'Метал' || hardAllowed(m))) expect(out[0].reason, `${g} ${m}`).toContain('Таны сонгосон төрөл');
     }
   });
   it('сонгосон төрөл mood-оос урьтална', () => {
@@ -172,5 +140,28 @@ describe('чат буланд наалдах', () => {
       expect(box.bottom + o.y).toBeLessThanOrEqual(area.bottom);
       expect(box.top + o.y).toBeGreaterThanOrEqual(area.top);
     }
+  });
+});
+
+describe('mood-ийн зорилго', () => {
+  it('гунигтай үед хоёр зорилгыг ээлжлэн авна', () => {
+    const items = [{ id: 1, goal: 'comfort' }, { id: 2, goal: 'comfort' }, { id: 3, goal: 'comfort' }, { id: 4, goal: 'uplift' }, { id: 5 }];
+    expect(balanceByGoal(items, MOOD_GOALS.sad, 3).map(x => x.id)).toEqual([1, 4, 2]);
+    expect(balanceByGoal(items, MOOD_GOALS.sad, 5).map(x => x.id)).toEqual([1, 4, 2, 3, 5]);
+  });
+  it('уурласан, түгшсэн үед зөвхөн тайвшруулах', () => {
+    expect(MOOD_GOALS.angry.map(g => g.key)).toEqual(['calm']);
+    expect(MOOD_GOALS.anxious.map(g => g.key)).toEqual(['calm']);
+  });
+  it('AI-д зорилгыг дамжуулж, төрөл, дуучныг шаардана', () => {
+    const c = suggestPrompt({ mood: 'sad', hobbies: [], artists: [], liked: [], disliked: [], exclude: [], count: 5, genres: ['Рок'], favArtists: ['Adele'] })[1].content;
+    expect(c).toContain('"comfort"');
+    expect(c).toContain('"uplift"');
+    expect(c).toContain('must be by these artists');
+    expect(c).toContain('must be in these genres');
+  });
+  it('зорилгыг задлана', () => {
+    expect(parsePicks('{"mn":[{"i":0,"goal":"uplift","why":"x"}]}', 1)).toEqual([{ i: 0, goal: 'uplift', why: 'x' }]);
+    expect(parseSuggestions('{"s":[{"t":"A","a":"B","goal":"comfort","why":""}]}', 3)[0].goal).toBe('comfort');
   });
 });

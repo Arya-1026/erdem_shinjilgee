@@ -225,32 +225,6 @@ body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 
 .embed-bar.embed-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
 @media (min-width: 900px) { .embed-bar { left: 256px; right: 16px; bottom: 16px; } }
 body.has-player .fp { padding-bottom: 110px; }
-
-/* YouTube тоглуулагч: Spotify маягийн нэг мөр (зүүн талд видео, баруун талд удирдлага).
-   YouTube-ийн дүрмээр видео ≥200×200px, харагдаж байх ёстой → хамгийн бага зөвшөөрөгдөх хэмжээ.
-   «Хураах» дарвал 64px mini bar болж, видео түр зогсоно (харагдахгүй видеог тоглуулахыг дүрэм хориглодог). */
-:root { --yt-h: 200px; }
-.yt-dock { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); height: var(--yt-h); }
-.yt-dock { flex-wrap: wrap; align-content: flex-start; height: calc(var(--yt-h) + 24px); }
-/* Чирэх бариул: видео дээр давхарлахгүйн тулд дээд талд тусдаа мөр */
-.yt-grip { flex: 0 0 100%; height: 24px; display: grid; place-items: center; cursor: grab; touch-action: none; }
-.yt-grip:active { cursor: grabbing; }
-.yt-grip i { display: block; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.45); }
-.yt-dock > :last-child { height: var(--yt-h); }
-.yt-dock.yt-small > :last-child { height: auto; flex: 0 0 100%; }
-.yt-dock.yt-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
-.yt-frame { width: var(--yt-h); height: var(--yt-h); flex: none; background: #000; }
-.yt-frame iframe { display: block; width: 100%; height: 100%; }
-@media (min-width: 900px) { .yt-dock { left: auto; right: 16px; bottom: 16px; width: 440px; } }
-/* Хураасан: дуу үргэлжилнэ, тоглуулагч буланд YouTube-ийн зөвшөөрөх хамгийн бага хэмжээгээр харагдана */
-.yt-dock.yt-small { left: auto; right: 8px; width: var(--yt-h); height: auto; flex-direction: column; }
-@media (min-width: 900px) { .yt-dock.yt-small { right: 16px; width: var(--yt-h); } }
-body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 48px); }
-body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
-@media (min-width: 900px) {
-  body.has-yt .app-main { padding-bottom: calc(var(--yt-h) + 40px); }
-    body.has-yt .fp { bottom: calc(var(--yt-h) + 32px); max-height: calc(100dvh - var(--yt-h) - 56px); }
-}
 .fp { padding: calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
   background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 70%, #1A1816) 0%, #1A1816 78%); animation: up .3s ease-out; }
 .fp-art { box-shadow: 0 26px 50px -14px color-mix(in srgb, var(--pc) 70%, #000); }
@@ -286,17 +260,15 @@ body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
 @keyframes step-pop { from { transform: scale(.6); } }
 @keyframes step-float { 50% { transform: translateY(-7px); } }
 
-/* ---------- Хөвөгч чат: YouTube тоглуулагчаас доогуур z-index (түүн дээр юу ч давхарлаж болохгүй) ---------- */
+/* ---------- Хөвөгч чат ---------- */
 /* Байрлалыг use-drag тооцдог (цэс, толгой, тоглуулагчаас зайлсхийж буланд наалдана). Энд зөвхөн анхны цэг, хэмжээ. */
 .chat-bubble { right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); }
 .chat-panel { --chat-free: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 20px); right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); width: min(350px, calc(100vw - 20px)); height: min(540px, var(--chat-free)); }
 body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px)); }
-body.has-yt .chat-panel { height: min(540px, calc(var(--chat-free) - var(--yt-h) - 28px)); }
 @media (min-width: 900px) {
   .chat-bubble { bottom: 10px; }
   .chat-panel { --chat-free: calc(100dvh - var(--head-h) - 20px); bottom: 10px; width: 400px; height: min(640px, var(--chat-free)); }
   body.has-player .chat-panel { height: min(640px, calc(var(--chat-free) - 84px)); }
-  body.has-yt .chat-panel { height: min(640px, calc(var(--chat-free) - var(--yt-h) - 40px)); }
 }
 
 /* ---------- Тайлангийн heatmap ---------- */

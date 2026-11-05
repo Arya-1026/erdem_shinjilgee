@@ -8,45 +8,41 @@ import type { MusicKind } from '@/lib/music-suggest';
 import { cn } from '@/lib/utils';
 import type { Mood, SongRec } from '@/lib/types';
 import { Eq } from './player';
-import { useApp, type MusicProvider } from './providers/app-provider';
-import { spTrack, usePlayer, ytTrack, type Track } from './providers/player-provider';
+import { useApp } from './providers/app-provider';
+import { songTrack, spTrack, usePlayer, type Track } from './providers/player-provider';
 import { Segmented } from './segmented';
 import { Button } from './ui/button';
-import { usePlay, useSongRecs, useSpotifyTracks, useYouTubeTracks } from './use-play';
+import { usePlay, useSongRecs, useSpotifyTracks } from './use-play';
 
 const ago = (iso: string) => {
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   return m < 1 ? 'дөнгөж сая' : m < 60 ? `${m} мин өмнө` : m < 1440 ? `${Math.round(m / 60)} цагийн өмнө` : `${Math.round(m / 1440)} өдрийн өмнө`;
 };
 
-/* Нэг дууны мөр. YouTube-ийн дүрмээр тоглуулах thumbnail нь ≥120×70px. */
+/* Нэг дууны мөр */
 function SongRow({ t, onPlay, extra }: { t: Track; onPlay: () => void; extra?: React.ReactNode }) {
   const { nowId, playing } = usePlayer();
   const now = nowId === t.id;
-  const wide = t.source === 'youtube';
   return (
     <div className="flex items-center gap-3 border-b py-2 last:border-0">
       <button onClick={onPlay} aria-label={`${t.title} тоглуулах`}
-        className={cn('relative grid flex-none place-items-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#1DB954,#0F7A37)] text-white', wide ? 'h-[70px] w-[124px]' : 'size-11')}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- YouTube/Spotify CDN-ийн зураг */}
+        className={cn('relative grid size-11 flex-none place-items-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#1DB954,#0F7A37)] text-white')}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- Spotify CDN-ийн зураг */}
         {t.image ? <img src={t.image} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" /> : '♪'}
-        {wide && <span className="absolute right-1 bottom-1 grid size-7 place-items-center rounded-full bg-black/70 text-xs">{now && playing ? <Eq /> : '▶'}</span>}
       </button>
       <div className="min-w-0 flex-1">
         <b className={cn('block truncate', now && 'text-spotify')}>{t.title}</b>
         <span className="block truncate text-sm text-muted-foreground">{t.artist}</span>
         {extra}
       </div>
-      {!wide && (
-        <button className="grid size-10 flex-none place-items-center rounded-full bg-spotify text-sm text-white" aria-label={`${t.title} тоглуулах`} onClick={onPlay}>
-          {now && playing ? <Eq /> : '▶'}
-        </button>
-      )}
+      <button className="grid size-10 flex-none place-items-center rounded-full bg-spotify text-sm text-white" aria-label={`${t.title} тоглуулах`} onClick={onPlay}>
+        {now && playing ? <Eq /> : '▶'}
+      </button>
     </div>
   );
 }
 
-/* ---------- Дуу хайх (YouTube). Квот хэмнэхийн тулд Enter/товч дарахад л хайна. ---------- */
+/* ---------- Дуу хайх (Spotify). Квот хэмнэхийн тулд Enter/товч дарахад л хайна. ---------- */
 function SongSearch({ mood, isLiked, onLike }: { mood: Mood; isLiked: (r: SongRec) => boolean; onLike: (r: SongRec) => void }) {
   const play = usePlay();
   const [q, setQ] = useState('');
@@ -61,7 +57,7 @@ function SongSearch({ mood, isLiked, onLike }: { mood: Mood; isLiked: (r: SongRe
     try {
       const r = await fetch(`/api/music/search?q=${encodeURIComponent(term)}`);
       const j: { results?: SongRec[]; error?: string } = await r.json().catch(() => ({}));
-      if (r.status === 429) return void toast.error('Өнөөдрийн YouTube хайлтын хязгаар дууссан. Маргааш дахин оролдоорой.');
+      if (r.status === 429) return void toast.error('Spotify хайлтын хязгаарт хүрлээ. Түр хүлээгээд дахин оролдоорой.');
       if (!r.ok || !j.results) return void toast.error('Хайж чадсангүй. Дахин оролдоно уу.');
       setRes({ q: term, rows: j.results });
     } finally {
@@ -69,7 +65,7 @@ function SongSearch({ mood, isLiked, onLike }: { mood: Mood; isLiked: (r: SongRe
     }
   }
 
-  const tracks = (res?.rows ?? []).map(r => ytTrack(r, mood.id));
+  const tracks = (res?.rows ?? []).map(r => songTrack(r, mood.id));
   return (
     <div className="mt-3">
       <form role="search" className="flex gap-2" onSubmit={e => void search(e)}>
@@ -89,14 +85,14 @@ function SongSearch({ mood, isLiked, onLike }: { mood: Mood; isLiked: (r: SongRe
                 <button className={cn('rounded-md border px-2 text-xs', isLiked(r) && 'border-primary bg-secondary')} aria-label="Таалагдсан" aria-pressed={isLiked(r)} onClick={() => onLike(r)}>👍</button>
               </span>
             } />
-          )) : <p className="py-3 text-center text-sm text-muted-foreground">Апп дотор тоглуулж болох дуу олдсонгүй. Өөр үгээр хайгаарай.</p>}
+          )) : <p className="py-3 text-center text-sm text-muted-foreground">Дуу олдсонгүй. Өөр үгээр хайгаарай.</p>}
         </div>
       )}
     </div>
   );
 }
 
-/* ---------- Тухайн хүнд зориулсан дуунууд (AI + YouTube) ---------- */
+/* ---------- Тухайн хүнд зориулсан дуунууд (AI + Spotify) ---------- */
 export function ForYou({ mood }: { mood: Mood }) {
   const { music, profile, feedback, setFeedback, likedSongs, toggleLike } = useApp();
   const [kind, setKind] = useState<MusicKind>('song');
@@ -104,19 +100,19 @@ export function ForYou({ mood }: { mood: Mood }) {
   const play = usePlay();
   if (!music.discovery) return null;
 
-  const visible = (recs ?? []).filter(r => feedback['yt:' + r.video_id] !== -1);
-  const tracks = visible.map(r => ytTrack(r, mood.id));
+  const visible = (recs ?? []).filter(r => feedback['sp:' + r.video_id] !== -1);
+  const tracks = visible.map(r => songTrack(r, mood.id));
   const taste = [...profile.fav_artists.slice(0, 3), ...pickGenres(profile.hobbies).slice(0, 3)];
-  const basis = profile.youtube_connected || profile.spotify_connected
+  const basis = profile.spotify_connected
     ? 'Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан'
-    : 'Таны хобби, үнэлгээнд тулгуурласан. YouTube-ээ холбовол илүү оновчтой болно';
+    : 'Таны хобби, үнэлгээнд тулгуурласан. Spotify-аа холбовол илүү оновчтой болно';
   const isLiked = (r: SongRec) => likedSongs.some(x => x.video_id === r.video_id);
   const like = (r: SongRec) => {
     toast(isLiked(r) ? 'Таалагдсан дуунаас хасагдлаа' : 'Таалагдсан дуунд хадгалагдлаа 💚');
     toggleLike({ video_id: r.video_id, title: r.title, artist: r.artist, thumbnail: r.thumbnail, duration_s: r.duration_s });
   };
   const dislike = (r: SongRec) => {
-    setFeedback('yt:' + r.video_id, -1);
+    setFeedback('sp:' + r.video_id, -1);
     toast('Ойлголоо, дараагийн удаа ийм дуу санал болгохгүй');
   };
 
@@ -137,10 +133,10 @@ export function ForYou({ mood }: { mood: Mood }) {
       )}
       {kind === 'ambient' && <p className="mt-2 text-xs text-muted-foreground">Үггүй хөгжим, байгалийн дуу, морин хуурын ая: амьсгалаа тайвшруулах, төвлөрөхөд тусална.</p>}
       {recs === null || (loading && !visible.length) ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">🎧 AI танд тохирохыг YouTube-ээс сонгож байна…</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">🎧 AI танд тохирохыг Spotify-аас сонгож байна…</p>
       ) : !visible.length ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          {reason === 'not-configured' ? 'YouTube хайлт тохируулагдаагүй байна.' : 'Одоогоор дуу олдсонгүй. «Шинэ дуунууд» дарж дахин оролдоорой.'}
+          {reason === 'not-configured' ? 'Spotify тохируулагдаагүй байна.' : 'Одоогоор дуу олдсонгүй. «Шинэ дуунууд» дарж дахин оролдоорой.'}
         </p>
       ) : (
         <>
@@ -165,7 +161,7 @@ export function LikedSongs({ mood }: { mood: Mood }) {
   const { likedSongs, toggleLike } = useApp();
   const play = usePlay();
   if (!likedSongs.length) return null;
-  const tracks = likedSongs.map(s => ytTrack(s, mood.id));
+  const tracks = likedSongs.map(s => songTrack(s, mood.id));
   return (
     <section className="card-x">
       <b>💚 Таалагдсан дуунууд</b>
@@ -179,30 +175,21 @@ export function LikedSongs({ mood }: { mood: Mood }) {
   );
 }
 
-const META: Record<MusicProvider, { name: string; icon: string; color: string; pitch: string; note: string }> = {
-  youtube: {
-    name: 'YouTube', icon: '▶', color: 'bg-[#FF0033] hover:bg-[#FF0033]/85',
-    pitch: 'YouTube-ээ холбоход таны playlist, like дарсан дуунуудыг сэтгэл хөдлөлөөр ангилж, тухайн үед тохирохыг нь санал болгоно. Бүтэн дуу үнэгүй тоглоно.',
-    note: 'Бид зөвхөн уншина. YouTube дээр юу ч өөрчлөхгүй.',
-  },
-  spotify: {
-    name: 'Spotify', icon: '🎧', color: 'bg-spotify hover:bg-spotify/85',
-    pitch: 'Spotify-аа холбоход таны playlist, liked songs-ийг сэтгэл хөдлөлөөр ангилж, тухайн үед тохирохыг нь санал болгоно.',
-    note: 'Premium бол апп дотроо бүтэн, бусад үед Spotify embed-ээр тоглоно.',
-  },
+const META = {
+  name: 'Spotify', icon: '🎧', color: 'bg-spotify hover:bg-spotify/85',
+  pitch: 'Spotify-аа холбоход таны playlist, liked songs-ийг сэтгэл хөдлөлөөр ангилж, тухайн үед тохирохыг нь санал болгоно. Premium бол апп дотроо бүтэн дуу тоглоно.',
+  note: 'Premium бол апп дотроо бүтэн, бусад үед Spotify embed-ээр тоглоно.',
 };
 
-/* ---------- Хэрэглэгчийн өөрийн сан (YouTube эсвэл Spotify) ---------- */
-export function MusicLibrary({ provider, mood }: { provider: MusicProvider; mood: Mood }) {
+/* ---------- Хэрэглэгчийн өөрийн Spotify сан ---------- */
+export function MusicLibrary({ mood }: { mood: Mood }) {
   const app = useApp();
-  const meta = META[provider];
-  const connected = provider === 'youtube' ? app.profile.youtube_connected : app.profile.spotify_connected;
-  const status = provider === 'youtube'
-    ? app.youtube && { name: app.youtube.channel_title, synced_at: app.youtube.synced_at, count: app.youtube.track_count }
-    : app.spotify && { name: app.spotify.display_name, synced_at: app.spotify.synced_at, count: app.spotify.track_count };
-  const ytRows = useYouTubeTracks(mood.id), spRows = useSpotifyTracks(mood.id);
+  const meta = META, provider = 'spotify' as const;
+  const connected = app.profile.spotify_connected;
+  const status = app.spotify && { name: app.spotify.display_name, synced_at: app.spotify.synced_at, count: app.spotify.track_count };
+  const spRows = useSpotifyTracks(mood.id);
   const play = usePlay();
-  if (!app.music[provider]) return null;
+  if (!app.music.spotify) return null;
 
   const syncing = app.musicSyncing === provider;
   if (!connected) return (
@@ -213,9 +200,7 @@ export function MusicLibrary({ provider, mood }: { provider: MusicProvider; mood
     </section>
   );
 
-  const rows = provider === 'youtube' ? ytRows : spRows;
-  const tracks: Track[] | null = rows === null ? null
-    : provider === 'youtube' ? (ytRows ?? []).map(r => ytTrack(r, mood.id)) : (spRows ?? []).map(r => spTrack(r, mood.id));
+  const tracks: Track[] | null = spRows === null ? null : spRows.map(r => spTrack(r, mood.id));
 
   return (
     <section className="card-x">

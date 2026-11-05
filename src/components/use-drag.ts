@@ -30,14 +30,14 @@ function safeArea(): Box {
   if (nav) { if (nav.width > nav.height) a.bottom = nav.top; else a.left = nav.right; } // Утсан дээр доор, том дэлгэцэд зүүн талд
   const head = rect('.topbar');
   if (head) a.top = head.bottom;
-  for (const s of ['.mini', '.yt-dock:not(.yt-off)']) {
+  for (const s of ['.mini', '.embed-bar:not(.embed-off)']) {
     const r = rect(s);
     if (r?.height && r.bottom > a.bottom - 40) a.bottom = Math.min(a.bottom, r.top);
   }
   return a;
 }
 
-const KEY = 'setgel_yt_pos';
+const KEY = 'setgel_drag_pos';
 const load = (): Record<string, Offset> => {
   try { return JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { return {}; }
 };

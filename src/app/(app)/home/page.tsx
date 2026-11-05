@@ -11,7 +11,7 @@ import { RecTile } from '@/components/rec-tiles';
 import { SeasonalGreeting } from '@/components/seasonal';
 import { Segmented, Chip } from '@/components/segmented';
 import { Eq } from '@/components/player';
-import { usePlayer, ytTrack } from '@/components/providers/player-provider';
+import { usePlayer, songTrack } from '@/components/providers/player-provider';
 import { usePlay, useSongRecs } from '@/components/use-play';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { needsExpert, prediction, todaysEntries } from '@/lib/analytics';
@@ -229,7 +229,7 @@ function ForYouRow({ title, m, kind }: { title: string; m: Mood; kind: MusicKind
   const { recs } = useSongRecs(m.id, kind);
   const { nowId, playing } = usePlayer();
   const play = usePlay();
-  const tracks = (recs ?? []).map(r => ytTrack(r, m.id));
+  const tracks = (recs ?? []).map(r => songTrack(r, m.id));
   return (
     <div>
       <div className="mt-3.5 mb-2 text-sm font-bold">{title} <span className="font-normal text-muted-foreground">· танд зориулсан</span></div>
@@ -237,8 +237,8 @@ function ForYouRow({ title, m, kind }: { title: string; m: Mood; kind: MusicKind
         <div className="hscroll">
           {tracks.map((t, i) => (
             <button key={t.id} onClick={() => play.list(tracks, i)} className={cn('htile flex w-[132px] flex-none snap-start flex-col self-start text-left', nowId === t.id && 'now')}>
-              <div className="relative mb-1.5 h-[74px] w-[132px] overflow-hidden rounded-xl bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element -- YouTube CDN-ийн зураг */}
+              <div className="relative mb-1.5 size-[132px] overflow-hidden rounded-xl bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element -- Spotify CDN-ийн зураг */}
                 {t.image && <img src={t.image} alt="" className="size-full object-cover" loading="lazy" />}
                 <span className="pl absolute right-1.5 bottom-1.5 grid size-[30px] place-items-center rounded-full bg-black/70 text-xs text-white">{nowId === t.id && playing ? <Eq /> : '▶'}</span>
               </div>

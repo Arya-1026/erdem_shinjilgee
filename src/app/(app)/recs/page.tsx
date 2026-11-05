@@ -16,7 +16,7 @@ import type { MoodId, RecType } from '@/lib/types';
 type Tab = 'all' | RecType | 'song';
 const TABS: [Tab, string][] = [['all', 'Бүгд'], ['exercise', '🧘 Дасгал'], ['song', '🎵 Дуу'], ['movie', '🎬 Кино']];
 
-// /api/{youtube,spotify}/login, callback-аас буцаж ирэх үеийн мэдэгдэл
+// /api/spotify/login, callback-аас буцаж ирэх үеийн мэдэгдэл
 const CONNECT_MSG = (name: string, env: string, users: string): Record<string, string> => ({
   'not-configured': `${name} тохируулагдаагүй байна (${env}).`,
   'wrong-host': `${name} холбохын тулд апп-ыг NEXT_PUBLIC_APP_URL хаягаар (локалд http://127.0.0.1:3000) нээнэ үү.`,
@@ -26,7 +26,6 @@ const CONNECT_MSG = (name: string, env: string, users: string): Record<string, s
   error: `${name} холбоход алдаа гарлаа.`,
 });
 const MSG = {
-  youtube: CONNECT_MSG('YouTube', 'GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, TOKEN_ENCRYPTION_KEY', 'Туршилтын горимд таны Google бүртгэл OAuth consent screen → Test users-д нэмэгдсэн байх ёстой.'),
   spotify: CONNECT_MSG('Spotify', 'SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, TOKEN_ENCRYPTION_KEY', 'Таны Spotify бүртгэл энэ апп-ын хэрэглэгчийн жагсаалтад алга (Spotify Dashboard → User Management).'),
 };
 
@@ -41,11 +40,10 @@ export default function RecsPage() {
   const params = useSearchParams(), router = useRouter(), path = usePathname();
 
   useEffect(() => {
-    const p = params.has('youtube') ? 'youtube' : params.has('spotify') ? 'spotify' : null;
-    const s = p && params.get(p); if (!p || !s) return;
+    const p = 'spotify' as const, s = params.get(p); if (!s) return;
     router.replace(path, { scroll: false });
     // Холбогдсон даруйд дуунуудыг татаж ангилна
-    if (s === 'connected') { toast.success(`${p === 'youtube' ? 'YouTube' : 'Spotify'} холбогдлоо 🎧`); void musicSync(p); }
+    if (s === 'connected') { toast.success('Spotify холбогдлоо 🎧'); void musicSync(p); }
     else toast.error(MSG[p][s] ?? MSG[p].error, { duration: 8000 });
   }, [params, router, path, musicSync]);
 
@@ -89,11 +87,10 @@ export default function RecsPage() {
       {(tab === 'all' || tab === 'song') && (
         <>
           <h2 className="mt-5 mb-2 text-[1.15rem] font-bold">🎧 Танд зориулсан дуу</h2>
-          {music.discovery ? <ForYou mood={cm} /> : <p className="card-x text-sm text-muted-foreground">Дуу санал болгохын тулд .env.local-д YOUTUBE_API_KEY тохируулна уу (README → YouTube).</p>}
+          {music.discovery ? <ForYou mood={cm} /> : <p className="card-x text-sm text-muted-foreground">Дуу санал болгохын тулд .env.local-д SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET тохируулна уу (README → Spotify).</p>}
           <div className="mt-3 flex flex-col gap-3">
             <LikedSongs mood={cm} />
-            <MusicLibrary provider="youtube" mood={cm} />
-            <MusicLibrary provider="spotify" mood={cm} />
+            <MusicLibrary mood={cm} />
           </div>
         </>
       )}

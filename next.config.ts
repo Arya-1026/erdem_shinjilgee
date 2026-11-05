@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Spotify localhost-ийг зөвшөөрдөггүй тул локалд 127.0.0.1-ээр нээдэг. Энэгүйгээр dev дээр хуудас hydrate болохгүй.
-  allowedDevOrigins: ["127.0.0.1"],
+  // Spotify localhost-ийг зөвшөөрдөггүй тул локалд 127.0.0.1-ээр нээдэг. Утаснаас Wi-Fi-ийн IP-гаар ч нээнэ. Энэгүйгээр dev дээр хуудас hydrate болохгүй.
+  allowedDevOrigins: ["127.0.0.1", "192.168.*.*"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

@@ -39,43 +39,6 @@ export function parseClassification(text: string, count: number): Map<number, Mo
   return out;
 }
 
-/* ---------- YouTube бичлэг: эхлээд дуу мөн эсэхийг, дараа нь уран бүтээлч, нэр, mood-ийг тодорхойлно ---------- */
-export type VideoInfo = { id: string; title: string; channel: string; music_category: boolean };
-export type VideoLabel = { music: boolean; artist: string; song: string; moods: MoodId[] };
-
-export function videoClassifyPrompt(videos: VideoInfo[]) {
-  return [
-    {
-      role: 'system' as const,
-      content:
-        'You label YouTube videos for a mood-support music app. For each video decide if it is a song/music track ' +
-        '(not a vlog, podcast, tutorial, game, news, compilation over 20 minutes). If music, extract the clean artist and song name ' +
-        '(drop "Official Video", "Lyrics", etc.) and choose 1-3 LISTENER moods it fits: ' +
-        'happy, calm, neutral, tired, anxious, sad, angry (same meaning as: upbeat; relaxed; everyday; low-energy lift; soothing; comforting; steady and grounding, never metal, hard rock or aggressive songs). ' +
-        'Reply with JSON only: {"r":[{"i":0,"music":true,"a":"Artist","s":"Song","m":["sad"]},{"i":1,"music":false}]} covering every index.',
-    },
-    { role: 'user' as const, content: videos.map((v, i) => `${i}. ${v.title} | channel: ${v.channel}${v.music_category ? ' | category: Music' : ''}`).join('\n') },
-  ];
-}
-
-export function parseVideoClassification(text: string, count: number): Map<number, VideoLabel> {
-  const out = new Map<number, VideoLabel>();
-  const json = text.match(/\{[\s\S]*\}/)?.[0];
-  if (!json) return out;
-  try {
-    const rows = (JSON.parse(json) as { r?: { i?: unknown; music?: unknown; a?: unknown; s?: unknown; m?: unknown }[] }).r ?? [];
-    for (const row of rows) {
-      const i = Number(row.i);
-      if (!Number.isInteger(i) || i < 0 || i >= count || typeof row.music !== 'boolean') continue;
-      if (!row.music) { out.set(i, { music: false, artist: '', song: '', moods: [] }); continue; }
-      const moods = Array.isArray(row.m) ? [...new Set(row.m.filter((m): m is MoodId => MOOD_IDS.includes(m as MoodId)))].slice(0, 3) : [];
-      if (typeof row.a !== 'string' || typeof row.s !== 'string' || !row.s.trim() || !moods.length) continue;
-      out.set(i, { music: true, artist: row.a.trim().slice(0, 200), song: row.s.trim().slice(0, 200), moods });
-    }
-  } catch { /* буруу JSON → хоосон */ }
-  return out;
-}
-
 const KEYWORDS: [MoodId, RegExp][] = [
   ['sad', /\b(sad|cry|cries|crying|tears?|alone|lonely|goodbye|broken|hurt|miss(ing)?|without you|someone like you|blue|rain)\b|гуниг|уйл|ганцаар|санаж|салах/i],
   ['happy', /\b(happy|dance|dancing|party|sunshine|sun|good|fun|celebrat\w*|joy|smile|feel good|summer)\b|баяр|инээ|бүжиг|аз жаргал/i],

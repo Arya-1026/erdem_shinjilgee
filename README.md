@@ -1,6 +1,6 @@
 # 🌙 Сэтгэл: Mood Tracker
 
-Өдөр бүрийн сэтгэл санааг бүртгэж, хэв маягийг харуулдаг вэб апп. Хобби, сэтгэл хөдлөлд тохирсон зөвлөмж, **хүн бүрт тусдаа сонгосон дуу** (YouTube, хүсвэл Spotify), AI туслах, сэтгэл зүйчийн захиалга санал болгоно.
+Өдөр бүрийн сэтгэл санааг бүртгэж, хэв маягийг харуулдаг вэб апп. Хобби, сэтгэл хөдлөлд тохирсон зөвлөмж, **хүн бүрт тусдаа сонгосон дуу** (Spotify), AI туслах, сэтгэл зүйчийн захиалга санал болгоно.
 Анхны прототип (нэг HTML файл) нь [legacy/index.html](legacy/index.html)-д хадгалагдсан.
 
 ## Архитектур
@@ -10,13 +10,12 @@
 ```
 Браузер (Next.js React, PWA)
   │  supabase-js (RLS)  ─────────────►  Supabase PostgreSQL + Auth
-  │  YouTube / Spotify тоглуулагч       ▲        │ pg_cron (5 мин)
+  │  Spotify тоглуулагч                 ▲        │ pg_cron (5 мин)
   │  fetch /api/*                        │        ▼ pg_net
   ▼                                      │   /api/cron/reminders → Resend имэйл + Web Push
 Next.js Route Handlers (Vercel) ─────────┘
   ├─ /api/chat         түлхүүр үг + OpenAI Moderation + утгын ангилал → Groq gpt-oss-20b → OpenRouter → дүрэмд суурилсан хариулт
-  ├─ /api/music/recs   хэрэглэгчийн амт → Groq-оор дуу санал болгох → YouTube хайлт (cache)
-  ├─ /api/youtube/*    OAuth, playlist/like татах → Groq: дуу мөн эсэх + mood ангилах
+  ├─ /api/music/recs   хэрэглэгчийн амт → Groq-оор дуу санал болгох → Spotify хайлт (cache)
   ├─ /api/spotify/*    (заавал биш) OAuth, playlist татах → mood ангилах
   ├─ /api/bookings     хуваарь шалгах + давхар захиалгаас хамгаалах + Resend
   ├─ /api/push/test    туршилтын push
@@ -33,7 +32,7 @@ Next.js Route Handlers (Vercel) ─────────┘
 | Сануулга | pg_cron + pg_net → имэйл + Web Push | `supabase/migrations/0002_cron.sql`, `public/sw.js` |
 | LLM | Groq `openai/gpt-oss-20b`, нөөц нь OpenRouter | `src/lib/server/llm.ts` |
 | Crisis | Түлхүүр үг (кирилл, латин) + OpenAI Moderation + LLM утгын ангилал | `src/lib/crisis.ts`, `src/lib/server/crisis-check.ts`, `src/lib/server/moderation.ts` |
-| Хөгжим | YouTube Data API + IFrame Player (үндсэн), Spotify Web API (заавал биш) | `src/lib/server/youtube.ts`, `src/lib/server/music-recs.ts`, `src/lib/server/spotify.ts` |
+| Хөгжим | Spotify Web API, Web Playback SDK, Embed | `src/lib/server/spotify.ts`, `src/lib/server/spotify-search.ts`, `src/lib/server/music-recs.ts` |
 | График | Recharts | `src/components/charts.tsx` |
 | Имэйл | Resend | `src/lib/server/email.ts` |
 | Design system | «Emotion tracker»: Nunito фонт, дулаан суурь өнгө, emotion-* өнгө, 5 палитр (анх орохдоо сонгоно) | `src/app/globals.css`, `src/lib/palettes.ts` |
@@ -43,23 +42,21 @@ Next.js Route Handlers (Vercel) ─────────┘
 
 ### Хөгжим: хүн бүрт өөр өөр дуу
 
-**1. Танд зориулсан дуунууд** (бүх хэрэглэгчид, YouTube холбоогүй ч ажиллана): `/api/music/recs?mood=sad`
+**1. Танд зориулсан дуунууд** (бүх хэрэглэгчид, Spotify холбоогүй ч ажиллана): `/api/music/recs?mood=sad`
 - Хэрэглэгчийн амтыг цуглуулна: сангаас нь хамгийн их сонсдог уран бүтээлчид, хобби, 👍/👎 дарсан дуунууд, өмнө санал болгосон дуунууд.
 - Groq-оос "энэ хүн одоо гунигтай байна, ийм уран бүтээлчдийг сонсдог..." гэх мэт мэдээлэлд тулгуурлан 10 дуу санал болгуулна. Хоёр өөр хүнд хоёр өөр жагсаалт гарна.
-- Дуу бүрийг YouTube дээр хайж, апп дотор тоглуулж болох бичлэгийг сонгоно (`videoEmbeddable`).
+- Дуу бүрийг Spotify дээр апп-ын токеноор хайж, бодит дуу эсэхийг шалгана (хэрэглэгч холбоогүй ч болно).
 - `search.list` өдөрт 100 удаагийн хязгаартай. Тиймээс олдсон бичлэгийг `song_cache`-д хадгалж бүх хэрэглэгч хуваалцана. Нэг хүний mood тус бүрийн жагсаалт 7 хоног хадгалагдана. "↻ Шинэ дуунууд" товчоор шинэчилнэ.
 
 **1б. Тайвшруулах ая** (`/api/music/recs?mood=anxious&kind=ambient`): үггүй хөгжим, байгалийн дуу, морин хуур, lo-fi. LLM тухайн mood, хобби, өнөөдрийн шалтгаанаас хамаарч сонгоно. 3 цаг хүртэлх бичлэг зөвшөөрнө.
 
-- **Монгол дуу**: жагсаалтын тал нь `src/lib/mn-songs.ts` дахь шалгасан монгол дуу. LLM монгол дууны нэрийг зохиож хэлдэг, YouTube-ийн Music ангилалд ч ихэнх нь ордоггүй тул video_id-тай гараар жагсаасан (хайлтын квот зарцуулахгүй). Монгол дуугүй хуучин жагсаалт автоматаар шинэчлэгдэнэ.
+- **Монгол дуу**: жагсаалтын тал нь монгол дуу: `src/lib/mn-songs.ts` дахь шалгасан дуу болон Spotify-аас олдсон дуунаас AI сонгоно.
 
-**2. Миний сан** (YouTube эсвэл Spotify-аа холбосон үед)
-- **YouTube**: like дарсан бичлэг болон өөрийн playlist-үүдийг татна (600 хүртэл). Groq эхлээд бичлэг бүр **дуу мөн эсэхийг** тодорхойлж vlog, podcast-ийг хасна. Дараа нь уран бүтээлч, дууны нэр, тохирох mood-ийг гаргана. Үр дүн `video_info`-д cache хийгдэнэ.
+**2. Миний сан** (Spotify-аа холбосон үед)
 - **Spotify**: liked songs болон өөрийн playlist-үүдийг татна. Spotify 2024.11-ээс `audio-features`-ийг хаасан тул нэр, уран бүтээлчээр нь LLM ангилна.
 - OAuth token-ууд AES-256-GCM-ээр шифрлэгдэж, RLS policy-гүй хүснэгтэд хадгалагдана. Тиймээс зөвхөн сервер уншина.
 
 **3. Тоглуулах**
-- **YouTube**: IFrame Player-ээр үнэгүй, бүтэн дуу тоглуулна. YouTube-ийн дүрмээр тоглуулагч **харагдаж байх ёстой** (≥200×200px, дээр нь юу ч давхарлахгүй). Тиймээс доод хэсэгт видеотой "dock" гарч, удирдлагын товчнууд нь видеоны доор байрлана.
 - **Spotify**: Premium бол Web Playback SDK, бусад үед Embed-ээр тоглуулна. Апп эзэмшигч Premium байх ёстой.
 - Хөгжмийн эх үүсвэр тохируулаагүй бол mood-ийн аялгууг браузер дээр үүсгэж тоглуулна (демо).
 
@@ -67,7 +64,8 @@ Next.js Route Handlers (Vercel) ─────────┘
 
 Дуу нь зөвхөн AI-ийн санал: анхдагч жагсаалт байхгүй. Нас, дуртай дуучин, төрөл, 👍/👎, тухайн mood-оос хамаарна. 👍 дарсан дуу `liked_songs`-д хадгалагдаж «Таалагдсан дуунууд»-д гарна.
 
-- **Монгол дуу**: сонгосон дуучид болон нас, төрөлд тохирох дуучдыг (`src/lib/artists.ts`) YouTube-ээс хайж, LLM дуу мөн эсэх, mood-ийг ангилна. Хайлт 30 хоног cache-д хадгалагдаж, нэг хүсэлтэд дээд тал нь 3 шинэ хайлт хийнэ. AI эдгээр бодит бичлэгээс сонгодог тул дууны нэр зохиож чадахгүй.
+- **Монгол дуу**: сонгосон дуучид болон нас, төрөлд тохирох дуучдыг (`src/lib/artists.ts`) Spotify-аас хайж, LLM mood-оор ангилна. Хайлт 30 хоног cache-д хадгалагдаж, нэг хүсэлтэд дээд тал нь 3 шинэ хайлт хийнэ. AI эдгээр бодит бичлэгээс сонгодог тул дууны нэр зохиож чадахгүй.
+- **Mood-ийн зорилго** (`MOOD_GOALS`): гунигтай үед гунигт нь нийцэх дуу, сэтгэл өргөх дууг ээлжлэн, уурласан, түгшсэн үед тайвшруулах дуу, ядарсан үед зөөлөн, эрч нэмэх дуу өгнө. Монгол дууг сонгосон төрөл, зорилгоор нь («монгол рок гунигтай дуу») бас хайна. Шалтгааны эхэнд зорилго нь бичигдэнэ.
 - **Уурласан, түгшсэн үед** метал, хатуу дуу санал болгохгүй, хэрэглэгч метал сонгосон ч гэсэн. Судалгаагаар түгшүүрт удаан (60-80 bpm) хөгжим тусалдаг, түрэмгий төрөл сонгосон хүмүүст түгшүүр буурах нь бага байсан. Метал нь зөвхөн баяртай, энгийн mood-д гарна.
 - Зарим бичлэг API-д embeddable гэсэн ч тоглуулагч дээр 150 алдаа өгдөг: тоглуулагч алгасаж дараагийнх руу шилжинэ.
 
@@ -90,7 +88,7 @@ src/
     api/              Route Handlers
     manifest.ts       PWA
   components/
-    providers/        AppProvider (өгөгдөл + үйлдлүүд), PlayerProvider (демо / YouTube / Spotify)
+    providers/        AppProvider (өгөгдөл + үйлдлүүд), PlayerProvider (демо / Spotify)
     music.tsx         Танд зориулсан дуунууд, Миний сан
     dialogs/          бүртгэгдлээ, дасгал, амьсгал, кино, цаг захиалах цонхнууд
     ui/               shadcn компонентууд
@@ -98,9 +96,9 @@ src/
     analytics.ts      гаригийн дундаж, streak, таамаглал, ажиглалт
     music-suggest.ts  хүн бүрт дуу санал болгох prompt, задлагч
     mood-classify.ts  дуу/бичлэгийг mood-оор ангилах
-    youtube-*.ts, spotify-*.ts  API-ийн хариу задлах, тоглуулагч
+    spotify-*.ts      API-ийн хариу задлах, тоглуулагч
     push-client.ts    Web Push бүртгэл
-    server/           зөвхөн сервер: DAL, LLM, YouTube, Spotify, push, имэйл, шифрлэлт
+    server/           зөвхөн сервер: DAL, LLM, Spotify, push, имэйл, шифрлэлт
   proxy.ts            session шинэчлэх, нэвтрээгүй бол /login руу шилжүүлэх
 supabase/
   migrations/         0001 үндсэн, 0002 cron, 0003 сэтгэл зүйч + push + Spotify, 0004 YouTube + дууны санал, 0005 өнгө + ая + өдрийн дэмжлэг, 0006 нас + дуртай дуучид + todo, 0007 Data API эрх, 0008 төлөвлөгөөний цаг + эможи
@@ -128,30 +126,13 @@ public/sw.js          push мэдэгдлийн service worker
    ```
    Supabase-ийн үндсэн имэйл сервер цагт хэдхэн имэйл, зөвхөн төслийн гишүүдийн хаяг руу илгээдэг. Жинхэнэ хэрэглэгчидтэй болбол SMTP заавал хэрэгтэй.
 
-### 2. YouTube (хувийн Gmail-ээр, үнэгүй)
-
-Сургуулийн Google бүртгэлийг админ хаасан байж магадгүй тул **хувийн Gmail** ашиглана.
-
-1. [console.cloud.google.com](https://console.cloud.google.com) → шинэ төсөл үүсгэнэ.
-2. **APIs & Services → Library** → **YouTube Data API v3** → **Enable**.
-3. **Credentials → Create credentials → API key**. Гарсан түлхүүрийг `YOUTUBE_API_KEY`-д хуулна. Үүгээр "Танд зориулсан дуунууд" ажиллана.
-4. *(Өөрийн YouTube playlist холбох бол)* **OAuth consent screen** (Google Auth Platform):
-   - User type: **External**, апп-ын нэр: Сэтгэл
-   - Data access → Add scope: `.../auth/youtube.readonly`
-   - **Audience → Test users**: апп-ыг ашиглах хүмүүсийн Gmail-ийг нэмнэ (100 хүртэл)
-5. **Credentials → Create credentials → OAuth client ID** → Application type: **Web application**
-   - Authorized redirect URI: `http://127.0.0.1:3000/api/youtube/callback`
-   - Client ID-г `GOOGLE_CLIENT_ID`-д, Client secret-ийг `GOOGLE_CLIENT_SECRET`-д хуулна.
-
-> Туршилтын (Testing) горимд Google-ийн зөвшөөрөл 7 хоногийн дараа дуусдаг. Хэрэглэгч YouTube-ээ дахин холбох шаардлагатай болно. Апп үүнийг автоматаар илрүүлж "дахин холбоно уу" гэж мэдэгдэнэ.
-
-### 3. Spotify (заавал биш)
+### 2. Spotify
 
 Апп эзэмшигч **Spotify Premium** байх ёстой (2026 оны дүрэм).
 1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → **Create app** дарна. Redirect URI нь `http://127.0.0.1:3000/api/spotify/callback`, APIs-д **Web API**, **Web Playback SDK** сонгоно.
 2. Client ID, secret-ээ `.env.local`-д хуулна. **User Management**-д хэрэглэгчдийг нэмнэ (5 хүртэл).
 
-### 4. Орчны хувьсагч
+### 3. Орчны хувьсагч
 
 ```bash
 cp .env.example .env.local
@@ -162,14 +143,12 @@ npm run keys            # TOKEN_ENCRYPTION_KEY, CRON_SECRET, VAPID түлхүү�
 |---|---|
 | Supabase-ийн 3 түлхүүр | **Апп ажиллахгүй** |
 | `GROQ_API_KEY` | Чат дүрэмд суурилна. Дууны санал хүн бүрт адилхан, ангилал түлхүүр үгээр явагдана |
-| `YOUTUBE_API_KEY` | "Танд зориулсан дуунууд" хэсэг харагдахгүй |
-| `GOOGLE_CLIENT_*` | "YouTube холбох" харагдахгүй |
 | `SPOTIFY_*` | "Spotify холбох" харагдахгүй |
 | `OPENAI_API_KEY` | Crisis-ийг зөвхөн түлхүүр үгээр шүүнэ |
 | `RESEND_API_KEY` | Имэйлийг зөвхөн server log-д бичнэ |
 | `*VAPID*` | Push мэдэгдлийн тохиргоо харагдахгүй |
 
-### 5. Эхлүүлэх
+### 4. Эхлүүлэх
 
 ```bash
 npm install
@@ -177,7 +156,7 @@ npm run dev             # http://127.0.0.1:3000
 npm test                # unit тест
 ```
 
-### 6. Deploy (Vercel)
+### 5. Deploy (Vercel)
 
 1. GitHub руу push хийгээд Vercel дээр import хийнэ.
 2. `.env.local`-ийн утгуудыг Vercel → Settings → Environment Variables-д хуулна. `NEXT_PUBLIC_APP_URL`-ийг Vercel хаягаар солино.
@@ -212,13 +191,13 @@ update experts set user_id = (select id from auth.users where email = 'psycholog
 | «Өгөгдлийн сангийн хүснэгтүүд үүсээгүй байна» (`Could not find the table 'public.profiles'`) | Supabase SQL Editor дээр `supabase/setup.sql`-ийг бүтнээр нь ажиллуулаагүй. |
 | `Route "/home": Next.js encountered the unstable value Date.now()` | Засагдсан: `getAppData()` дотор `connection()` дуудаж байна. Хуучин `.next` хавтас үлдсэн бол устгаад дахин эхлүүлнэ. |
 | `permission denied for table ...` | Шинэ Supabase төсөл хүснэгтэд эрх автоматаар олгодоггүй. [0007_grants.sql](supabase/migrations/0007_grants.sql)-ийг SQL Editor дээр ажиллуулна. |
-| Spotify/YouTube холбоход `wrong-host` | Апп-ыг `localhost` биш `http://127.0.0.1:3000` хаягаар нээнэ. |
+| Spotify холбоход `wrong-host` | Апп-ыг `localhost` биш `http://127.0.0.1:3000` хаягаар нээнэ. |
 
 ## Аюулгүй байдал
 
 - Хүснэгт бүр дээр **RLS** асаалттай. Хэрэглэгч зөвхөн өөрийн мөрийг уншиж, бичнэ.
 - Сэтгэл зүйч бусдын өгөгдлийг зөвхөн `security definer` функцээр, өөрт нь хийгдсэн захиалга болон үйлчлүүлэгч зөвшөөрсөн тохиолдолд л харна.
-- YouTube, Spotify-ийн refresh token клиент рүү хэзээ ч гарахгүй. Spotify SDK-д зөвхөн богино хугацаат access token өгнө.
+- Spotify-ийн refresh token клиент рүү хэзээ ч гарахгүй. Spotify SDK-д зөвхөн богино хугацаат access token өгнө.
 - OAuth `state`-ийг httpOnly cookie-оор шалгаж CSRF-ээс хамгаална.
 - Давхар захиалгаас `unique (expert_id, booking_date, slot)` constraint хамгаална.
 - Crisis илэрвэл чатын хариу бичихгүй, 103 / 108 утасны дугаар болон сэтгэл зүйчийн холбоосыг шууд харуулна.
@@ -226,9 +205,9 @@ update experts set user_id = (select id from auth.users where email = 'psycholog
 
 ## Хязгаарлалт
 
-- **YouTube хайлт** өдөрт 100 удаа хийх боломжтой. Нэг хүний нэг mood-ийн шинэ жагсаалт 6 хүртэл хайлт хийнэ, cache-д байгаа дуу хайлт зарцуулахгүй. Олон хэрэглэгчтэй болбол Google-ээс квот нэмүүлэх хүсэлт гаргана.
+- **Spotify Development Mode**: апп эзэмшигч Premium байх ёстой, 5 хүртэл хэрэглэгч (User Management), хайлт нэг удаад 10 дуу. Олон хэрэглэгчтэй болбол Spotify-д Extended Quota хүсэлт гаргана.
+- **Монгол ардын дуу, жазз, морин хуур** Spotify-д цөөн байдаг тул тэдгээр төрөлд сонголт бага.
 - **Киноны постер** Wikipedia-гийн сервэрээс шууд ачаалагдана (`src/lib/data.ts`), ачаалагдахгүй бол 🎬 харагдана. Постер нь зохиогчийн эрхтэй тул олон нийтэд гаргахдаа TMDB API-д шилжүүлэх нь зөв.
-- **YouTube тоглуулагч** харагдаж байх ёстой тул дэлгэцийн доод хэсгийг эзэлнэ. Зөвхөн дууг нь далд тоглуулах нь YouTube-ийн дүрмээр хориотой.
 - **Spotify Development Mode**: 5 хэрэглэгч хүртэл, апп эзэмшигч Premium байх ёстой.
 - **Дууны ангилал, санал** нь LLM-ийн таамаг тул 100% нарийвчлалтай биш. 👍/👎 үнэлгээгээр цаг хугацааны явцад сайжирна.
 - **iPhone дээр push** авахын тулд Safari-аас "Нүүр дэлгэцэнд нэмэх" хийсэн байх ёстой (iOS 16.4+).

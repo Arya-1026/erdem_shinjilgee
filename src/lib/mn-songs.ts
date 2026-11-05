@@ -1,8 +1,7 @@
 /* ---------- Дууны төрөл, монгол дуунууд ----------
-   LLM монгол дууны нэрийг зохиож хэлдэг, YouTube-ийн "Music" ангилалд ч ихэнх нь ордоггүй тул
-   шалгасан бодит бичлэгүүдийг гараар жагсаасан (API-д embeddable гэсэн ч зарим нь тоглуулагч дээр 150 алдаа өгдөг тул бүгдийг тоглуулж шалгасан). video_id шууд мэдэгдэж байгаа тул хайлтын квот зарцуулахгүй.
+   LLM монгол дууны нэрийг зохиож хэлдэг тул Spotify дээр олдсон бодит дуунуудыг гараар жагсаасан.
    Mood-ийг судалгаанд тулгуурлан оноосон: уурласан, түгшсэн үед хатуу метал биш дунд/удаан хэмнэлтэй дуу (README → Дуу сонгох зарчим).
-   Энэ жагсаалт шууд харагддаггүй: AI эндээс болон YouTube-ээс олсон дуунуудаас сонгоно (server/music-recs.ts). */
+   Энэ жагсаалт шууд харагддаггүй: AI эндээс болон Spotify-аас олсон дуунуудаас сонгоно (server/music-recs.ts). */
 import { hardAllowed } from './artists';
 import type { MoodId, SongRec } from './types';
 
@@ -18,89 +17,51 @@ export const pickGenres = (hobbies: string[]) => SONG_GENRES.filter(g => hobbies
 // Монголд тусдаа төрөл болж хөгжөөгүй төрлүүдэд хамгийн ойрыг нь санал болгоно
 const NEAREST: Partial<Record<Genre, Genre>> = { 'K-pop': 'Поп', 'Электрон': 'Поп', 'Lo-fi': 'Инди' };
 
-export type MnSong = { id: string; title: string; artist: string; dur: number; moods: MoodId[]; genres: Genre[] };
+/** Монгол дуу хайхад ашиглах төрөл */
+export const mnGenre = (g: Genre) => NEAREST[g] ?? g;
+
+/** id: Spotify track id, img: цомгийн зургийн код (i.scdn.co/image/...) */
+export type MnSong = { id: string; title: string; artist: string; dur: number; img: string; moods: MoodId[]; genres: Genre[] };
 
 export const MN_SONGS: MnSong[] = [
-  { id: 'v22ASLZ5o4M', title: 'Гарагийн өдөр', artist: 'Luuya', dur: 169, moods: ['happy', 'neutral'], genres: ['Поп'] },
-  { id: '0RaWPPxvfl4', title: 'Өвөлжөө', artist: 'Magnolian', dur: 337, moods: ['calm', 'tired'], genres: ['Инди'] },
-  { id: 'v4xZUr0BEfE', title: 'Yuve Yuve Yu', artist: 'The HU', dur: 353, moods: ['happy'], genres: ['Метал', 'Рок'] },
-  { id: 'PiRNggf0Lu4', title: 'Нулимсаа тэвчье', artist: 'Хурд', dur: 348, moods: ['sad'], genres: ['Рок'] },
-  { id: 'y-p21fbzsyk', title: 'Хязгааргүй', artist: 'Rokit Bay ft. Anouca', dur: 212, moods: ['happy', 'neutral'], genres: ['Хип хоп, рэп'] },
-  { id: 'Y7nfl9UtGuA', title: 'Амар мэндийн дуу', artist: 'Хурд', dur: 332, moods: ['neutral', 'calm', 'happy', 'angry'], genres: ['Рок'] },
-  { id: 'YdQ_Ml8BdgU', title: 'Эргэцүүлэл', artist: 'Big Gee ft. Medegma Dorjieva', dur: 246, moods: ['calm', 'sad', 'tired', 'anxious', 'angry'], genres: ['Хип хоп, рэп'] },
-  { id: 'cNyv-tc-aAY', title: 'Үлэмжийн чанар', artist: 'Н.Норовбанзад', dur: 204, moods: ['calm', 'anxious', 'tired', 'angry'], genres: ['Ардын дуу'] },
-  { id: '7kUBpqg4_ZI', title: 'Муу зуршил', artist: 'Нисванис', dur: 287, moods: ['neutral'], genres: ['Рок'] },
-  { id: 'ct80jYWsDlA', title: 'Зүрхний тал', artist: 'Naki ft. Hishigdalai', dur: 307, moods: ['sad', 'calm'], genres: ['R&B'] },
-  { id: 'Y50svVQ5cEk', title: 'Агшин 2', artist: 'Solla & OzzoBand', dur: 152, moods: ['happy', 'calm', 'neutral'], genres: ['Жазз'] },
-  { id: 'Cru4ClW-ELE', title: 'Цагаан суварга', artist: 'Н.Жанцанноров', dur: 219, moods: ['calm', 'sad', 'anxious', 'angry'], genres: ['Сонгодог хөгжим'] },
-  { id: 'KmtM7jIrEDs', title: 'Хоёр сэтгэл', artist: 'Батцэцэглэн', dur: 209, moods: ['calm', 'sad'], genres: ['Ардын дуу'] },
-  { id: 'YDPj3MMPWFQ', title: 'Аадар', artist: 'Rokit Bay', dur: 221, moods: ['sad'], genres: ['Хип хоп, рэп'] },
-  { id: 'NinVDQlmTp0', title: 'Woods', artist: 'Magnolian', dur: 214, moods: ['anxious', 'calm', 'angry'], genres: ['Инди'] },
-  { id: 'jM8dCGIm6yc', title: 'Wolf Totem', artist: 'The HU', dur: 397, moods: ['neutral', 'happy'], genres: ['Метал', 'Рок'] },
-
-  // Поп
-  { id: 'vCm-w0AQpCA', title: 'Тайван', artist: 'Ratabuzz', dur: 175, moods: ['anxious', 'calm', 'angry'], genres: ['Поп', 'Хип хоп, рэп'] },
-  { id: '_Z3mHnzTJMo', title: 'Chigi Tigi Boom', artist: 'Bayartsengel & Anu', dur: 206, moods: ['happy'], genres: ['Поп'] },
-  { id: '23HjASzVHGQ', title: 'Борооны үнэр', artist: 'Баярцэнгэл', dur: 221, moods: ['sad', 'tired'], genres: ['Поп'] },
-  { id: 'CtNj58UrnZE', title: 'Хайр эзэнтэй', artist: 'Баярцэнгэл', dur: 200, moods: ['calm', 'sad'], genres: ['Поп'] },
-  { id: 'HP28rLnAbXE', title: 'Tonjoo', artist: 'Bayanjargal ft Luuya', dur: 177, moods: ['happy', 'neutral'], genres: ['Поп'] },
-
-  // Рок
-  { id: 'RHK0sHv-LsE', title: 'Нэргүй дуу', artist: 'Нисванис', dur: 329, moods: ['sad', 'calm'], genres: ['Рок'] },
-  { id: 'Ak8LluYGDoY', title: 'Үгүйлэн санана', artist: 'Харанга', dur: 351, moods: ['sad'], genres: ['Рок'] },
-  { id: 'gCOfB02ZRsk', title: 'Толин хул', artist: 'Харанга & Татар', dur: 294, moods: ['neutral'], genres: ['Рок', 'Хип хоп, рэп'] },
-  { id: 'tWTAIasP4rk', title: 'Эсрэг утгаар нь', artist: 'Нисванис', dur: 243, moods: ['neutral'], genres: ['Рок'] },
-  { id: '6_KtTfifqsY', title: 'Бүсгүй', artist: 'Хурд', dur: 295, moods: ['calm', 'neutral'], genres: ['Рок'] },
-  { id: 'L50uM-otc90', title: 'Аавдаа', artist: 'Хурд', dur: 352, moods: ['sad', 'tired'], genres: ['Рок'] },
-  { id: 'XTacCEDgeYY', title: 'Халуун сэтгэл', artist: 'Харанга', dur: 323, moods: ['happy', 'calm'], genres: ['Рок'] },
-  { id: 'VtNIUPHqPoA', title: 'Аялгуу', artist: 'Харанга', dur: 339, moods: ['calm', 'anxious', 'angry'], genres: ['Рок'] },
-
-  // Хип хоп, рэп
-  { id: 'ygf3y67sn8c', title: 'Нэг өдрийн хаан', artist: 'Rokit Bay', dur: 301, moods: ['neutral', 'tired'], genres: ['Хип хоп, рэп'] },
-  { id: 'aQfa1XlGcBI', title: 'Эвдэрхий хүн', artist: 'Rokit Bay ft. Uyanga', dur: 298, moods: ['sad', 'anxious'], genres: ['Хип хоп, рэп'] },
-  { id: '-0hM8q-yxz8', title: 'Яасан', artist: 'Big Gee', dur: 273, moods: ['sad'], genres: ['Хип хоп, рэп'] },
-  { id: 'khIrGY6rWiI', title: 'Power', artist: 'Desant x Big Gee', dur: 149, moods: ['happy'], genres: ['Хип хоп, рэп'] },
-  { id: 'QpF77ks6UgY', title: 'Одоо ч би хайртай хэвээр', artist: 'Big Gee ft. Nyamkhuu', dur: 189, moods: ['sad', 'calm'], genres: ['Хип хоп, рэп'] },
-  { id: 'xlD1dhAToac', title: 'Зөөлөн гуниг', artist: 'Мөнхийн Рэп', dur: 268, moods: ['sad', 'tired'], genres: ['Хип хоп, рэп'] },
-  { id: 'VkajLZ-JdK8', title: 'Tengri: Mongol', artist: 'ThunderZ', dur: 267, moods: ['happy'], genres: ['Хип хоп, рэп'] },
-
-  // R&B
-  { id: '9fn83iJ6ni8', title: 'One Love (Ийм нэгэн дурлал)', artist: 'BX', dur: 288, moods: ['happy', 'calm'], genres: ['R&B'] },
-  { id: 'XfnovPZ-o9Q', title: '100 хувь', artist: 'Egshiglen & BX', dur: 194, moods: ['happy', 'neutral'], genres: ['R&B'] },
-
-  // Ардын дуу
-  { id: 'e2VgPucnLSo', title: 'Нутгийн айзам', artist: 'Түмэн-Өлзий Жимсээ', dur: 185, moods: ['calm', 'tired', 'angry'], genres: ['Ардын дуу'] },
-  { id: 'FNHqSrcj5Ks', title: 'Сайн яваа хүний хань', artist: 'Энхзул', dur: 231, moods: ['calm', 'tired', 'anxious'], genres: ['Ардын дуу'] },
-  { id: 'L2MAyVLbaMs', title: 'Хүмүүний сайхан хайрыг', artist: 'Банзрагч', dur: 265, moods: ['calm', 'neutral'], genres: ['Ардын дуу'] },
-  { id: 'hxRUwILrB7E', title: 'Хотгойдын унага', artist: 'Монгол ардын дуу', dur: 114, moods: ['happy', 'neutral'], genres: ['Ардын дуу'] },
-  { id: '-lvtJ4yLyJo', title: 'Дөрвөн цагийн тал', artist: 'Н.Норовбанзад', dur: 184, moods: ['calm', 'tired', 'angry'], genres: ['Ардын дуу'] },
-  { id: 'HXHdqRKHGJU', title: 'Уяхан замбуу тивийн наран', artist: 'Н.Норовбанзад', dur: 317, moods: ['calm', 'anxious', 'sad'], genres: ['Ардын дуу'] },
-  { id: 'CjohhxJVUMQ', title: 'Оньсого', artist: 'Алтан Ураг', dur: 155, moods: ['happy', 'neutral'], genres: ['Ардын дуу'] },
-
-  // Метал
-  { id: '4Y2gK4n35hw', title: 'This Is Mongol', artist: 'The HU', dur: 278, moods: ['happy'], genres: ['Метал', 'Рок'] },
-  { id: 'Ef9NK-RaNZE', title: 'Echoes of My Father', artist: 'The HU', dur: 381, moods: ['neutral'], genres: ['Метал', 'Рок'] },
-  { id: 'pD1gDSao1eA', title: 'The Great Chinggis Khaan', artist: 'The HU', dur: 307, moods: ['neutral', 'happy'], genres: ['Метал', 'Рок'] },
-  { id: 'GqrKj5lD5y4', title: 'Warrior Chant', artist: 'The HU', dur: 236, moods: ['happy'], genres: ['Метал'] },
-
-  // Инди
-  { id: 'L1U-FOngLog', title: 'Caroline', artist: 'Magnolian', dur: 285, moods: ['neutral', 'calm'], genres: ['Инди'] },
-  { id: 'aWJ6JxbFMug', title: 'Primadonna', artist: 'Magnolian', dur: 256, moods: ['happy'], genres: ['Инди'] },
-  { id: 'QblesJCcw8s', title: 'The Bride & the Bachelor', artist: 'Magnolian ft. Tselmuun', dur: 271, moods: ['sad', 'tired'], genres: ['Инди'] },
-  { id: 'J5Pr9-VW68o', title: 'Crimson', artist: 'Magnolian', dur: 188, moods: ['anxious'], genres: ['Инди'] },
-  { id: 'epcUYrseeJE', title: 'Навчны дуу', artist: 'The Royal Heartaches', dur: 233, moods: ['calm', 'neutral'], genres: ['Инди'] },
-
-  // Жазз
-  { id: '7pnsd1OgdDI', title: 'Хүнгийн дуу (Jazz cover)', artist: 'Nandintsetseg', dur: 177, moods: ['calm', 'sad', 'tired'], genres: ['Жазз'] },
-
-  // Сонгодог: морин хуурын чуулга
-  { id: '4Hbp__4awXw', title: 'Сэрсэн тал', artist: 'Б.Шарав, Морин хуурын чуулга', dur: 196, moods: ['calm', 'neutral', 'tired'], genres: ['Сонгодог хөгжим'] },
-  { id: 'NpWmZ9zLx2o', title: 'Торгоны хээ', artist: 'Морин хуурын чуулга', dur: 223, moods: ['calm', 'anxious', 'happy', 'angry'], genres: ['Сонгодог хөгжим'] },
-  { id: 'Ykz6ZokoEoQ', title: 'Огторгуйн хүрдэн', artist: 'Морин хуурын чуулга', dur: 681, moods: ['tired', 'neutral'], genres: ['Сонгодог хөгжим'] },
+  { id: '3kZ6bCM4JaTGApkchBTrCP', title: 'Өвөлжөө', artist: 'Magnolian', dur: 337, img: 'ab67616d00004851387b927cbb11c51b3ceb3a91', moods: ['calm', 'tired'], genres: ['Инди'] },
+  { id: '3yBr5dRJAbjppfxZg3OUWZ', title: 'Yuve Yuve Yu', artist: 'The HU', dur: 283, img: 'ab67616d00004851a849f2dea216228f9039f3e9', moods: ['happy'], genres: ['Метал', 'Рок'] },
+  { id: '6TPwgMWXtXuDlymEWgOs0f', title: 'Нулимсаа тэвчье', artist: 'Хурд', dur: 318, img: 'ab67616d000048512e83eb99a97036621ab8594f', moods: ['sad'], genres: ['Рок'] },
+  { id: '3GiPe0NGHg44qc7nVSk4kp', title: 'Хязгааргүй', artist: 'Rokit Bay ft. Anouca', dur: 209, img: 'ab67616d0000485154053a683bc2751e29a6b898', moods: ['happy', 'neutral'], genres: ['Хип хоп, рэп'] },
+  { id: '4EoW6PX4QYli2E4UbVJM9c', title: 'Амар мэндийн дуу', artist: 'Хурд', dur: 329, img: 'ab67616d000048518fcf82b713652ea067c624fc', moods: ['neutral', 'calm', 'happy', 'angry'], genres: ['Рок'] },
+  { id: '76JrIAnBqqRfuU0LUx1xu5', title: 'Эргэцүүлэл', artist: 'Big Gee ft. Medegma Dorjieva', dur: 246, img: 'ab67616d00004851a895c162bbbee72c86269bcc', moods: ['calm', 'sad', 'tired', 'anxious', 'angry'], genres: ['Хип хоп, рэп'] },
+  { id: '4dISgFpr0E9uqGbI6Dgzyv', title: 'Муу зуршил', artist: 'Нисванис', dur: 275, img: 'ab67616d000048513f12d84dae365797d0fe3496', moods: ['neutral'], genres: ['Рок'] },
+  { id: '3wMxiDt4s1rhS6GtH6ll9b', title: 'Аадар', artist: 'Rokit Bay', dur: 215, img: 'ab67616d0000485192ea16635496e782facecf01', moods: ['sad'], genres: ['Хип хоп, рэп'] },
+  { id: '0aOgNpAeUV4SlVLmJimK6p', title: 'Woods', artist: 'Magnolian', dur: 211, img: 'ab67616d00004851a5b2d8bf659fc9149897b3c2', moods: ['anxious', 'calm', 'angry'], genres: ['Инди'] },
+  { id: '7LSn5it9bQhJqyfEq1PM3l', title: 'Wolf Totem', artist: 'The HU', dur: 338, img: 'ab67616d00004851a849f2dea216228f9039f3e9', moods: ['neutral', 'happy'], genres: ['Метал', 'Рок'] },
+  { id: '07iytmjOnuUwFZypjXT5Pd', title: 'Тайван', artist: 'Ratabuzz', dur: 160, img: 'ab67616d0000485123cc27adbf03849ae11bdd7e', moods: ['anxious', 'calm', 'angry'], genres: ['Поп', 'Хип хоп, рэп'] },
+  { id: '6li3jwWNPZayYpKNFV09Xp', title: 'Chigi Tigi Boom', artist: 'Bayartsengel & Anu', dur: 206, img: 'ab67616d00004851e4338c4134204ba7a285d0f6', moods: ['happy'], genres: ['Поп'] },
+  { id: '4Zf2f4ubveUfomEBal89Ks', title: 'Хайр эзэнтэй', artist: 'Баярцэнгэл', dur: 200, img: 'ab67616d00004851e4338c4134204ba7a285d0f6', moods: ['calm', 'sad'], genres: ['Поп'] },
+  { id: '0b0NdXlhihjMoE11hgNvxQ', title: 'Tonjoo', artist: 'Bayanjargal ft Luuya', dur: 175, img: 'ab67616d000048516ec1d6ac7b371840a42d1c52', moods: ['happy', 'neutral'], genres: ['Поп'] },
+  { id: '7oiuvnrjILVa88I1FeCBfN', title: 'Нэргүй дуу', artist: 'Нисванис', dur: 313, img: 'ab67616d00004851ab8d603ff4b06be1f056f311', moods: ['sad', 'calm'], genres: ['Рок'] },
+  { id: '5lhmKpKjEUAhPQjbKXyodn', title: 'Үгүйлэн санана', artist: 'Харанга', dur: 317, img: 'ab67616d00004851c07493f9dfe0e65b9a420525', moods: ['sad'], genres: ['Рок'] },
+  { id: '2sNYoKlTPs16i41llZC429', title: 'Эсрэг утгаар нь', artist: 'Нисванис', dur: 246, img: 'ab67616d0000485187bb9df9d01c3379a8b2b3df', moods: ['neutral'], genres: ['Рок'] },
+  { id: '2B6WsntfQSQ3yyctOY1hqT', title: 'Бүсгүй', artist: 'Хурд', dur: 300, img: 'ab67616d000048516cfc9ae0c871046a20bf743d', moods: ['calm', 'neutral'], genres: ['Рок'] },
+  { id: '01B6BrR3dxAPje6gIedu9W', title: 'Аавдаа', artist: 'Хурд', dur: 316, img: 'ab67616d00004851796a4c3997205504e3df5205', moods: ['sad', 'tired'], genres: ['Рок'] },
+  { id: '2QslFceV712W88cqFoz4g5', title: 'Аялгуу', artist: 'Харанга', dur: 329, img: 'ab67616d00004851c07493f9dfe0e65b9a420525', moods: ['calm', 'anxious', 'angry'], genres: ['Рок'] },
+  { id: '00XFqNGAuPBb8OYHtGnfHG', title: 'Эвдэрхий хүн', artist: 'Rokit Bay ft. Uyanga', dur: 297, img: 'ab67616d00004851172aec74038ae019cad51090', moods: ['sad', 'anxious'], genres: ['Хип хоп, рэп'] },
+  { id: '7DvH1Up90fn4lDw1MhfvIl', title: 'Яасан', artist: 'Big Gee', dur: 271, img: 'ab67616d00004851d241ce2095466e9bea9e5597', moods: ['sad'], genres: ['Хип хоп, рэп'] },
+  { id: '2zfpkKF3wReQaA2KXGWeI2', title: 'Power', artist: 'Desant x Big Gee', dur: 146, img: 'ab67616d00004851fdef0c324668d338c4b3c1ce', moods: ['happy'], genres: ['Хип хоп, рэп'] },
+  { id: '38BHidVS8TcUsOnSwh3btn', title: 'Одоо ч би хайртай хэвээр', artist: 'Big Gee ft. Nyamkhuu', dur: 190, img: 'ab67616d00004851a59d1c735950baac85707a3a', moods: ['sad', 'calm'], genres: ['Хип хоп, рэп'] },
+  { id: '2W9W9j3WodIX8EpJ0F2TPc', title: 'Tengri: Mongol', artist: 'ThunderZ', dur: 192, img: 'ab67616d00004851a758ccc448dc124bf536bfa0', moods: ['happy'], genres: ['Хип хоп, рэп'] },
+  { id: '0l3Kq8VVcMDDtrMV4lldGy', title: 'One Love (Ийм нэгэн дурлал)', artist: 'BX', dur: 287, img: 'ab67616d00004851628172a87ac1ec937740fe21', moods: ['happy', 'calm'], genres: ['R&B'] },
+  { id: '7rJWcwXVdLNtJdRbBS6CKq', title: '100 хувь', artist: 'Egshiglen & BX', dur: 195, img: 'ab67616d00004851628172a87ac1ec937740fe21', moods: ['happy', 'neutral'], genres: ['R&B'] },
+  { id: '626SEzzrSB41pPVC9SLm0g', title: 'This Is Mongol', artist: 'The HU', dur: 225, img: 'ab67616d000048511fbfed350d11b4dd839960e1', moods: ['happy'], genres: ['Метал', 'Рок'] },
+  { id: '7IT6UOYMSWYCg32KuYhJGa', title: 'Echoes of My Father', artist: 'The HU', dur: 369, img: 'ab67616d000048514dfc05bd9d4867e7b35abc1e', moods: ['neutral'], genres: ['Метал', 'Рок'] },
+  { id: '01fGofO0g4WxuAF4Ue9cvl', title: 'The Great Chinggis Khaan', artist: 'The HU', dur: 272, img: 'ab67616d00004851a849f2dea216228f9039f3e9', moods: ['neutral', 'happy'], genres: ['Метал', 'Рок'] },
+  { id: '4VWia4zwaAj2QIkwQOKRKN', title: 'Warrior Chant', artist: 'The HU', dur: 227, img: 'ab67616d000048514dfc05bd9d4867e7b35abc1e', moods: ['happy'], genres: ['Метал'] },
+  { id: '7m4yNM4eG748t9IVVL9dw1', title: 'Caroline', artist: 'Magnolian', dur: 281, img: 'ab67616d00004851bf20f073b27112543892306c', moods: ['neutral', 'calm'], genres: ['Инди'] },
+  { id: '1zETDM7QUbjcUDAKdDlbSK', title: 'Primadonna', artist: 'Magnolian', dur: 249, img: 'ab67616d00004851bf20f073b27112543892306c', moods: ['happy'], genres: ['Инди'] },
+  { id: '2UweSn50xGODUOhkKnjJf2', title: 'The Bride & the Bachelor', artist: 'Magnolian ft. Tselmuun', dur: 250, img: 'ab67616d00004851387b927cbb11c51b3ceb3a91', moods: ['sad', 'tired'], genres: ['Инди'] },
+  { id: '3CwzWgBg0zcG9sqbVvyknv', title: 'Crimson', artist: 'Magnolian', dur: 187, img: 'ab67616d000048519a56202d734f75bec48fe2e4', moods: ['anxious'], genres: ['Инди'] },
 ];
 
 export const MN_IDS = new Set(MN_SONGS.map(s => s.id));
-export const ytThumb = (id: string) => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
 
 const WHY: Record<MoodId, string> = {
   happy: 'Сайхан өдрийн эрч хүчийг нэмэх монгол дуу', calm: 'Тайван мөчид зохих монгол дуу', neutral: 'Өдрөө дулаацуулах монгол дуу',
@@ -119,7 +80,7 @@ export function pickMongolian(mood: MoodId, skip: Set<string>, seen: Set<string>
     const tier = genre ? (fits ? 0 : 1) : 2;
     return [{ s, genre, k: tier * 2 + (seen.has(s.id) ? 1 : 0) + rand() }];
   }).sort((a, b) => a.k - b.k).slice(0, n)
-    .map(({ s, genre }) => ({ video_id: s.id, title: s.title, artist: s.artist, thumbnail: ytThumb(s.id), duration_s: s.dur, reason: genre ? `Таны сонгосон төрөл: ${genre}` : WHY[mood] }));
+    .map(({ s, genre }) => ({ video_id: s.id, title: s.title, artist: s.artist, thumbnail: `https://i.scdn.co/image/${s.img}`, duration_s: s.dur, reason: genre ? `Таны сонгосон төрөл: ${genre}` : WHY[mood] }));
 }
 
 /** Хоёр жагсаалтыг ээлжлэн холино: a[0], b[0], a[1], b[1]… */

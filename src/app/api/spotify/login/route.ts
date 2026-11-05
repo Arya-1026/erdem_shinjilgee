@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { appUrl, authorizeUrl, spotifyConfigured } from '@/lib/server/spotify';
+import { requestOrigin } from '@/lib/server/request-origin';
 import { createClient } from '@/lib/supabase/server';
 
 // "Spotify холбох" товч → Spotify-ийн зөвшөөрлийн хуудас (Authorization Code flow, state-ээр CSRF хамгаална)
 export async function GET(req: Request) {
-  const origin = new URL(req.url).origin;
+  const origin = requestOrigin(req);
   const back = (reason: string) => NextResponse.redirect(`${origin}/recs?spotify=${reason}`);
 
   const supabase = await createClient();

@@ -160,7 +160,7 @@ export async function syncLibrary(userId: string) {
 }
 
 /** Cache-д байхгүй дуунуудыг LLM-ээр (40-өөр нь багцлан) ангилж, cache-д нэмнэ */
-async function classify(list: SpotifyTrack[]) {
+export async function classify(list: Pick<SpotifyTrack, 'id' | 'name' | 'artists'>[]) {
   const db = createServiceClient();
   const result = new Map<string, MoodId[]>();
   for (let i = 0; i < list.length; i += 200) {

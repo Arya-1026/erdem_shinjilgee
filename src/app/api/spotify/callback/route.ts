@@ -1,12 +1,13 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { api, exchangeCode, saveConnection } from '@/lib/server/spotify';
+import { requestOrigin } from '@/lib/server/request-origin';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
+  const url = new URL(req.url), origin = requestOrigin(req);
   const back = (reason: string) => {
-    const res = NextResponse.redirect(`${url.origin}/recs?spotify=${reason}`);
+    const res = NextResponse.redirect(`${origin}/recs?spotify=${reason}`);
     res.cookies.delete({ name: 'sp_state', path: '/api/spotify' });
     return res;
   };
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(`${url.origin}/login`);
+  if (!user) return NextResponse.redirect(`${origin}/login`);
 
   try {
     const tokens = await exchangeCode(code);

@@ -1,6 +1,6 @@
 /* ---------- Уран бүтээлчид ----------
-   Нас, төрлөөр сонголт гаргах жагсаалт. Дуунуудыг нь эндээс биш, YouTube-ээс уран бүтээлчээр нь хайж авна
-   (server/youtube.ts → artistVideos), тиймээс шинэ дуу нь автоматаар орж ирнэ. */
+   Нас, төрлөөр сонголт гаргах жагсаалт. Дуунуудыг нь эндээс биш, Spotify-аас уран бүтээлчээр нь хайж авна
+   (server/spotify-search.ts → artistSongs), тиймээс шинэ дуу нь автоматаар орж ирнэ. */
 import type { Genre } from './mn-songs';
 
 export type AgeGroup = 'teen' | 'young' | 'adult' | 'mature' | 'senior';
