@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Тайван">
+  <defs>
+    <radialGradient id="face" cx=".36" cy=".3" r=".8">
+      <stop offset="0" stop-color="#ffe46b"/><stop offset=".55" stop-color="#ffc23a"/><stop offset="1" stop-color="#ff8f2a"/>
+    </radialGradient>
+    <radialGradient id="rim" cx=".5" cy=".5" r=".5">
+      <stop offset=".8" stop-color="#e2681c" stop-opacity="0"/><stop offset="1" stop-color="#d9601a" stop-opacity=".45"/>
+    </radialGradient>
+    <radialGradient id="shine" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blush" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ff6f7d" stop-opacity=".55"/><stop offset="1" stop-color="#ff6f7d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo" cx=".5" cy=".5" r=".5">
+      <stop offset=".7" stop-color="#e3f5ef"/><stop offset="1" stop-color="#d2eee5"/>
+    </radialGradient>
+  </defs>
+  <style>
+    .a { transform-box: view-box; }
+    /* one slow breath every 5 s */
+    .halo  { transform-origin: 60px 60px; animation: halo 5s ease-in-out infinite; }
+    .wave  { transform-origin: 60px 60px; opacity: 0; animation: wave 5s ease-out infinite; }
+    .sway  { transform-origin: 60px 100px; animation: sway 8s ease-in-out infinite; }
+    .face  { transform-origin: 60px 64px; animation: breathe 5s ease-in-out infinite; }
+    .brows { animation: brows 5s ease-in-out infinite; }
+    .blush { animation: blush 5s ease-in-out infinite; }
+    .spark { transform-box: fill-box; transform-origin: center; animation: tw 3s ease-in-out infinite; }
+    .k2 { animation-delay: -1s; } .k3 { animation-delay: -2s; }
+
+    @keyframes halo    { 0%,100% { transform: scale(.96); } 50% { transform: scale(1.03); } }
+    @keyframes wave    { 0%,40% { transform: scale(.85); opacity: 0; } 50% { opacity: .6; } 90%,100% { transform: scale(1.12); opacity: 0; } }
+    @keyframes sway    { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+    @keyframes breathe { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.04) translateY(-1.5px); } }
+    @keyframes brows   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.4px); } }
+    @keyframes blush   { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+    @keyframes tw      { 0%,100% { transform: scale(.3); opacity: .2; } 50% { transform: scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .wave { opacity: 0; } }
+  </style>
+
+  <circle class="halo a" cx="60" cy="60" r="56" fill="url(#halo)"/>
+  <circle class="wave a" cx="60" cy="60" r="54" fill="none" stroke="#ffffff" stroke-width="2"/>
+
+  <g fill="#fff">
+    <path class="spark"    d="M14 30 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+    <path class="spark k2" d="M104 40 l1 -3 l1 3 l3 1 l-3 1 l-1 3 l-1 -3 l-3 -1z"/>
+    <path class="spark k3" d="M98 98 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+  </g>
+
+  <g class="sway a"><g class="face a">
+    <ellipse cx="62" cy="104" rx="26" ry="3.5" fill="#5aa08c" opacity=".18"/>
+    <circle cx="60" cy="60" r="40" fill="url(#face)"/>
+    <circle cx="60" cy="60" r="40" fill="url(#rim)"/>
+    <ellipse cx="44" cy="36" rx="15" ry="9" fill="url(#shine)" transform="rotate(-30 44 36)"/>
+
+    <!-- blush -->
+    <g class="blush a">
+      <ellipse cx="35" cy="66" rx="9" ry="6" fill="url(#blush)"/>
+      <ellipse cx="85" cy="66" rx="9" ry="6" fill="url(#blush)"/>
+    </g>
+
+    <!-- relaxed brows -->
+    <g class="brows a" stroke="#6b3d22" stroke-width="3" stroke-linecap="round" fill="none" opacity=".8">
+      <path d="M31 40 q7 -5 15 -3"/><path d="M89 40 q-7 -5 -15 -3"/>
+    </g>
+
+    <!-- closed eyes -->
+    <g stroke="#4a2a1c" stroke-width="4.2" stroke-linecap="round" fill="none">
+      <path d="M31 55 q8 7 16 0">
+        <animate attributeName="d" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+          values="M31 55 q8 7 16 0;M31 54.5 q8 8 16 0;M31 55 q8 7 16 0"/>
+      </path>
+      <path d="M73 55 q8 7 16 0">
+        <animate attributeName="d" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+          values="M73 55 q8 7 16 0;M73 54.5 q8 8 16 0;M73 55 q8 7 16 0"/>
+      </path>
+      <!-- soft smile, widens on each breath -->
+      <path d="M46 74 q14 11 28 0">
+        <animate attributeName="d" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+          values="M46 74 q14 11 28 0;M43 73 q17 14 34 0;M46 74 q14 11 28 0"/>
+      </path>
+    </g>
+  </g></g>
+</svg>

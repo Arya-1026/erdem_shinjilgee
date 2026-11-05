@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Булчин суллах дасгал">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe4df"/><stop offset="1" stop-color="#f7b8b2"/>
+    </linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9a8cf0"/><stop offset="1" stop-color="#7a6bd6"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe9e4"/>
+    </linearGradient>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+    <path id="wave" d="M-40 0 q10 -7 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>
+  </defs>
+
+  <style>
+    .a { transform-box: view-box; }
+    /* one breath = 6 s : in 2.6 s, hold, out 3 s */
+    .chest  { transform-origin: 90px 129px; animation: breathe 6s ease-in-out infinite; }
+    .waves  { transform-origin: 100px 68px; animation: calm 6s ease-in-out infinite; }
+    .flow   { animation: flow 5s linear infinite; }
+    .f2     { animation-duration: 7s; animation-direction: reverse; }
+    .f3     { animation-duration: 9s; }
+    .scan   { animation: scan 12s ease-in-out infinite; }
+    .halo   { transform-origin: 100px 100px; animation: haloP 6s ease-in-out infinite; }
+    .bub    { transform-box: fill-box; transform-origin: center; opacity: 0; animation: bub 6s ease-out infinite; }
+    .b2 { animation-delay: -2s; } .b3 { animation-delay: -4s; }
+    .toes   { transform-origin: 160px 126px; animation: toes 12s ease-in-out infinite; }
+    .hand   { transform-origin: 92px 131px; animation: hand 12s ease-in-out infinite; }
+    .shadow { transform-origin: 100px 150px; animation: shade 6s ease-in-out infinite; }
+
+    @keyframes breathe { 0%,100% { transform: scaleY(1); } 43%,52% { transform: scaleY(1.16); } }
+    @keyframes calm    { 0%,100% { transform: scaleY(1); opacity: .9; } 43%,52% { transform: scaleY(.55); opacity: .6; } }
+    @keyframes flow    { from { transform: translateX(0); } to { transform: translateX(-40px); } }
+    @keyframes scan    { 0% { transform: translateX(70px); opacity: 0; } 10% { opacity: .9; } 80% { opacity: .9; } 92%,100% { transform: translateX(-60px); opacity: 0; } }
+    @keyframes haloP   { 0%,100% { transform: scale(.92); opacity: .6; } 50% { transform: scale(1.05); opacity: 1; } }
+    @keyframes bub     { 0% { opacity: 0; transform: translateY(0) scale(.4); } 25% { opacity: .9; } 100% { opacity: 0; transform: translateY(-46px) scale(1); } }
+    /* tense → release: toes curl, then hand squeezes, then everything lets go */
+    @keyframes toes    { 0%,4% { transform: rotate(0); } 8%,16% { transform: rotate(-14deg); } 22%,100% { transform: rotate(0); } }
+    @keyframes hand    { 0%,34% { transform: scale(1); } 38%,46% { transform: scale(.8); } 52%,100% { transform: scale(1); } }
+    @keyframes shade   { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(1.03); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+
+  <g clip-path="url(#card)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle class="halo a" cx="100" cy="100" r="80" fill="url(#halo)" opacity=".7"/>
+    <circle cx="30" cy="170" r="22" fill="#fff" opacity=".25"/>
+    <circle cx="178" cy="28" r="16" fill="#fff" opacity=".3"/>
+
+    <!-- calming waves (flatten as you breathe in) -->
+    <g class="waves a" fill="none" stroke-linecap="round">
+      <g transform="translate(0 48)"><use href="#wave" class="flow a" stroke="#e8737b" stroke-width="4"/></g>
+      <g transform="translate(0 66)"><use href="#wave" class="flow f2 a" stroke="#ee8f94" stroke-width="3.5"/></g>
+      <g transform="translate(0 84)"><use href="#wave" class="flow f3 a" stroke="#f3a9ab" stroke-width="3"/></g>
+    </g>
+
+    <!-- rising bubbles -->
+    <g fill="#fff">
+      <circle class="bub a"    cx="60"  cy="104" r="2.4"/>
+      <circle class="bub b2 a" cx="118" cy="104" r="2"/>
+      <circle class="bub b3 a" cx="150" cy="108" r="2.6"/>
+    </g>
+
+    <!-- mat -->
+    <ellipse class="shadow a" cx="100" cy="150" rx="78" ry="5" fill="#b6625c" opacity=".25"/>
+    <rect x="24" y="132" width="152" height="12" rx="6" fill="url(#mat)"/>
+    <rect x="24" y="132" width="152" height="4" rx="2" fill="#b4a9ff" opacity=".7"/>
+    <circle cx="176" cy="138" r="6" fill="#6a5bc4"/><circle cx="176" cy="138" r="3" fill="#8577e0"/>
+
+    <!-- pillow -->
+    <rect x="30" y="122" width="30" height="11" rx="5.5" fill="#fffaf5"/>
+    <rect x="30" y="122" width="30" height="4" rx="2" fill="#fff"/>
+
+    <!-- person lying down, head left, face up -->
+    <!-- legs -->
+    <path d="M110 120 H158 q4 0 4 4 v4 q0 4 -4 4 H110Z" fill="#3b4a82"/>
+    <line x1="112" y1="126" x2="156" y2="126" stroke="#2f3c6e" stroke-width="1"/>
+    <!-- feet -->
+    <g class="toes a">
+      <path d="M157 131 q3 -14 6 -15 q4 0 4 4 l-1 11z" fill="#f3c29b"/>
+    </g>
+    <!-- torso (breathes) -->
+    <g class="chest a">
+      <path d="M58 129 V119 q0 -6 7 -6 H106 q6 0 6 6 V129Z" fill="url(#shirt)" stroke="#f0b4ad" stroke-width="1.2"/>
+      <path d="M58 122 q24 -2 54 0" stroke="#f6cfc9" stroke-width="1.2" fill="none"/>
+    </g>
+    <!-- arm resting along the body -->
+    <path d="M64 128 H92" stroke="#ffe2dc" stroke-width="6" stroke-linecap="round"/>
+    <path d="M64 128 H92" stroke="#f0b4ad" stroke-width="1" fill="none" transform="translate(0 3)"/>
+    <g class="hand a"><circle cx="95" cy="129" r="3.6" fill="#f3c29b"/></g>
+
+    <!-- head -->
+    <g>
+      <circle cx="47" cy="117" r="12" fill="#f6c9a2"/>
+      <path d="M35 119 q-2 -14 11 -14 q7 0 9 4 q-6 -1 -10 2 q-3 3 -3 9 q-4 2 -7 -1z" fill="#3a2a2a"/>
+      <!-- closed, peaceful eye -->
+      <path d="M48 112 q3 3 6 0" stroke="#2d2330" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M52 121 q3 2 5 -1" stroke="#a5523e" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <circle cx="54" cy="116.5" r="2.2" fill="#ff8f8f" opacity=".45"/>
+    </g>
+
+    <!-- body-scan light sweeping feet → head -->
+    <g class="scan a">
+      <ellipse cx="100" cy="122" rx="14" ry="16" fill="url(#halo)" opacity=".75"/>
+    </g>
+  </g>
+</svg>

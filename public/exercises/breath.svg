@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="4-7-8 амьсгалын дасгал">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3f4ff"/><stop offset="1" stop-color="#b5dcf5"/></linearGradient>
+    <radialGradient id="orb" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#bfe3fb"/><stop offset="1" stop-color="#7cbfe9"/></radialGradient>
+    <radialGradient id="aura"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+  <style>
+    .a { transform-box: view-box; }
+    /* 4 s in (0–21%), 7 s hold (21–58%), 8 s out (58–100%) = 19 s */
+    .orb  { transform-origin: 100px 96px; animation: orb 19s ease-in-out infinite; }
+    .aura { transform-origin: 100px 96px; animation: aura 19s ease-in-out infinite; }
+    .ring { transform-origin: 100px 96px; transform: rotate(-90deg); stroke-dasharray: 289; animation: ring 19s linear infinite; }
+    .n4 { animation: t4 19s steps(1) infinite; } .n7 { animation: t7 19s steps(1) infinite; } .n8 { animation: t8 19s steps(1) infinite; }
+    .wind { stroke-dasharray: 18 10; animation: wind 19s linear infinite; }
+    .w2 { animation-delay: -.6s; } .w3 { animation-delay: -1.2s; }
+    .windG { animation: windG 19s ease-in-out infinite; }
+
+    @keyframes orb  { 0% { transform: scale(.62); } 21%,58% { transform: scale(1); } 100% { transform: scale(.62); } }
+    @keyframes aura { 0% { transform: scale(.6); opacity: .4; } 21% { transform: scale(1.1); opacity: 1; }
+                      40% { transform: scale(1.18); opacity: .8; } 58% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(.6); opacity: .4; } }
+    @keyframes ring { 0% { stroke-dashoffset: 289; } 21% { stroke-dashoffset: 0; } 21.01% { stroke-dashoffset: 289; }
+                      58% { stroke-dashoffset: 0; } 58.01% { stroke-dashoffset: 289; } 100% { stroke-dashoffset: 0; } }
+    @keyframes t4 { 0% { opacity: 1; } 21% { opacity: 0; } }
+    @keyframes t7 { 0% { opacity: 0; } 21% { opacity: 1; } 58% { opacity: 0; } }
+    @keyframes t8 { 0% { opacity: 0; } 58% { opacity: 1; } }
+    /* wind flows in while inhaling, rests while holding, flows out while exhaling */
+    @keyframes wind { 0% { stroke-dashoffset: 0; } 21% { stroke-dashoffset: -80; } 58% { stroke-dashoffset: -84; } 100% { stroke-dashoffset: 0; } }
+    @keyframes windG { 0% { opacity: .9; transform: translateX(0); } 21% { opacity: .9; transform: translateX(6px); } 30%,52% { opacity: .25; }
+                       58% { opacity: .9; transform: translateX(6px); } 100% { opacity: .9; transform: translateX(0); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .n7,.n8 { opacity: 0; } }
+  </style>
+  <g clip-path="url(#card)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="30" cy="30" r="16" fill="#fff" opacity=".4"/><circle cx="176" cy="176" r="22" fill="#fff" opacity=".35"/>
+
+    <!-- wind swirls -->
+    <g class="windG a" fill="none" stroke="#4d93c9" stroke-width="4.5" stroke-linecap="round">
+      <path class="wind" d="M14 70 H62 q14 0 14 -12 q0 -10 -10 -10 q-8 0 -8 8"/>
+      <path class="wind w2" d="M8 98 H58"/>
+      <path class="wind w3" d="M14 126 H60 q14 0 14 12 q0 10 -10 10 q-8 0 -8 -8"/>
+    </g>
+    <g class="windG a" fill="none" stroke="#4d93c9" stroke-width="4.5" stroke-linecap="round" transform="translate(200 0) scale(-1 1)">
+      <path class="wind w2" d="M14 70 H62 q14 0 14 -12 q0 -10 -10 -10 q-8 0 -8 8"/>
+      <path class="wind w3" d="M8 98 H58"/>
+      <path class="wind" d="M14 126 H60 q14 0 14 12 q0 10 -10 10 q-8 0 -8 -8"/>
+    </g>
+
+    <!-- breathing orb -->
+    <circle class="aura a" cx="100" cy="96" r="62" fill="url(#aura)"/>
+    <circle cx="100" cy="96" r="46" fill="none" stroke="#ffffff" stroke-width="5" opacity=".6"/>
+    <circle class="ring a" cx="100" cy="96" r="46" fill="none" stroke="#2f7fbf" stroke-width="5" stroke-linecap="round"/>
+    <g class="orb a">
+      <circle cx="100" cy="96" r="38" fill="url(#orb)"/>
+      <ellipse cx="88" cy="80" rx="10" ry="6" fill="#fff" opacity=".7" transform="rotate(-30 88 80)"/>
+    </g>
+    <g font-family="system-ui, 'Segoe UI', sans-serif" font-weight="800" text-anchor="middle" fill="#245f91">
+      <text class="n4" x="100" y="108" font-size="34">4</text>
+      <text class="n7" x="100" y="108" font-size="34" opacity="0">7</text>
+      <text class="n8" x="100" y="108" font-size="34" opacity="0">8</text>
+    </g>
+    <g font-family="system-ui, 'Segoe UI', sans-serif" font-weight="700" text-anchor="middle" font-size="15" fill="#2f6e9f">
+      <text class="n4" x="100" y="172">Амьсгал ав</text>
+      <text class="n7" x="100" y="172" opacity="0">Барь</text>
+      <text class="n8" x="100" y="172" opacity="0">Гарга</text>
+    </g>
+  </g>
+</svg>

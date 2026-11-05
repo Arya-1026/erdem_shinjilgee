@@ -44,7 +44,7 @@ export function RecCard({ r, m, onFeedback }: { r: ScoredRec; m: Mood; onFeedbac
         <div className="min-w-0">
           <b>{r.title}</b>
           <div className="text-sm text-muted-foreground">{r.sub}</div>
-          {r.moves && <Badge variant="secondary" className="mt-1 mr-1">3D дагаж хийнэ</Badge>}
+          {r.moves && <Badge variant="secondary" className="mt-1 mr-1">Дагаж хийнэ</Badge>}
           {r.hob && <Badge className="mt-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Таны хоббид тохирсон</Badge>}
         </div>
       </div>

@@ -78,7 +78,7 @@ function Exercise({ recId }: { recId: string }) {
     <>
       <Title>{r.title}</Title>
       <DialogDescription>{r.sub}</DialogDescription>
-      {r.moves ? <ExerciseCoach moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
+      {r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
     </>
   );
 }

@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Талархлын тэмдэглэл">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffecd2"/><stop offset="1" stop-color="#ffd2b3"/>
+    </linearGradient>
+    <radialGradient id="warm" cx=".5" cy=".45" r=".55">
+      <stop offset="0" stop-color="#fff6e6" stop-opacity=".9"/><stop offset="1" stop-color="#fff6e6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pageL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fffdf7"/><stop offset=".8" stop-color="#fdf3e1"/><stop offset="1" stop-color="#efdcbc"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#fffdf7"/><stop offset=".8" stop-color="#fdf3e1"/><stop offset="1" stop-color="#efdcbc"/>
+    </linearGradient>
+    <linearGradient id="heartG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8fa3"/><stop offset="1" stop-color="#e8576f"/>
+    </linearGradient>
+    <path id="heart" d="M0 6 C-10 -1 -12 -8 -7 -11 C-4 -13 -1 -11 0 -8 C1 -11 4 -13 7 -11 C12 -8 10 -1 0 6Z"/>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+
+  <style>
+    .a { transform-box: view-box; }
+    .book   { animation: float 4s ease-in-out infinite; }
+    .shadow { transform-origin: 100px 168px; animation: shade 4s ease-in-out infinite; }
+    .beat   { transform-origin: 72px 100px; animation: beat 1.6s ease-in-out infinite; }
+    .glow   { transform-origin: 72px 100px; animation: glow 1.6s ease-in-out infinite; }
+    .ln     { stroke-dasharray: 40; stroke-dashoffset: 40; animation: 7s ease-in-out infinite; }
+    .l1 { animation-name: w1; } .l2 { animation-name: w2; } .l3 { animation-name: w3; }
+    .pencil { animation: pen 7s ease-in-out infinite; }
+    .wiggle { animation: wig .16s ease-in-out infinite alternate; }
+    .mini   { opacity: 0; animation: rise 4.5s ease-out infinite; }
+    .m2 { animation-delay: -1.5s; } .m3 { animation-delay: -3s; }
+    .spark  { transform-box: fill-box; transform-origin: center; animation: twinkle 2.4s ease-in-out infinite; }
+    .s2 { animation-delay: -.8s; } .s3 { animation-delay: -1.6s; } .s4 { animation-delay: -2s; }
+    .dot    { animation: drift 9s ease-in-out infinite alternate; }
+    .d2     { animation-duration: 12s; animation-delay: -4s; }
+
+    @keyframes float { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-.6deg); } }
+    @keyframes shade { 0%,100% { transform: scaleX(1); opacity: .22; } 50% { transform: scaleX(.88); opacity: .14; } }
+    @keyframes beat  { 0%,40%,100% { transform: scale(1); } 10% { transform: scale(1.16); } 20% { transform: scale(1.02); } 28% { transform: scale(1.1); } }
+    @keyframes glow  { 0%,40%,100% { transform: scale(1); opacity: .25; } 12% { transform: scale(1.45); opacity: .45; } }
+    @keyframes w1 { 0% { stroke-dashoffset: 40; opacity: 1; } 14% { stroke-dashoffset: 0; } 84% { stroke-dashoffset: 0; opacity: 1; } 94%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes w2 { 0%,17% { stroke-dashoffset: 40; opacity: 1; } 31% { stroke-dashoffset: 0; } 84% { stroke-dashoffset: 0; opacity: 1; } 94%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes w3 { 0%,34% { stroke-dashoffset: 40; opacity: 1; } 46% { stroke-dashoffset: 12; } 84% { stroke-dashoffset: 12; opacity: 1; } 94%,100% { stroke-dashoffset: 12; opacity: 0; } }
+    @keyframes pen {
+      0%   { transform: translate(113px, 88px); }
+      14%  { transform: translate(149px, 88px); }
+      17%  { transform: translate(113px, 102px); }
+      31%  { transform: translate(149px, 102px); }
+      34%  { transform: translate(113px, 116px); }
+      46%  { transform: translate(141px, 116px); }
+      56%,88% { transform: translate(160px, 136px); }
+      100% { transform: translate(113px, 88px); }
+    }
+    @keyframes wig   { from { transform: translateY(0); } to { transform: translateY(-1.3px); } }
+    @keyframes rise  { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 15% { opacity: .9; }
+                       100% { opacity: 0; transform: translate(var(--dx), -62px) scale(1); } }
+    @keyframes twinkle { 0%,100% { transform: scale(.3); opacity: .2; } 50% { transform: scale(1); opacity: 1; } }
+    @keyframes drift { from { transform: translate(0,0); } to { transform: translate(8px,-10px); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .ln { stroke-dashoffset: 0; } .l3 { stroke-dashoffset: 12; } .pencil { transform: translate(160px,136px); }
+    }
+  </style>
+
+  <g clip-path="url(#card)">
+    <!-- background -->
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="100" cy="98" r="90" fill="url(#warm)"/>
+    <circle class="dot a"  cx="28"  cy="40"  r="14" fill="#ffffff" opacity=".35"/>
+    <circle class="dot d2 a" cx="176" cy="160" r="18" fill="#ffffff" opacity=".3"/>
+    <circle class="dot d2 a" cx="170" cy="30"  r="7"  fill="#ffb08a" opacity=".35"/>
+
+    <!-- sparkles -->
+    <g fill="#ffc94a">
+      <path class="spark"    d="M36 128 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2z"/>
+      <path class="spark s2" d="M160 50 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5z"/>
+      <path class="spark s3" d="M50 46 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+      <path class="spark s4" d="M170 112 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z" fill="#ff8fa3"/>
+    </g>
+
+    <!-- shadow -->
+    <ellipse class="shadow a" cx="100" cy="168" rx="62" ry="5" fill="#8a4b2a"/>
+
+    <g class="book a">
+      <!-- cover -->
+      <path d="M100 66 Q70 54 34 60 V158 Q70 152 100 162 Q130 152 166 158 V60 Q130 54 100 66Z" fill="#2f2b4d"/>
+      <path d="M38 156 Q70 150 100 159 Q130 150 162 156" stroke="#47416e" stroke-width="2" fill="none"/>
+      <!-- page stack edges -->
+      <path d="M100 64 Q72 53 40 58 V152 Q72 146 100 156Z" fill="#e8d3b0"/>
+      <path d="M100 64 Q128 53 160 58 V152 Q128 146 100 156Z" fill="#e8d3b0"/>
+      <!-- pages -->
+      <path d="M100 62 Q72 50 43 55 V148 Q72 142 100 152Z" fill="url(#pageL)" stroke="#2f2b4d" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M100 62 Q128 50 157 55 V148 Q128 142 100 152Z" fill="url(#pageR)" stroke="#2f2b4d" stroke-width="2.4" stroke-linejoin="round"/>
+      <line x1="100" y1="62" x2="100" y2="152" stroke="#2f2b4d" stroke-width="2.4"/>
+      <!-- bookmark ribbon -->
+      <path d="M128 52 V70 l4 -4 l4 4 V51" fill="#ff8fa3"/>
+
+      <!-- heart on left page -->
+      <use href="#heart" class="glow a" x="72" y="100" transform="translate(-72 -100) translate(72 100)" fill="#ff8fa3" opacity=".3"/>
+      <g class="beat a">
+        <use href="#heart" transform="translate(72 100) scale(1.75)" fill="url(#heartG)"/>
+        <ellipse cx="63" cy="88" rx="3.5" ry="2.2" fill="#fff" opacity=".55" transform="rotate(-30 63 88)"/>
+      </g>
+
+      <!-- floating mini hearts -->
+      <use href="#heart" class="mini a"    style="--dx:-14px" transform="translate(66 84) scale(.45)" fill="#ff8fa3"/>
+      <use href="#heart" class="mini m2 a" style="--dx:10px"  transform="translate(76 82) scale(.35)" fill="#ffa8b8"/>
+      <use href="#heart" class="mini m3 a" style="--dx:-4px"  transform="translate(71 84) scale(.4)"  fill="#e8576f"/>
+
+      <!-- written lines on right page -->
+      <g stroke="#e6a43a" stroke-width="4" stroke-linecap="round" fill="none">
+        <line class="ln l1" x1="113" y1="88"  x2="149" y2="88"/>
+        <line class="ln l2" x1="113" y1="102" x2="149" y2="102"/>
+        <line class="ln l3" x1="113" y1="116" x2="149" y2="116"/>
+      </g>
+    </g>
+
+    <!-- pencil (tip at its origin) -->
+    <g class="pencil a">
+      <g class="wiggle a">
+        <g transform="rotate(32)">
+          <path d="M0 0 L-2.6 -7 H2.6Z" fill="#f2c79a"/>
+          <path d="M0 0 L-.9 -2.4 H.9Z" fill="#2f2b4d"/>
+          <rect x="-2.8" y="-31" width="5.6" height="24" fill="#ffc83d"/>
+          <rect x="-.9" y="-31" width="1.8" height="24" fill="#ffd86e"/>
+          <rect x="-2.9" y="-35" width="5.8" height="4" fill="#b9bfcc"/>
+          <rect x="-2.9" y="-40" width="5.8" height="5.4" rx="1.6" fill="#ff8fa3"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

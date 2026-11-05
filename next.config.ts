@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
       { source: "/chat", destination: "/home", permanent: false },
       // Тайлан хуудас Хуваарь дотор «Миний тойм» болж нэгдсэн
       { source: "/stats", destination: "/todo", permanent: false },
+      // Найзуудын чат хасагдсан: найзаа профайлын «Найзууд» цонхноос удирдана, сэтгэл санаа нь Нүүр хуудсанд
+      { source: "/friends", destination: "/profile", permanent: false },
     ];
   },
 };

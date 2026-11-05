@@ -253,7 +253,7 @@ function AccountSection() {
 /* Нууцлал: профайл, идэвхтэй байдал, mood, зурвас, найзуудын жагсаалтыг хэнд харуулах */
 function SocialSection() {
   const { profile: u, updateProfile } = useApp();
-  const pick = (key: 'mood_visibility' | 'message_permission' | 'friends_visibility', label: string, sub: string) => (
+  const pick = (key: 'mood_visibility' | 'friends_visibility', label: string, sub: string) => (
     <Setting title={label} sub={sub}>
       <select aria-label={label} value={u[key]} onChange={e => void updateProfile({ [key]: e.target.value as Audience })}
         className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
@@ -272,11 +272,7 @@ function SocialSection() {
           <option value="friends">🔒 Нууц</option>
         </select>
       </Setting>
-      <Setting title="Идэвхтэй байгаагаа харуулах" sub="Найзууд тань таныг онлайн үед ногоон цэг харна. Унтраавал та ч бусдынхыг харахгүй.">
-        <Switch checked={u.show_active} onCheckedChange={v => void updateProfile({ show_active: v })} aria-label="Идэвхтэй байгаагаа харуулах" />
-      </Setting>
-      {pick('mood_visibility', 'Сэтгэл санаагаа харуулах', 'Таны сүүлийн бүртгэлийн эможиг хэн харах вэ')}
-      {pick('message_permission', 'Надад зурвас бичих', 'Хэн танд зурвас бичиж болох вэ')}
+      {pick('mood_visibility', 'Сэтгэл санаагаа харуулах', 'Таны одоогийн сэтгэл санаа (Нүүр хуудасны бөмбөлөг) хэнд харагдах вэ')}
       {pick('friends_visibility', 'Найзуудаа харуулах', 'Таны найзуудын жагсаалтыг хэн харах вэ')}
     </section>
   );

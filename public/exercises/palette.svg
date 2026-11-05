@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Мэдрэмжээ зураглах">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe6f0"/><stop offset="1" stop-color="#f9c3d8"/></linearGradient>
+    <linearGradient id="pal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf8"/><stop offset="1" stop-color="#f3e6d6"/></linearGradient>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+  <style>
+    .a { transform-box: view-box; }
+    .st { stroke-dasharray: 140; stroke-dashoffset: 140; animation: 9s ease-in-out infinite; }
+    .s1 { animation-name: d1; } .s2 { animation-name: d2; } .s3 { animation-name: d3; }
+    .dot { transform-box: fill-box; transform-origin: center; animation: 9s ease-in-out infinite; }
+    .dr { animation-name: p1; } .dy { animation-name: p2; } .db { animation-name: p3; }
+    .brush { animation: brush 9s ease-in-out infinite; }
+    .tip   { animation: tip 9s steps(1) infinite; }
+    .pal   { transform-origin: 100px 150px; animation: rock 4.5s ease-in-out infinite; }
+    .spark { transform-box: fill-box; transform-origin: center; animation: tw 2.2s ease-in-out infinite; }
+    .k2 { animation-delay: -.7s; } .k3 { animation-delay: -1.4s; }
+
+    @keyframes d1 { 0%,8% { stroke-dashoffset: 140; opacity: 1; } 24% { stroke-dashoffset: 0; } 86% { stroke-dashoffset: 0; opacity: 1; } 96%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes d2 { 0%,32% { stroke-dashoffset: 140; opacity: 1; } 48% { stroke-dashoffset: 0; } 86% { stroke-dashoffset: 0; opacity: 1; } 96%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes d3 { 0%,56% { stroke-dashoffset: 140; opacity: 1; } 72% { stroke-dashoffset: 0; } 86% { stroke-dashoffset: 0; opacity: 1; } 96%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes p1 { 0%,2%,10%,100% { transform: scale(1); } 5% { transform: scale(1.3); } }
+    @keyframes p2 { 0%,26%,34%,100% { transform: scale(1); } 29% { transform: scale(1.3); } }
+    @keyframes p3 { 0%,50%,58%,100% { transform: scale(1); } 53% { transform: scale(1.3); } }
+    /* brush tip positions: dip red → stroke 1, dip yellow → stroke 2, dip blue → stroke 3, rest */
+    @keyframes brush {
+      0%   { transform: translate(150px, 112px) rotate(0); }
+      5%   { transform: translate(70px, 140px) rotate(-6deg); }
+      8%   { transform: translate(34px, 52px); }
+      24%  { transform: translate(166px, 52px); }
+      29%  { transform: translate(98px, 132px) rotate(-6deg); }
+      32%  { transform: translate(34px, 74px); }
+      48%  { transform: translate(166px, 74px); }
+      53%  { transform: translate(126px, 140px) rotate(-6deg); }
+      56%  { transform: translate(34px, 96px); }
+      72%  { transform: translate(166px, 96px); }
+      82%,100% { transform: translate(150px, 112px) rotate(0); }
+    }
+    @keyframes tip { 0% { fill: #b07a52; } 5% { fill: #ff6b6b; } 29% { fill: #ffc93c; } 53% { fill: #4d9de0; } 82% { fill: #b07a52; } }
+    @keyframes rock { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+    @keyframes tw { 0%,100% { transform: scale(.3); opacity: .2; } 50% { transform: scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .st { stroke-dashoffset: 0; } .brush { transform: translate(150px,112px); } }
+  </style>
+  <g clip-path="url(#card)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="176" cy="26" r="16" fill="#fff" opacity=".4"/><circle cx="24" cy="180" r="20" fill="#fff" opacity=".35"/>
+
+    <!-- feelings painted as waves -->
+    <g fill="none" stroke-linecap="round" stroke-width="9">
+      <path class="st s1" d="M34 52 q16 -12 33 0 t33 0 t33 0 t33 0" stroke="#ff6b6b"/>
+      <path class="st s2" d="M34 74 q16 -12 33 0 t33 0 t33 0 t33 0" stroke="#ffc93c"/>
+      <path class="st s3" d="M34 96 q16 -12 33 0 t33 0 t33 0 t33 0" stroke="#4d9de0"/>
+    </g>
+
+    <!-- palette -->
+    <g class="pal a">
+      <path d="M100 112 C140 110 178 126 172 152 C168 170 146 168 136 166 C124 164 122 176 112 182 C96 192 30 186 28 152 C26 124 62 113 100 112Z" fill="#c9a27e" transform="translate(2 4)" opacity=".5"/>
+      <path d="M100 112 C140 110 178 126 172 152 C168 170 146 168 136 166 C124 164 122 176 112 182 C96 192 30 186 28 152 C26 124 62 113 100 112Z" fill="url(#pal)" stroke="#2f2b4d" stroke-width="3.5"/>
+      <ellipse cx="128" cy="172" rx="0" ry="0"/>
+      <ellipse cx="146" cy="152" rx="7" ry="6" fill="#f9c3d8" stroke="#2f2b4d" stroke-width="2.5"/>
+      <circle class="dot dr" cx="70"  cy="140" r="9" fill="#ff6b6b"/>
+      <circle class="dot dy" cx="98"  cy="132" r="9" fill="#ffc93c"/>
+      <circle class="dot db" cx="126" cy="140" r="9" fill="#4d9de0"/>
+      <circle class="dot"    cx="52"  cy="160" r="8" fill="#6cc46a"/>
+      <circle class="dot"    cx="80"  cy="168" r="8" fill="#a77ee8"/>
+      <g fill="#fff" opacity=".7"><circle cx="67" cy="137" r="2.4"/><circle cx="95" cy="129" r="2.4"/><circle cx="123" cy="137" r="2.4"/><circle cx="49" cy="157" r="2"/><circle cx="77" cy="165" r="2"/></g>
+    </g>
+
+    <!-- brush (tip at origin) -->
+    <g class="brush a">
+      <g transform="rotate(35)">
+        <path class="tip" d="M0 0 q-4 -6 -3.5 -12 h7 q.5 6 -3.5 12z" fill="#b07a52"/>
+        <rect x="-4" y="-18" width="8" height="7" rx="1" fill="#c4c9d6"/>
+        <rect x="-3" y="-52" width="6" height="35" rx="3" fill="#ff9f43"/>
+        <rect x="-1.2" y="-50" width="2" height="31" rx="1" fill="#ffc48a"/>
+      </g>
+    </g>
+
+    <g fill="#fff">
+      <path class="spark"    d="M178 66 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5z"/>
+      <path class="spark k2" d="M20 112 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+      <path class="spark k3" d="M60 22 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+    </g>
+  </g>
+</svg>

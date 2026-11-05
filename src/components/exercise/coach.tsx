@@ -1,26 +1,20 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { ExerciseArt } from '@/components/exercise-art';
 import { Button } from '@/components/ui/button';
 import { cueAt, moveSeconds, PREP_SECONDS, totalSeconds, type Move } from '@/lib/exercise-moves';
-
-// three.js том тул зөвхөн дасгал нээхэд ачаална
-const Stage = dynamic(() => import('./stage'), {
-  ssr: false,
-  loading: () => <div className="grid size-full place-items-center text-sm text-muted-foreground">3D загвар ачаалж байна…</div>,
-});
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 type Status = 'ready' | 'run' | 'pause' | 'done';
 
-/* Дасгалыг 3D загвартай хамт алхам алхмаар дагуулна. Хөдөлгөөн бүрийн өмнө 3 секунд бэлдэнэ. */
-export function ExerciseCoach({ moves, onFinish }: { moves: Move[]; onFinish: () => void }) {
+/* Дасгалыг хөдөлгөөнт зурагтай хамт алхам алхмаар дагуулна. Хөдөлгөөн бүрийн өмнө 3 секунд бэлдэнэ.
+   (Өмнө нь three.js 3D загвар байсан: утсан дээр удаан байсан тул хөнгөн SVG анимациар сольсон.) */
+export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves: Move[]; onFinish: () => void }) {
   const [status, setStatus] = useState<Status>('ready');
   const [i, setI] = useState(0);
   const [t, setT] = useState(-PREP_SECONDS);
-  const [noWebGL, setNoWebGL] = useState(false);
   const m = moves[i];
 
   const go = (n: number) => {
@@ -59,8 +53,7 @@ export function ExerciseCoach({ moves, onFinish }: { moves: Move[]; onFinish: ()
   return (
     <div className="mt-3 min-w-0">
       <div className="relative h-[min(44dvh,340px)] overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,var(--secondary),color-mix(in_srgb,var(--secondary)_55%,var(--card)))]">
-        {noWebGL ? <p className="grid size-full place-items-center p-6 text-center text-sm text-muted-foreground">Таны төхөөрөмж 3D дэмжихгүй байна. Доорх зааврыг дагаарай.</p>
-          : <Stage anim={done ? 'idle' : m.anim} cycle={ready ? -1 : i} period={done ? 5 : m.period} running={status === 'run' ? !prep : ready || done} view={done ? 'front' : m.view} onFail={() => setNoWebGL(true)} />}
+        <ExerciseArt id={recId} className={`mx-auto size-full max-w-[340px] object-contain transition-opacity ${status === 'pause' ? 'opacity-60' : ''}`} />
         {!ready && !done && (
           <div className="pointer-events-none absolute inset-x-0 top-2.5 flex items-start justify-between px-3 text-sm font-bold">
             <span className="rounded-full bg-background/80 px-2.5 py-1">{i + 1} / {moves.length}</span>
@@ -81,7 +74,7 @@ export function ExerciseCoach({ moves, onFinish }: { moves: Move[]; onFinish: ()
         </>
       ) : ready ? (
         <>
-          <p className="mt-3 text-sm text-muted-foreground">Загвараа дагаад хамт хийгээрэй. Чирж өөр өнцгөөс харж болно. Нийт {Math.ceil(total / 60)} мин.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Зургийг дагаад хамт хийгээрэй. Нийт {Math.ceil(total / 60)} мин.</p>
           <ol className="mt-2 list-decimal pl-5 text-sm">{[...new Set(moves.map(x => x.label))].map(l => <li key={l} className="mb-1">{l}</li>)}</ol>
           <Button size="xl" className="mt-3 w-full" onClick={() => setStatus('run')}>▶ Дагаж эхлэх</Button>
         </>
