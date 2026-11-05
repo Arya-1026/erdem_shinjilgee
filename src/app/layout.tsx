@@ -2,14 +2,14 @@ import type { Metadata, Viewport } from 'next';
 import { Nunito } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
-import { PALETTE_KEY } from '@/lib/palettes';
+import { PALETTE_KEY, PALETTE_STYLE_ID } from '@/lib/palettes';
 import './globals.css';
 
 // Design system-ийн цорын ганц фонт. Кирилл үсгийг заавал оруулна.
 const nunito = Nunito({ subsets: ['latin', 'cyrillic'], variable: '--font-nunito', display: 'swap' });
 
 // Хэрэглэгчийн сонгосон өнгийг React ачаалагдахаас өмнө тавина (өнгө анивчихгүй)
-const paletteScript = `try{var p=localStorage.getItem('${PALETTE_KEY}');if(p)document.documentElement.dataset.palette=p}catch(e){}`;
+const paletteScript = `try{var c=localStorage.getItem('${PALETTE_KEY}');if(c){var s=document.createElement('style');s.id='${PALETTE_STYLE_ID}';s.textContent=c;document.head.appendChild(s)}}catch(e){}`;
 
 export const metadata: Metadata = {
   title: 'Сэтгэл: Mood Tracker',

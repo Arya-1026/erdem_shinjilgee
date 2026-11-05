@@ -116,7 +116,7 @@ export default function ProfilePage() {
         <div className="border-b py-3">
           <b>Апп-ын өнгө</b>
           <div className="mb-2.5 text-sm text-muted-foreground">Товч, цэс, графикийн үндсэн өнгө</div>
-          <PalettePicker compact value={isPaletteId(u.theme) ? u.theme : DEFAULT_PALETTE} onChange={v => void updateProfile({ theme: v })} />
+          <PalettePicker value={isPaletteId(u.theme) ? u.theme : DEFAULT_PALETTE} onChange={v => void updateProfile({ theme: v })} />
         </div>
         <MoodImages />
         <Setting title="Өдөр тутмын сануулга" sub="Энэ цагт бүртгээгүй бол имэйл, push-ээр сануулна">

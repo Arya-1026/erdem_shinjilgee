@@ -136,18 +136,15 @@
   --div-5: #D9B65A; --div-5-ink: #1A1816;
 }
 
-/* Гэрэлтэй горимын дэвсгэр хэрэглэгчийн сонгосон өнгөөр зөөлөн будагдана */
-html:not(.dark) { --background: color-mix(in srgb, var(--secondary) 32%, #FBF9F6); }
-
-/* ---------- Хэрэглэгчийн сонгох өнгөний палитр (<html data-palette="...">) ---------- */
-[data-palette="water"] { --primary: #36689E; --primary-2: #9DB4D9; --secondary: #DDE7F3; --secondary-foreground: #36689E; --accent: #DDE7F3; --ring: #36689E; --primary-foreground: #FFFFFF; }
-.dark[data-palette="water"] { --primary: #8FB4E3; --primary-2: #B9CDEB; --secondary: #1E2C3D; --secondary-foreground: #8FB4E3; --accent: #1E2C3D; --ring: #8FB4E3; --primary-foreground: #0F1A26; }
-[data-palette="dawn"] { --primary: #B5533B; --primary-2: #F2A08B; --secondary: #FBE3DA; --secondary-foreground: #B5533B; --accent: #FBE3DA; --ring: #B5533B; --primary-foreground: #FFFFFF; }
-.dark[data-palette="dawn"] { --primary: #F0957C; --primary-2: #F5C29A; --secondary: #3A241D; --secondary-foreground: #F0957C; --accent: #3A241D; --ring: #F0957C; --primary-foreground: #2B1A14; }
-[data-palette="lavender"] { --primary: #6A4FD8; --primary-2: #B9A6D6; --secondary: #ECE7FB; --secondary-foreground: #6A4FD8; --accent: #ECE7FB; --ring: #6A4FD8; --primary-foreground: #FFFFFF; }
-.dark[data-palette="lavender"] { --primary: #A996F2; --primary-2: #C9BCF5; --secondary: #2A2345; --secondary-foreground: #A996F2; --accent: #2A2345; --ring: #A996F2; --primary-foreground: #17112E; }
-[data-palette="rose"] { --primary: #A8456A; --primary-2: #F2B8C6; --secondary: #F8E1E8; --secondary-foreground: #A8456A; --accent: #F8E1E8; --ring: #A8456A; --primary-foreground: #FFFFFF; }
-.dark[data-palette="rose"] { --primary: #E79AB2; --primary-2: #F2B8C6; --secondary: #3A1F29; --secondary-foreground: #E79AB2; --accent: #3A1F29; --ring: #E79AB2; --primary-foreground: #2A1019; }
+/* ---------- Хэрэглэгчийн сонгосон өнгө ----------
+   Хувьсагчдыг src/lib/palettes.ts тооцож <style id="setgel-palette">-д тавина. Доорх нь тэдгээрийг бүх системд хэрэглэнэ. */
+:root { --grad: linear-gradient(135deg, var(--primary), var(--primary-2)); --wash: none; --nav-bg: var(--card); }
+body { background-image: var(--wash); background-attachment: fixed; }
+.bg-primary { background-image: var(--grad); }
+.app-nav { background: var(--nav-bg); }
+.app-nav a[aria-current="page"] { position: relative; }
+::selection { background: color-mix(in srgb, var(--primary) 28%, transparent); }
+html { scrollbar-color: color-mix(in srgb, var(--primary) 45%, transparent) transparent; }
 
 /* ---------- Design system-ийн градиентууд (зөвхөн том гадаргууд) ---------- */
 .grad-dawn { background: linear-gradient(135deg, var(--emotion-joy), var(--emotion-love)); color: var(--on-emotion); }
