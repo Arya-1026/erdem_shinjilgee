@@ -1,0 +1,40 @@
+group,label,text
+dev2_cyr,1,Би цаашид амьдрахгүй ээ
+dev2_cyr,1,Амиа хорлох арга хайж байна
+dev2_cyr,1,Энэ бүхнийг дуусгамаар байна
+dev2_cyr,1,Өөрийгөө гэмтээчихлээ
+dev2_cyr,1,Амьдрал утгагүй үхсэн нь дээр
+dev2_cyr,1,Үхвэл дээр юм шиг
+dev2_cyr,1,Өөрийгөө боомаар байна
+dev2_cyr,1,Амиа хорлочихъё гэж бодлоо
+dev2_cyr,1,Хэн ч намайг санахгүй алга болсон нь дээр
+dev2_cyr,1,Амьдрах хүсэл минь алга
+dev2_lat,1,yhmeer bna
+dev2_lat,1,amia xorlomoor bn
+dev2_lat,1,uhsen ni deer
+dev2_lat,1,amidrah husel baihgui
+dev2_lat,1,amidrahiig husehgui bn
+dev2_lat,1,ooriigoo gemteemeer baina
+dev2_lat,1,ooroo alamaar bn
+dev2_lat,1,uhmeer bnaa
+dev2_lat,1,amia eguutgemeer baina
+dev2_lat,1,amidarch chadahgui ee
+dev2_neg_cyr,0,Шалгалтанд унавал үхнэ дээ
+dev2_neg_cyr,0,Өөрийгөө алдаршуулж байна
+dev2_neg_cyr,0,Би өөрийгөө хайрлаж сурмаар байна
+dev2_neg_cyr,0,Алга ташилт сайхан байлаа
+dev2_neg_cyr,0,Амьдрал сайхан байна
+dev2_neg_cyr,0,Гэмтээсэн гараа эмчлүүлэв
+dev2_neg_cyr,0,Найзын маань түлхүүр алга болсон
+dev2_neg_cyr,0,Үхэр малаа хариулав
+dev2_neg_cyr,0,Кино дуусаасай гэж бодлоо
+dev2_neg_cyr,0,Амьдрах байраа солимоор байна
+dev2_neg_cyr,0,Хорлонтой хүнээс зайлсхийе
+dev2_neg_lat,0,amidral saihan bn
+dev2_neg_lat,0,uher maliig hariulav
+dev2_neg_lat,0,alga tashilt saihan
+dev2_neg_lat,0,ooriigoo hairlaj surmaar bn
+dev2_neg_lat,0,ajil ih bna yadarlaa
+dev2_neg_lat,0,gar gemteesen
+dev2_neg_lat,0,kino duusaasai
+dev2_neg_lat,0,uuriigee aldchihlaa

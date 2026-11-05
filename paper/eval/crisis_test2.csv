@@ -1,0 +1,43 @@
+group,label,text
+t2_cyr,1,Би хэнд ч хэрэггүй байхгүй болсон нь дээр
+t2_cyr,1,Шөнө болгон үхлийн тухай боддог болсон
+t2_cyr,1,Энэ тарчлал хэзээ дуусах юм бол дуусгачихмаар байна
+t2_cyr,1,Ээж аавдаа ачаа болж байна би үгүй бол тэд амарна
+t2_cyr,1,Гүүрнээс үсрэхийг бодоод байна
+t2_cyr,1,Бүх эмээ уучихвал дуусна
+t2_cyr,1,Амьдрал надад хэрэггүй
+t2_cyr,1,Өнөө шөнө дуусгах гэж байна
+t2_cyr,1,Цаашид тэсэхгүй нь явах цаг боллоо
+t2_cyr,1,Өөртөө шарх учруулж байж л тайвширдаг
+t2_cyr,1,Оршин байхгүй бол зовлон ч байхгүй
+t2_cyr,1,Цонхоор үсрэхэд ч хамаагүй санагдаж байна
+t2_lat,1,bi hend ch hereggui baihgui bolson ni deer
+t2_lat,1,shunu bolgon uhliin tuhai bodood bn
+t2_lat,1,eej aavdaa achaa bolj bn bi ugui bol amarna
+t2_lat,1,guurnees usrehiig bodood bn
+t2_lat,1,buh emee uuchihval duusna
+t2_lat,1,amidral nadad hereggui
+t2_lat,1,unuu shunu duusgah gej bn
+t2_lat,1,tsaashid tesehgui ni yavah tsag bolloo
+t2_lat,1,gar huruugee zusej baij l taivshirdag
+t2_lat,1,zovlongoos garah tsorhoi zam ni uhel
+t2_lat,1,tsonhoor usrehed ch hamaagui sanagdaj bn
+t2_lat,1,ene amidral duusaasai
+t2_neg_cyr,0,Төсөл дуусгах гэж шөнөжин суулаа
+t2_neg_cyr,0,Цонхоо нээгээд салхилав
+t2_neg_cyr,0,Эм ууж эхэлсэн ханиад намдлаа
+t2_neg_cyr,0,Гүүрний замын түгжрэл ихтэй байна
+t2_neg_cyr,0,Хичээлээс залхлаа
+t2_neg_cyr,0,Эмээгийнхээ хөдөө явмаар байна
+t2_neg_cyr,0,Найз маань салсны дараа их уйлсан
+t2_neg_cyr,0,Сэтгэл хөдлөм кино үзээд уйлчихлаа
+t2_neg_cyr,0,Ачаа зөөгөөд ядарлаа
+t2_neg_cyr,0,Хөл бөмбөгт хожигдоод хэцүү боллоо
+t2_neg_lat,0,tusul duusgah gej shunujin suulaa
+t2_neg_lat,0,tsonhoo neegeed salhilav
+t2_neg_lat,0,hicheelees zalhlaa
+t2_neg_lat,0,emeegiinhee hudoo yavmaar bn
+t2_neg_lat,0,achaa zuugeed yadarlaa
+t2_neg_lat,0,kino uzeed uilchihlaa
+t2_neg_lat,0,em uugaad haniad namdlaa
+t2_neg_lat,0,mashinaa zasuulah heregtei
