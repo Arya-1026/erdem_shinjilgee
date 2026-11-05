@@ -6,210 +6,132 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActionMenu, type MenuItem } from '@/components/action-menu';
 import { useFriendActions } from '@/components/friend-actions';
+import { FriendsSheet, type SheetTab } from '@/components/friends-tile';
 import { PersonAvatar } from '@/components/person-avatar';
 import { useApp } from '@/components/providers/app-provider';
-import { Segmented } from '@/components/segmented';
+import { Chip } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
 import { moodById } from '@/lib/data';
-import { today } from '@/lib/date';
-import { filterChats, moodAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow, type Person, type RequestRow, type SearchRow } from '@/lib/social';
+import { filterChats, isActive, shortAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow } from '@/lib/social';
 import { cn } from '@/lib/utils';
 
-type Tab = 'friends' | 'requests' | 'search' | 'blocked';
-const TABS: Tab[] = ['friends', 'requests', 'search', 'blocked'];
+const preview = (s: string | null) => (s && s.length > 60 ? s.slice(0, 60) + '…' : s);
+const firstName = (n: string) => n.split(/[\s.]+/).filter(Boolean).pop() ?? n;
 
-const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
-const preview = (s: string | null) => (s && s.length > 48 ? s.slice(0, 48) + '…' : s);
-
-export default function FriendsPage() {
+/* Messenger шиг чатын жагсаалт: хайлт, идэвхтэй найзуудын эгнээ, яриа (сүүлийн зурвас, хугацаа, уншаагүй).
+   Найз нэмэх, хүсэлт, блок нь профайлын найзын цонхонд (FriendsSheet). */
+export default function ChatsPage() {
   const { supabase } = useApp();
-  // Профайлаас /friends?tab=blocked гэх мэтээр шууд тухайн таб руу орно
   const params = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() => TABS.find(t => t === params.get('tab')) ?? 'friends');
-  const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<ChatFilter>('all');
+  // Хуучин холбоос (/friends?tab=requests) ирвэл цонхыг тэр табаар нээнэ
+  const initial = params.get('tab');
+  const [sheet, setSheet] = useState<SheetTab | null>(initial === 'requests' || initial === 'blocked' ? initial : initial === 'search' ? 'friends' : null);
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const [chats, setChats] = useState<ChatRow[]>([]);
-  const [requests, setRequests] = useState<RequestRow[]>([]);
-  const [blocked, setBlocked] = useState<Person[]>([]);
+  const [incoming, setIncoming] = useState(0);
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<ChatFilter>('all');
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     try {
-      const [f, c, r, b] = await Promise.all([social.friends(supabase), social.otherChats(supabase), social.requests(supabase), social.blocked(supabase)]);
-      setFriends(f); setChats(c); setRequests(r); setBlocked(b);
+      const [f, c, n] = await Promise.all([social.friends(supabase), social.otherChats(supabase), social.counts(supabase)]);
+      setFriends(f); setChats(c); setIncoming(n.incoming); setNow(Date.now());
     } catch (e) {
       setFriends([]);
       toast.error(socialError(e as Error));
     }
   }, [supabase]);
   useEffect(() => {
-    // Шинэ зурвас, хүсэлт ирэхэд жагсаалт шинэчлэгдэнэ
+    // Шинэ зурвас, идэвхтэй байдал 15 секунд тутам шинэчлэгдэнэ
     const t = setTimeout(() => void load(), 0);
     const id = setInterval(() => { if (!document.hidden) void load(); }, 15_000);
     return () => { clearTimeout(t); clearInterval(id); };
   }, [load]);
 
-  const incoming = requests.filter(r => r.direction === 'incoming');
-  const act = async (p: PromiseLike<{ error: unknown }>, ok: string) => {
-    const { error } = await p;
-    if (error) return void toast.error(socialError(error as Error));
-    toast(ok);
-    void load();
-  };
-
-  const shown = filterChats(friends ?? [], q, filter), others = filterChats(chats, q, filter);
-  const archivedN = (friends ?? []).filter(x => x.archived).length + chats.filter(x => x.archived).length;
-  // Яриа бүрийн ⋯ цэс (Messenger-ийн адил)
   const friendActions = useFriendActions(() => void load());
-  const menu = (p: Person & { archived: boolean; mood_hidden?: boolean; favorite?: boolean }, isFriend: boolean): MenuItem[] =>
-    friendActions(p, { isFriend, chat: true });
+  const menu = (p: FriendRow, isFriend: boolean): MenuItem[] => friendActions(p, { isFriend, chat: true });
+
+  // Нэг жагсаалт: найзуудтай болон бусадтай хийсэн яриа, сүүлийн зурвасаар эрэмбэлнэ
+  const all: (FriendRow & { isFriend: boolean })[] = [
+    ...(friends ?? []).map(f => ({ ...f, isFriend: true })),
+    ...chats.map(c => ({ ...c, mood: null, mood_date: null, mood_hidden: false, favorite: false, active_at: null, isFriend: false })),
+  ];
+  const list = filterChats(all, q, filter).sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? '') || Number(b.favorite) - Number(a.favorite));
+  // Идэвхтэй эгнээ: онлайн нь эхэнд, дараа нь favorite, сүүлд идэвхтэй байсан
+  const strip = [...(friends ?? [])].sort((a, b) => Number(isActive(b.active_at, now)) - Number(isActive(a.active_at, now))
+    || Number(b.favorite) - Number(a.favorite) || (b.active_at ?? '').localeCompare(a.active_at ?? ''));
+  const archivedN = all.filter(x => x.archived).length, unreadN = all.filter(x => !x.archived && x.unread > 0).length;
 
   return (
-    <div className="mx-auto flex max-w-[760px] flex-col gap-3.5">
-      <Segmented full label="Найзын хэсэг" value={tab} onChange={setTab} options={[
-        ['friends', `👥 Найзууд${friends?.length ? ` ${friends.length}` : ''}`],
-        ['requests', <span key="r">📨 Хүсэлт{incoming.length > 0 && <b className="ml-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{incoming.length}</b>}</span>],
-        ['search', '🔍 Хайх'],
-        ['blocked', '🚫 Блок'],
-      ]} />
+    <div className="mx-auto flex max-w-[680px] flex-col gap-3">
+      <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="🔍 Хайх" aria-label="Чат хайх"
+        className="min-h-11 w-full rounded-full border-0 bg-secondary px-4 focus:ring-2 focus:ring-primary focus:outline-none" />
 
-      {tab === 'friends' && (
-        <section className="card-x">
-          <div className="mb-2 flex flex-col gap-2">
-            <input type="search" className={FIELD} placeholder="🔍 Найзаа нэрээр шүүх" aria-label="Найз шүүх" value={q} onChange={e => setQ(e.target.value)} />
-            <Segmented label="Шүүлтүүр" value={filter} onChange={setFilter}
-              options={[['all', 'Бүгд'], ['unread', 'Уншаагүй'], ['archived', `🗄️ Архив${archivedN ? ` ${archivedN}` : ''}`]]} />
-          </div>
-          {friends === null ? <p className="py-6 text-center text-sm text-muted-foreground">Ачаалж байна…</p>
-            : !friends.length && !chats.length ? (
-              <div className="py-6 text-center">
-                <p className="text-sm text-muted-foreground">Одоогоор найз алга.</p>
-                <Button size="xl" variant="secondary" className="mt-3" onClick={() => setTab('search')}>🔍 Найз хайх</Button>
-              </div>
-            ) : !shown.length && !others.length ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">{filter === 'archived' ? 'Архивласан яриа алга.' : filter === 'unread' ? 'Уншаагүй зурвас алга 🎉' : 'Олдсонгүй.'}</p>
-            ) : shown.map(f => <FriendLine key={f.id} f={f} menu={menu(f, true)} />)}
-          {others.length > 0 && (
-            <>
-              <h3 className="mt-4 mb-1 text-sm font-semibold text-muted-foreground">Бусад яриа</h3>
-              {others.map(c => <FriendLine key={c.id} f={{ ...c, mood: null, mood_date: null, mood_hidden: false, favorite: false }} menu={menu(c, false)} />)}
-            </>
-          )}
-        </section>
-      )}
-
-      {tab === 'requests' && (
-        <section className="card-x">
-          {!requests.length && <p className="py-6 text-center text-sm text-muted-foreground">Хүсэлт алга.</p>}
-          {incoming.length > 0 && <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Танд ирсэн</h3>}
-          {incoming.map(r => (
-            <PersonLine key={r.id} p={r}>
-              <Button size="sm" className="h-9 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: true }), `${r.name} найз боллоо 🎉`)}>Зөвшөөрөх</Button>
-              <Button size="sm" className="h-9 px-3" variant="outline" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: false }), 'Хүсэлтийг татгалзлаа')}>Татгалзах</Button>
-            </PersonLine>
-          ))}
-          {requests.some(r => r.direction === 'outgoing') && <h3 className="mt-3 mb-1 text-sm font-semibold text-muted-foreground">Таны илгээсэн</h3>}
-          {requests.filter(r => r.direction === 'outgoing').map(r => (
-            <PersonLine key={r.id} p={r} sub="Хариу хүлээж байна">
-              <Button size="sm" className="h-9 px-3" variant="outline" onClick={() => void act(supabase.rpc('remove_friend', { target: r.id }), 'Хүсэлтээ цуцаллаа')}>Цуцлах</Button>
-            </PersonLine>
-          ))}
-        </section>
-      )}
-
-      {tab === 'search' && <Search onChange={load} />}
-
-      {tab === 'blocked' && (
-        <section className="card-x">
-          <p className="mb-2 text-sm text-muted-foreground">Блоклосон хүн таныг хайж олох, хүсэлт, зурвас илгээх, таны сэтгэл санааг харах боломжгүй.</p>
-          {!blocked.length && <p className="py-4 text-center text-sm text-muted-foreground">Блоклосон хүн алга.</p>}
-          {blocked.map(b => (
-            <PersonLine key={b.id} p={b}>
-              <Button size="sm" className="h-9 px-3" variant="outline" onClick={() => void act(supabase.rpc('unblock_user', { target: b.id }), 'Блокоос гаргалаа')}>Блок цуцлах</Button>
-            </PersonLine>
-          ))}
-        </section>
-      )}
-    </div>
-  );
-}
-
-/* Найзын мөр: сүүлийн mood, сүүлийн зурвас, уншаагүй тоо. Дарвал профайл + чат руу. */
-function FriendLine({ f, menu }: { f: FriendRow; menu: MenuItem[] }) {
-  const [now] = useState(today);
-  return (
-    <div className="flex items-center gap-1 border-b last:border-0">
-      <Link href={`/friends/${f.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2.5">
-        <PersonAvatar name={f.name} avatar={f.avatar} mood={f.mood} className="size-12 text-lg" />
-        <div className="min-w-0 flex-1">
-          <b className="block truncate">{f.name} {f.handle && <span className="font-normal text-muted-foreground">@{f.handle}</span>}{f.favorite && <span className="ml-1 text-xs" title="Favorite">⭐</span>}{f.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}</b>
-          <span className={cn('block truncate text-sm', f.unread ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
-            {f.last_body ? `${f.last_mine ? 'Та: ' : ''}${preview(f.last_body)}` : f.mood ? `${moodById(f.mood).emoji} ${moodById(f.mood).label} · ${moodAgo(f.mood_date, now)}` : 'Зурвас бичих'}
-          </span>
+      {/* Идэвхтэй найзууд (Messenger-ийн дээд эгнээ) */}
+      {strip.length > 0 && (
+        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 no-scrollbar" aria-label="Найзууд">
+          {strip.map(f => {
+            const on = isActive(f.active_at, now);
+            return (
+              <Link key={f.id} href={`/friends/${f.id}`} className="flex w-16 flex-none flex-col items-center gap-1 text-center">
+                <span className="relative">
+                  <PersonAvatar name={f.name} avatar={f.avatar} className="size-14 text-xl" />
+                  {on ? <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Идэвхтэй" />
+                    : f.active_at && <span className="absolute -right-1 bottom-0 rounded-full border-2 border-background bg-secondary px-1 text-[.6rem] font-bold text-green-600">{shortAgo(f.active_at, now)}</span>}
+                  {f.mood && <span className="absolute -top-1 -right-1 text-base" title={moodById(f.mood).label}>{moodById(f.mood).emoji}</span>}
+                </span>
+                <span className="w-full truncate text-xs">{firstName(f.name)}</span>
+              </Link>
+            );
+          })}
         </div>
-        {f.unread > 0 && <span className="grid min-w-6 place-items-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">{f.unread}</span>}
-      </Link>
-      <ActionMenu items={menu} label={`${f.name}: үйлдэл`} />
+      )}
+
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        <Chip on={filter === 'all'} onClick={() => setFilter('all')}>Бүгд</Chip>
+        <Chip on={filter === 'unread'} onClick={() => setFilter('unread')}>Уншаагүй{unreadN ? ` ${unreadN}` : ''}</Chip>
+        <Chip on={filter === 'archived'} onClick={() => setFilter('archived')}>Архив{archivedN ? ` ${archivedN}` : ''}</Chip>
+        <Chip onClick={() => setSheet('requests')} className={cn(incoming > 0 && 'border-primary')}>Хүсэлт{incoming ? ` ${incoming}` : ''}</Chip>
+        <Chip onClick={() => setSheet('friends')}>＋ Найз нэмэх</Chip>
+      </div>
+
+      <section className="flex flex-col">
+        {friends === null ? <p className="py-10 text-center text-sm text-muted-foreground">Ачаалж байна…</p>
+          : !all.length ? (
+            <div className="py-10 text-center">
+              <p className="mb-3 text-sm text-muted-foreground">Одоогоор чат алга. Найзаа нэмээд бичиж эхлээрэй.</p>
+              <Button size="xl" onClick={() => setSheet('friends')}>＋ Найз нэмэх</Button>
+            </div>
+          ) : !list.length ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">{filter === 'archived' ? 'Архивласан чат алга.' : filter === 'unread' ? 'Уншаагүй зурвас алга 🎉' : 'Олдсонгүй.'}</p>
+          ) : list.map(c => {
+            const on = isActive(c.active_at, now), bold = c.unread > 0;
+            return (
+              <div key={c.id} className="group flex items-center gap-1 rounded-2xl px-2 hover:bg-secondary/60">
+                <Link href={`/friends/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2">
+                  <span className="relative flex-none">
+                    <PersonAvatar name={c.name} avatar={c.avatar} className="size-14 text-xl" />
+                    {on && <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Идэвхтэй" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block truncate', bold ? 'font-bold' : 'font-medium')}>
+                      {c.favorite && '⭐ '}{c.name}{c.mood && ` ${moodById(c.mood).emoji}`}{c.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}
+                    </span>
+                    <span className={cn('flex min-w-0 gap-1 text-sm', bold ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
+                      <span className="truncate">{c.last_body ? `${c.last_mine ? 'Та: ' : ''}${preview(c.last_body)}` : on ? 'Идэвхтэй байна · Сайн уу гэж бичээрэй 👋' : 'Зурвас бичих'}</span>
+                      {c.last_at && <span className="flex-none">· {shortAgo(c.last_at, now)}</span>}
+                    </span>
+                  </span>
+                  {bold && <i className="size-3 flex-none rounded-full bg-primary" aria-label={`${c.unread} уншаагүй`} />}
+                </Link>
+                <ActionMenu items={menu(c, c.isFriend)} label={`${c.name}: үйлдэл`} className="desk:opacity-0 desk:group-hover:opacity-100 desk:focus-within:opacity-100" />
+              </div>
+            );
+          })}
+      </section>
+
+      <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => { if (!o) { setSheet(null); void load(); } }} />
     </div>
-  );
-}
-
-function PersonLine({ p, sub, children }: { p: Person; sub?: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 border-b py-2.5 last:border-0">
-      <Link href={`/friends/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-        <PersonAvatar name={p.name} avatar={p.avatar ?? null} className="size-11" />
-        <span className="min-w-0">
-          <b className="block truncate">{p.name}</b>
-          <span className="block truncate text-sm text-muted-foreground">{sub ?? (p.handle ? `@${p.handle}` : '')}</span>
-        </span>
-      </Link>
-      <div className="flex flex-none gap-1.5">{children}</div>
-    </div>
-  );
-}
-
-const REL_LABEL = { friend: '✓ Найз', outgoing: 'Хүсэлт илгээсэн', incoming: 'Танд хүсэлт илгээсэн', self: 'Та', none: '' } as const;
-
-/* Нэр, @handle эсвэл ID-аар хайх. Enter дарахад хайна. */
-function Search({ onChange }: { onChange: () => void }) {
-  const { supabase, profile } = useApp();
-  const [q, setQ] = useState('');
-  const [res, setRes] = useState<SearchRow[] | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function run(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (q.trim().length < 2) return void toast('Хамгийн багадаа 2 тэмдэгт бичнэ үү');
-    setBusy(true);
-    try { setRes(await social.search(supabase, q)); } catch (err) { toast.error(socialError(err as Error)); } finally { setBusy(false); }
-  }
-
-  async function add(p: SearchRow) {
-    const { data, error } = await supabase.rpc('send_friend_request', { target: p.id });
-    if (error) return void toast.error(socialError(error));
-    toast(data === 'friend' ? `${p.name} найз боллоо 🎉` : 'Найзын хүсэлт илгээлээ 📨');
-    setRes(r => r?.map(x => (x.id === p.id ? { ...x, relation: data as SearchRow['relation'] } : x)) ?? null);
-    onChange();
-  }
-
-  return (
-    <section className="card-x">
-      <form className="flex gap-2" onSubmit={e => void run(e)}>
-        <input type="search" className={FIELD} placeholder="Нэр, @нэр эсвэл ID" aria-label="Хүн хайх" value={q} maxLength={60} onChange={e => setQ(e.target.value)} />
-        <Button type="submit" size="xl" variant="secondary" className="h-11 flex-none" disabled={busy}>{busy ? '…' : 'Хайх'}</Button>
-      </form>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Таны нэр: {profile.handle ? <b>@{profile.handle}</b> : <Link href="/profile#social" className="font-semibold text-primary">@нэр тохируулах</Link>} · ID: <b>{profile.id.slice(0, 8)}</b>
-      </p>
-      {res && !res.length && <p className="py-4 text-center text-sm text-muted-foreground">Хүн олдсонгүй. Нууц профайлтай хүнийг яг @нэр эсвэл ID-аар нь хайна.</p>}
-      {res?.map(p => (
-        <PersonLine key={p.id} p={p}>
-          {p.relation === 'none' ? <Button size="sm" className="h-9 px-3" onClick={() => void add(p)}>＋ Найз нэмэх</Button>
-            : p.relation === 'incoming' ? <Button size="sm" className="h-9 px-3" onClick={() => void add(p)}>Зөвшөөрөх</Button>
-            : <span className="text-sm text-muted-foreground">{REL_LABEL[p.relation]}</span>}
-        </PersonLine>
-      ))}
-    </section>
   );
 }

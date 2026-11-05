@@ -6,7 +6,7 @@ import type { Audience, MoodId } from './types';
 export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'none';
 export type Person = { id: string; name: string; handle: string | null; avatar: string | null };
 /** archived: архивласан, шинэ зурвас ирэхэд false болно. mood_hidden: би энэ хүнээс сэтгэл санаагаа нуусан */
-export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean; mood_hidden: boolean; favorite: boolean };
+export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean; mood_hidden: boolean; favorite: boolean; active_at: string | null };
 export type ChatRow = Person & { last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean };
 export type RequestRow = Person & { direction: 'incoming' | 'outgoing'; created_at: string };
 export type SearchRow = Person & { relation: Relation };
@@ -62,6 +62,16 @@ export const social = {
   messages: (db: Db, me: string, other: string) => rows<Message>(db.from('messages').select('id,sender,recipient,body,created_at,read_at')
     .or(`and(sender.eq.${me},recipient.eq.${other}),and(sender.eq.${other},recipient.eq.${me})`).order('created_at').limit(200)),
 };
+
+/** Сүүлд идэвхтэй байснаас 2 минут болоогүй бол «онлайн» */
+export const isActive = (at: string | null, now = Date.now()) => !!at && now - new Date(at).getTime() < 2 * 60_000;
+
+/** Messenger маягийн богино хугацаа: «одоо», «5 мин», «3 цаг», «2 өдөр», «7 долоо хоног» */
+export function shortAgo(at: string | null, now = Date.now()) {
+  if (!at) return '';
+  const m = Math.max(0, Math.round((now - new Date(at).getTime()) / 60_000));
+  return m < 1 ? 'одоо' : m < 60 ? `${m} мин` : m < 1440 ? `${Math.round(m / 60)} цаг` : m < 10080 ? `${Math.round(m / 1440)} өдөр` : `${Math.round(m / 10080)} долоо хоног`;
+}
 
 /** Сүүлийн mood-ийн огноог «өнөөдөр / өчигдөр / 3 өдрийн өмнө» болгоно */
 export function moodAgo(date: string | null, today: string) {

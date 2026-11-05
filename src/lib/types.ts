@@ -64,6 +64,8 @@ export type Profile = {
   mood_visibility: Audience;
   message_permission: Audience;
   friends_visibility: Audience;
+  /** Найзууддаа «идэвхтэй» ногоон цэгээ харуулах */
+  show_active: boolean;
 };
 
 /** Нууцлалын түвшин: хэнд зөвшөөрөх */

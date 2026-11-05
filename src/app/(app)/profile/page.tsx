@@ -299,6 +299,9 @@ function SocialSection() {
           <option value="friends">🔒 Нууц</option>
         </select>
       </Setting>
+      <Setting title="Идэвхтэй байгаагаа харуулах" sub="Найзууд тань таныг онлайн үед ногоон цэг харна. Унтраавал та ч бусдынхыг харахгүй.">
+        <Switch checked={u.show_active} onCheckedChange={v => void updateProfile({ show_active: v })} aria-label="Идэвхтэй байгаагаа харуулах" />
+      </Setting>
       {pick('mood_visibility', 'Сэтгэл санаагаа харуулах', 'Таны сүүлийн бүртгэлийн эможиг хэн харах вэ')}
       {pick('message_permission', 'Надад зурвас бичих', 'Хэн танд зурвас бичиж болох вэ')}
       {pick('friends_visibility', 'Найзуудаа харуулах', 'Таны найзуудын жагсаалтыг хэн харах вэ')}
