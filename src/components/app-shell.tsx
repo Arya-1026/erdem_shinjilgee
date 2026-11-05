@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { streak } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { Avatar } from './avatar';
 import { DialogHost } from './dialogs/dialog-host';
+import { Logo } from './logo';
+import { SantaHat, SeasonalNav } from './seasonal';
 import { ThemeToggle } from './theme-toggle';
 import { useReminder } from './use-reminder';
 import { FullPlayer, MiniPlayer } from './player';
@@ -22,7 +25,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { profile, entries, tint, isExpert } = useApp();
+  const { entries, tint, isExpert } = useApp();
   const active = NAV.find(([href]) => path.startsWith(href)) ?? NAV[0];
   useReminder();
 
@@ -30,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <nav aria-label="Үндсэн цэс"
         className="app-nav fixed inset-x-0 bottom-0 z-30 flex border-t bg-card desk:top-0 desk:right-auto desk:w-60 desk:flex-col desk:gap-1 desk:border-t-0 desk:border-r desk:px-3 desk:pt-5">
-        <div className="hidden px-3 pt-2 pb-5 text-xl font-extrabold desk:block">🌙 Сэтгэл</div>
+        <Link href="/home" className="hidden px-3 pt-2 pb-5 text-[1.6rem] desk:block"><Logo /></Link>
         {NAV.map(([href, icon, label]) => {
           const on = href === active[0];
           return (
@@ -39,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 'desk:flex-none desk:flex-row desk:justify-start desk:gap-3 desk:rounded-xl desk:px-3.5 desk:py-3 desk:text-[.95rem]',
                 href === '/profile' && 'hidden desk:flex',
                 on && 'font-bold text-primary desk:bg-secondary')}>
-              <span className="text-[1.35rem] leading-none">{icon}</span><span>{label}</span>
+              <span className="relative text-[1.35rem] leading-none">{icon}<SantaHat /></span><span>{label}</span>
             </Link>
           );
         })}
@@ -48,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="text-[1.35rem] leading-none">🗂️</span><span>Сэтгэл зүйчийн портал</span>
           </Link>
         )}
+        <SeasonalNav />
       </nav>
 
       <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')} style={{ '--mc': tint } as React.CSSProperties}>
@@ -56,9 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-actions flex items-center gap-2">
             <ThemeToggle />
             <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title="Тасралтгүй бүртгэсэн өдөр">🔥 {streak(entries)}</span>
-            <Link href="/profile" aria-label="Профайл"
-              className="grid size-10 place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-white desk:hidden">
-              {profile.name[0] || '?'}
+            <Link href="/profile" aria-label="Профайл" className="rounded-full desk:hidden">
+              <Avatar className="size-10" />
             </Link>
           </div>
         </header>

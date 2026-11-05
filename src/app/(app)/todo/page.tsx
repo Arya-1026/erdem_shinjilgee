@@ -3,19 +3,22 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { MoodCalendar } from '@/components/charts';
+import { type CalendarMark, MoodCalendar } from '@/components/charts';
 import { useApp } from '@/components/providers/app-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { dayAvg } from '@/lib/analytics';
 import { WD } from '@/lib/data';
 import { TODO_COLS } from '@/lib/db';
 import { today as todayStr, weekdayOf } from '@/lib/date';
-import { EFFORT, effortLabel, supportHints, TODO_CATEGORIES, weekdayProfile } from '@/lib/todo-plan';
+import { EFFORT, effortLabel, FIXED, hhmm, supportHints, TODO_CATEGORIES, TODO_EMOJIS, weekdayProfile } from '@/lib/todo-plan';
 import { cn } from '@/lib/utils';
 import type { Todo } from '@/lib/types';
 
 const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
 const dayName = (d: string) => `${d.slice(5).replace('-', '/')} · ${WD[weekdayOf(d)]}`;
+// Цагтай ажил эхэнд, цагаар нь эрэмбэлнэ
+const byTime = (a: Todo, b: Todo) => (a.planned_time ?? '99').localeCompare(b.planned_time ?? '99');
+type NewTodo = { title: string; category: string; effort: number; minutes: number; due_date: string | null; planned_time: string | null; emoji: string | null };
 
 export default function TodoPage() {
   const { supabase, todos, setTodos, entries, openDialog } = useApp();
@@ -28,8 +31,18 @@ export default function TodoPage() {
   const [summary, setSummary] = useState('');
 
   const counts: Record<string, number> = {};
-  for (const t of todos) if (t.planned_date && !t.done) counts[t.planned_date] = (counts[t.planned_date] ?? 0) + 1;
-  const dayTodos = todos.filter(t => t.planned_date === day);
+  const [editing, setEditing] = useState<string | null>(null);
+
+  // 🔥 Сэтгэл санаагаа бүртгэсэн (идэвхтэй байсан) өдрүүд
+  const activeDays = new Set(entries.map(e => e.entry_date));
+  const marks: Record<string, CalendarMark[]> = {};
+  for (const t of [...todos].sort(byTime)) {
+    if (!t.planned_date) continue;
+    if (!t.done) counts[t.planned_date] = (counts[t.planned_date] ?? 0) + 1;
+    // Эможигүй ажил 📌-ээр харагдана (Тайлан хуудастай адил)
+    (marks[t.planned_date] ??= []).push({ id: t.id, emoji: t.emoji ?? '📌', title: [hhmm(t.planned_time), t.title].filter(Boolean).join(' · ') });
+  }
+  const dayTodos = todos.filter(t => t.planned_date === day).sort(byTime);
   const waiting = todos.filter(t => !t.planned_date && !t.done);
   const stats = weekdayProfile(entries, todos.filter(t => t.done));
   const hints = supportHints(todos, stats, today);
@@ -50,8 +63,8 @@ export default function TodoPage() {
     }
   }
 
-  async function add(t: { title: string; category: string; effort: number; minutes: number; due_date: string | null }) {
-    const { data, error } = await supabase.from('todos').insert({ ...t, planned_date: day >= today ? day : today, reason: 'Та өөрөө энэ өдөрт нэмсэн.' }).select(TODO_COLS).single<Todo>();
+  async function add(t: NewTodo) {
+    const { data, error } = await supabase.from('todos').insert({ ...t, planned_date: day >= today ? day : today, reason: `${FIXED}Та өөрөө энэ өдөрт нэмсэн.` }).select(TODO_COLS).single<Todo>();
     if (error || !data) return void toast.error('Нэмж чадсангүй');
     setTodos(l => [...l, data]);
   }
@@ -61,6 +74,22 @@ export default function TodoPage() {
     setTodos(l => l.map(x => (x.id === t.id ? { ...x, ...patch } : x)));
     const { error } = await supabase.from('todos').update(patch).eq('id', t.id);
     if (error) { setTodos(l => l.map(x => (x.id === t.id ? t : x))); toast.error('Хадгалж чадсангүй'); }
+  }
+
+  async function save(t: Todo, patch: NewTodo & { planned_date: string }) {
+    setEditing(null);
+    setTodos(l => l.map(x => (x.id === t.id ? { ...x, ...patch } : x)));
+    const { error } = await supabase.from('todos').update(patch).eq('id', t.id);
+    if (error) { setTodos(l => l.map(x => (x.id === t.id ? t : x))); toast.error('Хадгалж чадсангүй'); }
+  }
+
+  // Календарийн эможи дээр дарахад тухайн ажлыг засах горимд нээнэ
+  function editFromCalendar(id: string) {
+    const t = todos.find(x => x.id === id);
+    if (!t?.planned_date) return;
+    setDay(t.planned_date);
+    setEditing(id);
+    requestAnimationFrame(() => document.getElementById(`todo-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   }
 
   async function remove(t: Todo) {
@@ -104,28 +133,32 @@ export default function TodoPage() {
             <h2 className="font-bold">{month.y} оны {month.m + 1}-р сар</h2>
             <button className="grid size-10 place-items-center rounded-full border text-xl" aria-label="Дараагийн сар" onClick={() => shift(1)}>›</button>
           </div>
-          <MoodCalendar year={month.y} month={month.m} today={today} avgOf={d => dayAvg(entries, d)} counts={counts} selected={day} onPick={setDay} />
+          <MoodCalendar year={month.y} month={month.m} today={today} avgOf={d => dayAvg(entries, d)} counts={counts} marks={marks} fire={activeDays} selected={day} onPick={setDay} onMark={editFromCalendar} />
         </section>
 
         <section className="card-x">
           <h2 className="mb-1 font-bold">{day === today ? 'Өнөөдөр' : dayName(day)}</h2>
-          {dayTodos.length ? dayTodos.map(t => <TodoRow key={t.id} t={t} onToggle={toggle} onRemove={remove} />) : <p className="text-sm text-muted-foreground">Энэ өдөр ажил алга.</p>}
-          <AddTodo onAdd={add} />
+          {dayTodos.length ? dayTodos.map(t => editing === t.id
+            ? <div key={t.id} id={`todo-${t.id}`} className="border-b py-2.5 last:border-0"><TodoForm initial={t} submitLabel="✓ Хадгалах" onSubmit={p => save(t, { ...p, planned_date: p.planned_date ?? t.planned_date ?? day })} onCancel={() => setEditing(null)} /></div>
+            : <TodoRow key={t.id} t={t} onToggle={toggle} onRemove={remove} onEdit={() => setEditing(t.id)} />)
+            : <p className="text-sm text-muted-foreground">Энэ өдөр ажил алга.</p>}
+          <TodoForm submitLabel="＋ Нэмэх" onSubmit={add} />
         </section>
       </div>
     </div>
   );
 }
 
-function TodoRow({ t, onToggle, onRemove }: { t: Todo; onToggle: (t: Todo) => void; onRemove: (t: Todo) => void }) {
+function TodoRow({ t, onToggle, onRemove, onEdit }: { t: Todo; onToggle: (t: Todo) => void; onRemove: (t: Todo) => void; onEdit: () => void }) {
   return (
-    <div className="border-b py-2.5 last:border-0">
+    <div id={`todo-${t.id}`} className="border-b py-2.5 last:border-0">
       <div className="flex items-start gap-2.5">
         <input type="checkbox" className="mt-0.5 size-6 flex-none accent-primary" checked={t.done} onChange={() => onToggle(t)} aria-label={`${t.title} дууссан`} />
-        <div className="min-w-0 flex-1">
-          <b className={cn('block [overflow-wrap:anywhere]', t.done && 'text-muted-foreground line-through')}>{t.title}</b>
-          <span className="text-xs text-muted-foreground">{t.category} · {effortLabel(t.effort)} · {t.minutes} мин{t.due_date && ` · эцсийн хугацаа ${t.due_date.slice(5).replace('-', '/')}`}</span>
-        </div>
+        <button className="min-w-0 flex-1 rounded-lg text-left hover:bg-secondary/60" title="Дарж засах" aria-label={`${t.title} засах`} onClick={onEdit}>
+          <b className={cn('block [overflow-wrap:anywhere]', t.done && 'text-muted-foreground line-through')}>{t.emoji && <span className="mr-1.5" aria-hidden>{t.emoji}</span>}{t.title}</b>
+          <span className="text-xs text-muted-foreground">{t.planned_time && <b className="text-foreground">{hhmm(t.planned_time)} · </b>}{t.category} · {effortLabel(t.effort)} · {t.minutes} мин{t.due_date && ` · эцсийн хугацаа ${t.due_date.slice(5).replace('-', '/')}`}</span>
+        </button>
+        <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={`${t.title} засах`} title="Засах" onClick={onEdit}>✎</button>
         <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={`${t.title} устгах`} onClick={() => onRemove(t)}>✕</button>
       </div>
       {t.reason && (
@@ -138,25 +171,46 @@ function TodoRow({ t, onToggle, onRemove }: { t: Todo; onToggle: (t: Todo) => vo
   );
 }
 
-function AddTodo({ onAdd }: { onAdd: (t: { title: string; category: string; effort: number; minutes: number; due_date: string | null }) => Promise<void> }) {
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState(TODO_CATEGORIES[0]);
-  const [effort, setEffort] = useState(2);
-  const [minutes, setMinutes] = useState(30);
-  const [due, setDue] = useState('');
+// Шинэ ажил нэмэх, эсвэл initial өгвөл тухайн ажлыг засах форм
+function TodoForm({ initial, submitLabel, onSubmit, onCancel }: { initial?: Todo; submitLabel: string; onSubmit: (t: NewTodo & { planned_date?: string }) => Promise<void>; onCancel?: () => void }) {
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [category, setCategory] = useState(initial?.category ?? TODO_CATEGORIES[0]);
+  const [effort, setEffort] = useState(initial?.effort ?? 2);
+  const [minutes, setMinutes] = useState(initial?.minutes ?? 30);
+  const [due, setDue] = useState(initial?.due_date ?? '');
+  const [time, setTime] = useState(hhmm(initial?.planned_time ?? null));
+  const [emoji, setEmoji] = useState(initial?.emoji ?? '');
+  const [date, setDate] = useState(initial?.planned_date ?? '');
   return (
-    <form className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4" onSubmit={e => {
+    <form className={cn('grid grid-cols-2 gap-2 sm:grid-cols-4', !initial && 'mt-3')} onSubmit={e => {
       e.preventDefault();
       if (!title.trim()) return;
-      void onAdd({ title: title.trim(), category, effort, minutes: Math.min(600, Math.max(5, minutes || 30)), due_date: due || null });
-      setTitle(''); setDue('');
+      void onSubmit({ title: title.trim(), category, effort, minutes: Math.min(600, Math.max(5, minutes || 30)), due_date: due || null, planned_time: time || null, emoji: emoji || null, ...(initial && date ? { planned_date: date } : {}) });
+      if (!initial) { setTitle(''); setDue(''); setTime(''); setEmoji(''); }
     }}>
-      <input className={cn(FIELD, 'col-span-2 sm:col-span-4')} placeholder="Шинэ ажил нэмэх" aria-label="Ажлын нэр" value={title} maxLength={200} onChange={e => setTitle(e.target.value)} />
+      <input className={cn(FIELD, 'col-span-2 sm:col-span-4')} placeholder="Шинэ ажил нэмэх" aria-label="Ажлын нэр" value={title} maxLength={200} onChange={e => setTitle(e.target.value)} autoFocus={!!initial} />
+      <div className="col-span-2 flex flex-wrap gap-1.5 sm:col-span-4" role="group" aria-label="Эможи">
+        {TODO_EMOJIS.map(em => (
+          <button key={em} type="button" aria-pressed={emoji === em} aria-label={`Эможи ${em}`} onClick={() => setEmoji(v => (v === em ? '' : em))}
+            className={cn('grid size-10 place-items-center rounded-xl border-[1.5px] text-xl', emoji === em ? 'border-primary bg-secondary' : 'bg-background')}>{em}</button>
+        ))}
+      </div>
       <select className={FIELD} aria-label="Ангилал" value={category} onChange={e => setCategory(e.target.value)}>{TODO_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select>
       <select className={FIELD} aria-label="Хүндрэл" value={effort} onChange={e => setEffort(+e.target.value)}>{EFFORT.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
       <input className={FIELD} type="number" min={5} max={600} step={5} aria-label="Хугацаа, минут" value={minutes} onChange={e => setMinutes(+e.target.value)} />
-      <input className={FIELD} type="date" aria-label="Эцсийн хугацаа" value={due} onChange={e => setDue(e.target.value)} />
-      <Button type="submit" size="xl" variant="secondary" className="col-span-2 sm:col-span-4">＋ Нэмэх</Button>
+      <input className={FIELD} type="time" aria-label="Эхлэх цаг" title="Эхлэх цаг" value={time} onChange={e => setTime(e.target.value)} />
+      <label className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground sm:col-span-4">
+        <span className="flex-none">Эцсийн хугацаа</span>
+        <input className={FIELD} type="date" value={due} onChange={e => setDue(e.target.value)} />
+      </label>
+      {initial && (
+        <label className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground sm:col-span-4">
+          <span className="flex-none">Хийх өдөр</span>
+          <input className={FIELD} type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </label>
+      )}
+      <Button type="submit" size="xl" variant={initial ? 'default' : 'secondary'} className={cn('col-span-2', initial ? 'sm:col-span-2' : 'sm:col-span-4')}>{submitLabel}</Button>
+      {onCancel && <Button type="button" size="xl" variant="outline" className="col-span-2 sm:col-span-2" onClick={onCancel}>Болих</Button>}
     </form>
   );
 }

@@ -19,13 +19,53 @@ export const CHAT_ACTIONS = {
 export type ChatAction = keyof typeof CHAT_ACTIONS;
 const isAction = (v: string): v is ChatAction => v in CHAT_ACTIONS;
 
-/** "...хариулт\nACTIONS: breath, plan" → { text, actions } */
-export function splitActions(raw: string): { text: string; actions: ChatAction[] } {
-  const m = raw.match(/\n?[ \t]*\**ACTIONS\**\s*[:：]\s*\**\s*([a-z_,\s]*)\s*$/i);
-  if (!m) return { text: raw.trim(), actions: [] };
-  const actions = [...new Set(m[1].split(/[,\s]+/).map(s => s.trim().toLowerCase()).filter(isAction))].slice(0, 3);
-  return { text: raw.slice(0, m.index).trim(), actions };
+/** "...хариулт\nACTIONS: breath, plan\nEXPERTS: p2" → { text, actions, experts }. Хоёр мөр аль ч дараалалтай байж болно. */
+export function splitActions(raw: string): { text: string; actions: ChatAction[]; experts: string[] } {
+  let text = raw, actions: ChatAction[] = [], experts: string[] = [];
+  for (;;) {
+    const m = text.match(/\n?[ \t]*\**(ACTIONS|EXPERTS)\**\s*[:：]\s*\**\s*([a-z0-9_,\s]*)\s*$/i);
+    if (!m) break;
+    const codes = m[2].split(/[,\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (m[1].toUpperCase() === 'ACTIONS') actions = [...new Set(codes.filter(isAction))].slice(0, 3);
+    else experts = [...new Set(codes.filter(c => /^[a-z0-9_]{1,20}$/.test(c)))].slice(0, 2);
+    text = text.slice(0, m.index);
+  }
+  return { text: text.trim(), actions, experts };
 }
+
+/** Хэрэглэгч энэ мессежээрээ сэтгэл зүйч/зөвлөх хайж байна уу */
+export const asksForExpert = (msg: string) => /сэтгэл\s*зүйч|сэтгэлзүйч|зөвлөх|мэргэжилт|психолог|хэнтэй\s+уулз|хэнд\s+хандах/i.test(msg);
+
+/* AI товч гаргахаа мартсан үед мессежийн агуулгаар тохирох дасгалыг сонгоно (эхний тохирсон 2) */
+const GUESS: [RegExp, ChatAction][] = [
+  [/харилца|найз\s*(охин|залуу)|хайрт|муудалц|салсан|гэр\s*бүл|ээж|аав/i, 'partner'],
+  [/стресс|түгш|сандар|айж|санаа\s*зов|уур|бухимд/i, 'breath'],
+  [/нойр|унтаж|унтах|нойргүй/i, 'relax'],
+  [/давхц|ачаал|амжихгүй|хугацаа|шалгалт|даалгавар/i, 'plan'],
+  [/гуни|ганцаар|уйтга|урам|сэтгэл\s*ун/i, 'walk'],
+];
+export function guessActions(msg: string): ChatAction[] {
+  return [...new Set(GUESS.filter(([re]) => re.test(msg)).map(([, a]) => a))].slice(0, 2);
+}
+
+/** Хэрэглэгч дасгал, хийх зүйл шууд хүсэж байна уу («дасгал», «юу хийх вэ») */
+export const asksForExercise = (msg: string) => /дасгал|юу\s+хийх|туслах\s+арга|тайвшрах\s+арга/i.test(msg);
+
+/* AI заримдаа кодыг текст дотор бичдэг («partner» дасгал): товч болгож, текстэд нь жинхэнэ нэрийг тавина */
+export function extractInlineActions(text: string): { text: string; actions: ChatAction[] } {
+  const actions: ChatAction[] = [];
+  const re = new RegExp(`[«"']?\\b(${Object.keys(CHAT_ACTIONS).join('|')})\\b[»"']?`, 'g');
+  const out = text.replace(re, (_, code: string) => {
+    const a = code as ChatAction;
+    if (!actions.includes(a)) actions.push(a);
+    return `«${CHAT_ACTIONS[a].label.replace(/^\S+\s/, '')}»`;
+  });
+  return { text: out, actions: actions.slice(0, 3) };
+}
+
+/** Сэтгэл зүйчийг AI-д танилцуулах мөр */
+export type ExpertBrief = { id: string; name: string; title: string; spec: string[]; exp: number; rating: number; price: number };
+const fmtExpert = (e: ExpertBrief) => `- ${e.id}: ${e.name}, ${e.title}. Мэргэшил: ${e.spec.join(', ')}. ${e.exp} жил, ★${e.rating}, ${e.price.toLocaleString('en-US')}₮/цаг`;
 
 const MODE_HINT: Record<ChatMode, string> = {
   calm: 'Tone setting "calm": when they are upset, soothe first.',
@@ -35,7 +75,8 @@ const MODE_HINT: Record<ChatMode, string> = {
 
 const fmt = (e: Entry) => `${e.entry_date}: ${moodById(e.mood).label} (эрч хүч ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep}ц` : ''}${e.tags.length ? `, ${e.tags.join('/')}` : ''})`;
 
-export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string }) {
+export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[] }) {
+  const experts = p.experts ?? [];
   const recent = p.entries.slice(-7).map(fmt).join('\n');
   return `You are the AI companion in «Сэтгэл», a Mongolian mood app. You talk like a smart, warm friend who also knows psychology. Always reply in natural spoken Mongolian (Cyrillic), using «чи» (use «та» if they do).
 
@@ -50,15 +91,35 @@ RULES
 - Use a bullet list only when you truly give several steps. Most replies are plain sentences.
 - Never repeat advice or phrasing from earlier in the chat. If earlier replies sound repetitive, change course. Never end with the same question twice.
 - If you do not understand a word, slang or what they mean, ask instead of guessing. Slang: «лан» means playing computer games in a game room or with friends online.
-- Write simple, correct Mongolian. Use only words you are sure of. No word-for-word translations from English, no invented expressions, no «Хайрт», «Эрхэм». Say «тэмдэглэл», not «журнал». For breathing say «амьсгал ав», «амьсгалаа гарга».
 - Use their name rarely. At most one emoji, often none. No fake positivity like «бүх юм сайхан болно».
 - Their mood log below is background only. Mention it only if it is clearly relevant to what they just said. Never claim they said something they did not say.
+
+MONGOLIAN WRITING (most important: a reply with clumsy Mongolian is a bad reply)
+Think the reply directly in Mongolian, never compose it in English and translate. Write the way a Mongolian young person really talks to a close friend.
+- Word order: subject, object, then the verb at the very end of the sentence. One idea per sentence, usually under 12 words.
+- Join ideas with natural connectors: «тэгээд», «гэхдээ», «харин», «тиймээс», «бас». Do not start sentences with «Энэ нь».
+- Correct suffixes and vowel harmony (-ыг/-ийг, -д/-т, -аас/-ээс, -тай/-тэй). Use only words you are sure exist in Mongolian; if unsure, use a simpler word.
+- Always «чи», never mix with «та» (unless they write «та» first). No «Хайрт», «Эрхэм». Say «тэмдэглэл», not «журнал». For breathing say «амьсгал ав», «амьсгалаа гарга».
+- Never invent names of films, books, songs, people or places. Name only very famous titles you are sure of, in their original spelling, or ask what they like first.
+- Avoid these translated-from-English patterns (bad → good):
+  «Чамайг гунигтай байна гэж би ойлгож байна» → «Ойлгож байна, хэцүү байгаа биз.»
+  «Энэ нь чамайг ядарсан байгааг заадаг» → «Чи ядарчихсан юм шиг байна.»
+  «...хийх нь чухал юм» → «Эхлээд ... -аа хий.»
+  «Энэ нь маш хэцүү нөхцөл байдал юм» → «Үнэхээр хэцүү юм аа.»
+  «Чи юу мэдэрч байна?» → «Одоо яг юу нь хамгийн их санааг чинь зовоож байна?»
+  «Би чамд туслахад бэлэн байна» → leave it out.
 
 SAFETY
 - You are not a doctor: no diagnosis, no medication advice.
 - Mention 103, 108 or emergency help ONLY if they talk about self-harm, suicide or danger.
 - Suggest the app's «Сэтгэл зүйчид» section only for a heavy state lasting 2+ weeks, or if they ask.
-
+${experts.length ? `
+PSYCHOLOGISTS IN THIS APP (the only ones you may name; never invent other people):
+${experts.map(fmtExpert).join('\n')}
+ONLY when their LATEST message itself asks for a psychologist, counselor or who to talk to («сэтгэл зүйч санал болго», «зөвлөх», «хэнтэй уулзах»), recommend 1-2 of them right away. If they asked earlier but the latest message is about something else, do NOT bring the psychologists up again; help with the new message instead. When you do recommend, matched to what they told you in this chat (their problem → specialties). For each: name, one sentence why they fit, price. Do not just ask more questions first; if the problem is unclear, still recommend the best guess and ask one short question. Then add a last line in exactly this form:
+EXPERTS: <id>, <id>
+Use EXPERTS only when you actually recommend someone.
+` : ''}
 ${MODE_HINT[p.mode] ?? MODE_HINT.calm}
 
 USER: ${p.name || 'unknown'}. Hobbies: ${p.hobbies.join(', ') || 'unknown'}. Latest mood: ${p.entries.length ? moodById(p.entries[p.entries.length - 1].mood).label : 'unknown'}.
@@ -66,7 +127,7 @@ ${recent ? `Recent mood log:\n${recent}` : 'No mood log yet.'}
 ${p.todayNote ? `Today's note: «${p.todayNote.slice(0, 500)}»` : ''}
 
 APP BUTTONS
-Only for type 3 or 4, and only if a button would really help now, end with a last line in exactly this form (0-2 codes, otherwise leave the line out):
+For type 4 (they share something painful or stressful) ALWAYS end with this line, choosing the 1-2 exercises that fit best (relationships → partner, stress or anxiety → breath, sleep → relax, sadness → walk or journal, overload → plan). The app shows them as buttons that open a step-by-step guide, so do not write the exercise steps in your text; just say in one sentence that a short exercise below may help. Never write the codes (partner, breath, journal…) inside your text; they only go on the ACTIONS line. If they ask for an exercise («дасгал»), ALWAYS add the ACTIONS line, picked from what they told you earlier in the chat. For type 3 add it only if a button would really help. Never for type 1 or 2.
 ACTIONS: <code>, <code>
 Codes: ${Object.entries(CHAT_ACTIONS).map(([k, v]) => `${k} (${v.hint})`).join('; ')}.
 
@@ -77,6 +138,12 @@ You: Сайн уу! Өнөөдөр ямар байна даа?
 User: лан тогломоор байна аа
 You: Хэхэ, тоглохгүй юу тэгвэл! Юу тоглох гэж байна, найзуудтайгаа юу?
 
+User: орой найзуудтайгаа кино үзэх гэж байна, юу үзэх вэ
+You: Гоё төлөвлөгөө шүү! Та нар инээдэмтэй юм үзэх үү, эсвэл аймшгийн кино уу? Хэлбэл сайн хэдийг нь санал болгоё.
+
+User: хамгийн дотно найзтайгаа муудалцчихлаа
+You: Дотны хүнтэйгээ муудалцах үнэхээр хэцүү шүү. Ялангуяа тэр чамайг ойлгохгүй байгаа юм шиг санагдвал бүр хэцүү. Юунаас болж муудалцсан юм бэ?
+
 User: яаж илүү сайн төвлөрч хичээл хийх вэ
 You: Төвлөрөл ихэнхдээ хүч зоригоос биш, орчноос шалтгаалдаг. Гурван зүйл хамгийн их нөлөөлдөг:
 • Утсаа өөр өрөөнд тавь. Дэргэд чинь байхад л анхаарал сарнидаг.
@@ -84,6 +151,10 @@ You: Төвлөрөл ихэнхдээ хүч зоригоос биш, орчн�
 • 25 минут ажиллаад 5 минут амар, 4 удаа давтсаны дараа урт завсарлага ав.
 Ер нь чамд хамгийн их саад болдог зүйл юу вэ, утас уу эсвэл эхлэхэд хэцүү байдаг уу?
 ACTIONS: plan
+
+User: ганцаардаад байна, сэтгэл зүйч санал болгооч
+You: Ганцаардал харилцаатай их холбоотой байдаг. Тийм болохоор Д. Тэмүүлэнтэй ярилцахыг санал болгож байна. Тэр харилцаа, гэр бүлийн асуудлаар мэргэшсэн зөвлөх сэтгэл зүйч (50,000₮). Стресс бас дарж байвал Б. Сарангэрэл ч тохирно. Ойр дотны хүмүүсээсээ холдсон юм шиг санагдаж байна уу?
+EXPERTS: p2, p1
 
 User: хичээл, ажил давхцаад, найз охинтойгоо ч муудалцаад сэтгэл унаад байна
 You: Гурвуулаа нэг дор хүндэрвэл хэнд ч хэцүү шүү. Энийг бүгдийг чи ганцаараа үүрээд явж байна.

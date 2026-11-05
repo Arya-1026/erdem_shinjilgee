@@ -8,6 +8,13 @@ import type { Entry, Todo } from './types';
 export const TODO_CATEGORIES = ['Ажил', 'Хичээл', 'Гэр', 'Эрүүл мэнд', 'Хувийн', 'Бүтээлч'];
 export const EFFORT = [[1, 'Хөнгөн'], [2, 'Дунд'], [3, 'Хүнд']] as const;
 export const effortLabel = (e: number) => EFFORT.find(([v]) => v === e)?.[1] ?? 'Дунд';
+/** Төлөвлөгөөнд сонгох эможи (календарь дээр харагдана) */
+export const TODO_EMOJIS = ['📚', '💼', '🏃', '🧹', '🛒', '🍽️', '☕', '🎂', '🎉', '✈️', '💊', '📞', '🎵', '❤️'];
+/** Хэрэглэгч өдрийг нь өөрөө заасан ажил: дахин хуваарилахад хөдөлгөхгүй (reason-ий эхэнд тэмдэглэнэ) */
+export const FIXED = '📌 ';
+export const isFixed = (t: Pick<Todo, 'reason'>) => t.reason.startsWith(FIXED);
+/** "HH:MM:SS" → "HH:MM" */
+export const hhmm = (t: string | null) => t?.slice(0, 5) ?? '';
 
 const HORIZON = 14, DAY_MINUTES = 180, LOW_DAY_MINUTES = 120, MIN_SAMPLES = 2;
 
@@ -98,17 +105,24 @@ export function statsSummary(stats: DayStat[]) {
   return stats.filter(known).map(d => `${WD[d.w]}: mood ${d.mood!.toFixed(1)}/5, energy ${(d.energy ?? 3).toFixed(1)}/5, ${d.n} entries`).join('\n') || 'Not enough mood data yet.';
 }
 
+const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
 export function parseTaskList(text: string, today: string) {
   const json = text.match(/\{[\s\S]*\}/)?.[0];
   if (!json) return [];
+  const last = ymd(addDays(new Date(today + 'T12:00'), 90));
   try {
-    const rows = (JSON.parse(json) as { t?: { title?: unknown; category?: unknown; effort?: unknown; minutes?: unknown; due?: unknown }[] }).t ?? [];
+    const rows = (JSON.parse(json) as { t?: { title?: unknown; category?: unknown; effort?: unknown; minutes?: unknown; due?: unknown; on?: unknown; time?: unknown }[] }).t ?? [];
     return rows.flatMap(r => {
       const title = typeof r.title === 'string' ? r.title.trim().slice(0, 200) : '';
       if (!title) return [];
-      const due = typeof r.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.due) && r.due >= today ? r.due : null;
+      const due = isDate(r.due) && r.due >= today ? r.due : null;
+      // Хэрэглэгч тодорхой өдөр заасан бол («даваа гарагт», «маргааш») тэр өдөрт нь шууд тавина
+      const on = isDate(r.on) && r.on >= today && r.on <= last ? r.on : null;
+      const time = typeof r.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) ? r.time : null;
       return [{
-        title, due_date: due,
+        title, due_date: due, planned_date: on, planned_time: time,
+        reason: on ? `${FIXED}Та энэ өдрийг өөрөө заасан.` : '',
         category: TODO_CATEGORIES.includes(r.category as string) ? (r.category as string) : 'Ажил',
         effort: [1, 2, 3].includes(Number(r.effort)) ? Number(r.effort) : 2,
         minutes: Math.min(600, Math.max(5, Math.round(Number(r.minutes)) || 30)),
@@ -121,9 +135,32 @@ export function parseTaskList(text: string, today: string) {
 
 const WEEKDAY_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+/** Ирэх 3 долоо хоногийн огноо, гараг. LLM огноог өөрөө тоолж алдахгүйн тулд хүснэгтээр өгнө. */
+export function calendarTable(today: string, days = 21) {
+  const start = new Date(today + 'T12:00');
+  const monday = addDays(start, -((start.getDay() + 6) % 7)); // энэ долоо хоногийн Даваа
+  return Array.from({ length: days }, (_, i) => {
+    const d = addDays(start, i);
+    const week = Math.floor(Math.round((d.getTime() - monday.getTime()) / 864e5) / 7);
+    const tag = i === 0 ? 'today' : i === 1 ? 'tomorrow (маргааш)' : i === 2 ? 'day after tomorrow (нөгөөдөр)' : ['this week', 'next week', 'in two weeks', 'in three weeks'][week];
+    return `${ymd(d)} ${WEEKDAY_EN[d.getDay()]} (${WD[d.getDay()]}) - ${tag}`;
+  }).join('\n');
+}
+
 export function taskPrompt(text: string, today: string) {
   return [
-    { role: 'system' as const, content: `You turn a Mongolian-speaking person's free text into a task list. Today is ${today}, ${WEEKDAY_EN[weekdayOf(today)]}. Work out dates from weekday names (Даваа Monday, Мягмар Tuesday, Лхагва Wednesday, Пүрэв Thursday, Баасан Friday, Бямба Saturday, Ням Sunday); "гэхэд" means a deadline. Keep titles in Mongolian, short. category is one of: ${TODO_CATEGORIES.join(', ')}. effort: 1 light, 2 medium, 3 heavy. minutes: realistic estimate. due: YYYY-MM-DD only if the text gives a deadline, else null. Reply with JSON only: {"t":[{"title":"...","category":"...","effort":2,"minutes":60,"due":null}]}` },
+    { role: 'system' as const, content: `You turn a Mongolian-speaking person's free text into a task list. Today is ${today}, ${WEEKDAY_EN[weekdayOf(today)]}.
+Use ONLY this calendar to pick dates, never count days yourself:
+${calendarTable(today)}
+
+Mongolian day words:
+- "<weekday> гарагт", "<weekday>", "дараагийн <weekday>", "ирэх <weekday>" = the FIRST such weekday after today in the calendar.
+- "дараа долоо хоногийн <weekday>" = that weekday in the rows marked "next week".
+- "маргааш" = tomorrow, "нөгөөдөр" = day after tomorrow, "өнөөдөр" = today.
+- If the task happens ON a day, put that date in "on". If they say "гэхэд" or "-аас өмнө" (by / before), it is a deadline: put it in "due" and leave "on" null.
+- "time": HH:MM (24h) only if a clock time is given ("10 цагт" -> "10:00", "оройн 7-д" -> "19:00"), else null.
+Keep titles in Mongolian, short, without the date words. category is one of: ${TODO_CATEGORIES.join(', ')}. effort: 1 light, 2 medium, 3 heavy. minutes: realistic estimate.
+Reply with JSON only: {"t":[{"title":"...","category":"...","effort":2,"minutes":60,"on":null,"due":null,"time":null}]}` },
     { role: 'user' as const, content: text.slice(0, 2000) },
   ];
 }

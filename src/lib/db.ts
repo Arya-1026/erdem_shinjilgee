@@ -1,6 +1,6 @@
 // Клиент, сервер хоёуланд хэрэглэгдэх баганын жагсаалт
-export const PROFILE_COLS = 'id,name,email,hobbies,theme,reminder_time,reminder_enabled,art_mode,chat_mode,spotify_connected,youtube_connected,exercises_done,birth_year,fav_artists,mood_images';
-export const TODO_COLS = 'id,title,category,effort,minutes,due_date,planned_date,reason,done,done_at';
+export const PROFILE_COLS = 'id,name,email,hobbies,theme,reminder_time,reminder_enabled,art_mode,chat_mode,spotify_connected,youtube_connected,exercises_done,birth_year,fav_artists,mood_images,avatar';
+export const TODO_COLS = 'id,title,category,effort,minutes,due_date,planned_date,planned_time,emoji,reason,done,done_at';
 export const YOUTUBE_TRACK_COLS = 'video_id,title,artist,thumbnail,duration_s';
 export const ENTRY_COLS = 'id,entry_date,entry_time,mood,intensity,tags,note,sleep';
 export const BOOKING_COLS = 'id,expert_id,booking_date,slot,kind,share_report,status,meeting_url';

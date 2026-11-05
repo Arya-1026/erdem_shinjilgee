@@ -55,6 +55,8 @@ export type Profile = {
   fav_artists: string[];
   /** Хэрэглэгчийн өөрийн оруулсан mood-ийн зураг (data URL) */
   mood_images: Partial<Record<MoodId, string>>;
+  /** Профайл зураг (data URL), байхгүй бол нэрийн эхний үсэг */
+  avatar: string | null;
 };
 
 export type Entry = {
@@ -104,6 +106,10 @@ export type Todo = {
   minutes: number;
   due_date: string | null;
   planned_date: string | null;
+  /** "HH:MM:SS" (Postgres time) */
+  planned_time: string | null;
+  /** Календарь дээр харагдах эможи */
+  emoji: string | null;
   /** Яагаад энэ өдөрт хуваарилсан тайлбар */
   reason: string;
   done: boolean;

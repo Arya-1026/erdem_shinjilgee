@@ -36,7 +36,8 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
-    renderer.domElement.style.display = 'block';
+    // Хэмжээг CSS-ээр өгнө: пикселээр тогтоовол утсан дээр цонхыг дэлгэцнээс өргөн болгож тэлдэг байсан
+    Object.assign(renderer.domElement.style, { display: 'block', width: '100%', height: '100%' });
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
@@ -65,7 +66,8 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
 
     const size = () => {
       const w = el.clientWidth, h = el.clientHeight;
-      renderer.setSize(w, h);
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
@@ -108,8 +110,10 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
       rig.apply(now, ANIM_REGION[curAnim], time);
 
       const v = VIEWS[curView], ease = Math.min(1, dt * 3);
+      // Босоо нарийн дэлгэцэнд (утас) загвар, хэвтээ дасгал багтахаар камерыг холдуулна
+      const fit = Math.max(1, (curView === 'floor' ? 1.3 : 0.62) / camera.aspect);
       if (!cam.manual) cam.az += (v.az - cam.az) * ease;
-      cam.r += (v.r - cam.r) * ease;
+      cam.r += (v.r * fit - cam.r) * ease;
       cam.y += (v.y - cam.y) * ease;
       camera.position.set(cam.r * Math.sin(cam.az) * Math.cos(cam.el), cam.y + cam.r * Math.sin(cam.el), cam.r * Math.cos(cam.az) * Math.cos(cam.el));
       camera.lookAt(0, cam.y, 0);

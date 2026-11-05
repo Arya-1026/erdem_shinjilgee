@@ -16,7 +16,10 @@ export async function requireUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  return { supabase, user };
+  // Устгах хүсэлт гаргасан хүн 30 хоногийн дотор буцаж нэвтэрвэл бүртгэл нь сэргээгдэнэ
+  const { data: back } = await supabase.from('profiles').update({ deletion_requested_at: null })
+    .eq('id', user.id).not('deletion_requested_at', 'is', null).select('id');
+  return { supabase, user, restored: Boolean(back?.length) };
 }
 
 type Client = Awaited<ReturnType<typeof createClient>>;
@@ -51,6 +54,8 @@ export async function getProfile() {
 }
 
 export type AppData = {
+  /** Устгах хүсэлттэй бүртгэл энэ нэвтрэлтээр сэргээгдсэн */
+  restored: boolean;
   profile: Profile;
   entries: Entry[];
   feedback: Record<string, number>;
@@ -67,7 +72,7 @@ export type AppData = {
 };
 
 export async function getAppData(): Promise<AppData> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, restored } = await requireUser();
   const since = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   const profile = await loadProfile(supabase, user);
   if (!profile.hobbies.length) redirect('/onboarding');
@@ -85,6 +90,7 @@ export async function getAppData(): Promise<AppData> {
     supabase.from('todos').select(TODO_COLS).order('created_at').returns<Todo[]>(),
   ]);
   return {
+    restored,
     profile,
     entries: (e.data ?? []).map(normalizeEntry),
     feedback: Object.fromEntries((f.data ?? []).map(x => [x.rec_id, x.value])),

@@ -5,8 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
+import { AvatarEditor } from '@/components/avatar';
 import { MoodImages } from '@/components/mood-images';
+import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
+import { useSeasonPref } from '@/components/seasonal';
+import { isSeasonPref, saveSeasonPref } from '@/lib/season';
 import { useApp } from '@/components/providers/app-provider';
 import { usePlayer } from '@/components/providers/player-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -26,6 +30,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
+  const seasonPref = useSeasonPref();
   const [pushOn, setPushOn] = useState<boolean | null>(null);
   useEffect(() => { currentSubscription().then(s => setPushOn(Boolean(s))).catch(() => setPushOn(false)); }, []);
 
@@ -64,7 +69,7 @@ export default function ProfilePage() {
     <div className="grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
       <section className="card-x">
         <div className="flex items-center gap-3.5">
-          <div className="grid size-16 flex-none place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] text-2xl font-bold text-white">{u.name[0] || '?'}</div>
+          <AvatarEditor />
           <div className="min-w-0"><h2 className="text-[1.15rem] font-bold">{u.name}</h2><p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p></div>
         </div>
         <div className="my-3.5 grid grid-cols-3 gap-3">
@@ -100,6 +105,14 @@ export default function ProfilePage() {
         <Setting title="Харанхуй горим" sub="Гэрэлтэй горимд таны сонгосон өнгө хадгалагдана">
           {mounted && <Switch checked={resolvedTheme === 'dark'} onCheckedChange={v => setTheme(v ? 'dark' : 'light')} aria-label="Харанхуй горим" />}
         </Setting>
+        <Setting title="Улирлын чимэглэл" sub="Шинэ жилийн гацуур, цас. «Автомат» нь 12/15–1/5-нд асна">
+          <select aria-label="Улирлын чимэглэл" value={seasonPref} onChange={e => { if (isSeasonPref(e.target.value)) saveSeasonPref(e.target.value); }}
+            className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
+            <option value="auto">Автомат</option>
+            <option value="newyear">🎄 Шинэ жил</option>
+            <option value="off">Унтраах</option>
+          </select>
+        </Setting>
         <Setting title="2D дүр ашиглах" sub="Emoji-ийн оронд">
           <Switch checked={u.art_mode === 'art'} onCheckedChange={v => updateProfile({ art_mode: v ? 'art' : 'emoji' })} aria-label="2D дүр" />
         </Setting>
@@ -121,6 +134,8 @@ export default function ProfilePage() {
         </Link>
       )}
 
+      <AccountSection />
+
       <section className="card-x desk:col-span-2">
         <h3 className="font-semibold">Нууцлал ба өгөгдөл</h3>
         <p className="text-sm text-muted-foreground">Таны өгөгдөл Supabase дээр хадгалагдаж, Row Level Security-ээр зөвхөн танд харагдана. Таны зөвшөөрөлгүйгээр хэнтэй ч хуваалцахгүй.</p>
@@ -132,6 +147,82 @@ export default function ProfilePage() {
         <p className="mt-4 text-xs text-muted-foreground">⚠️ Энэхүү апп нь мэргэжлийн оношилгоо, эмчилгээг орлохгүй. Яаралтай тусламж хэрэгтэй бол 103 руу залгана уу.</p>
       </section>
     </div>
+  );
+}
+
+const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
+
+/* Нэр, нууц үг солих. Нууц үгээ мартсан (эсвэл Google-ээр бүртгүүлсэн) бол имэйлээр код авч тохируулна. */
+function AccountSection() {
+  const { profile: u, updateProfile, supabase } = useApp();
+  const [name, setName] = useState(u.name);
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const [mode, setMode] = useState<'idle' | 'change' | 'reset'>('idle');
+  const [cur, setCur] = useState('');
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => { if (alive) setHasPassword(Boolean(data.user?.identities?.some(i => i.provider === 'email'))); });
+    return () => { alive = false; };
+  }, [supabase]);
+
+  const close = () => { setMode('idle'); setCur(''); setPw(''); setPw2(''); };
+
+  async function saveName(e: React.FormEvent) {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n || n === u.name) return;
+    await updateProfile({ name: n });
+    toast('Нэр солигдлоо ✓');
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (pw.length < 6) return void toast('Шинэ нууц үг хамгийн багадаа 6 тэмдэгт');
+    if (pw !== pw2) return void toast('Шинэ нууц үг таарахгүй байна');
+    setBusy(true);
+    const res = await fetch('/api/account/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current: cur, next: pw }) });
+    setBusy(false);
+    if (res.status === 403) return void toast.error('Одоогийн нууц үг буруу байна');
+    if (!res.ok) return void toast.error('Нууц үг сольж чадсангүй');
+    toast('Нууц үг солигдлоо ✓');
+    close();
+  }
+
+  return (
+    <section className="card-x desk:col-span-2">
+      <h3 className="mb-2 font-semibold">Аккаунт</h3>
+      <form className="flex max-w-[420px] flex-col gap-1.5 border-b pb-3.5" onSubmit={saveName}>
+        <label htmlFor="acc-name" className="text-sm font-semibold">Нэр</label>
+        <div className="flex gap-2">
+          <input id="acc-name" className={FIELD} value={name} maxLength={60} autoComplete="given-name" onChange={e => setName(e.target.value)} />
+          <Button type="submit" size="xl" variant="secondary" className="h-11 flex-none" disabled={!name.trim() || name.trim() === u.name}>Хадгалах</Button>
+        </div>
+      </form>
+
+      <div className="max-w-[420px] pt-3.5">
+        <b>Нууц үг</b>
+        {mode === 'idle' && (
+          <>
+            <div className="mb-2.5 text-sm text-muted-foreground">{hasPassword === false ? 'Та Google-ээр нэвтэрсэн. Имэйлээр код авч нууц үг тохируулж болно.' : 'Нэвтрэхэд ашигладаг нууц үгээ солих'}</div>
+            <Button size="xl" variant="outline" className="w-full" disabled={hasPassword === null} onClick={() => setMode(hasPassword ? 'change' : 'reset')}>🔑 {hasPassword === false ? 'Нууц үг тохируулах' : 'Нууц үг солих'}</Button>
+          </>
+        )}
+        {mode === 'change' && (
+          <form className="mt-2 flex flex-col gap-2.5" onSubmit={changePassword} noValidate>
+            <input className={FIELD} type="password" autoComplete="current-password" placeholder="Одоогийн нууц үг" aria-label="Одоогийн нууц үг" value={cur} onChange={e => setCur(e.target.value)} />
+            <input className={FIELD} type="password" autoComplete="new-password" placeholder="Шинэ нууц үг (6+ тэмдэгт)" aria-label="Шинэ нууц үг" value={pw} onChange={e => setPw(e.target.value)} />
+            <input className={FIELD} type="password" autoComplete="new-password" placeholder="Шинэ нууц үг дахин" aria-label="Шинэ нууц үг дахин" value={pw2} onChange={e => setPw2(e.target.value)} />
+            <Button type="submit" size="xl" className="w-full" disabled={busy || !cur || !pw}>{busy ? 'Сольж байна…' : 'Нууц үг солих'}</Button>
+            <button type="button" className="min-h-10 text-sm font-semibold text-primary" onClick={() => setMode('reset')}>Одоогийн нууц үгээ мартсан уу? Имэйлээр код авах</button>
+            <Button type="button" size="xl" variant="outline" className="w-full" onClick={close}>Болих</Button>
+          </form>
+        )}
+        {mode === 'reset' && <div className="mt-2"><PasswordReset email={u.email} onDone={() => { setHasPassword(true); close(); }} onCancel={close} /></div>}
+      </div>
+    </section>
   );
 }
 

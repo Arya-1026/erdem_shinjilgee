@@ -54,19 +54,40 @@ async function callProvider(p: (typeof PROVIDERS)[number], model: string, messag
     }
 }
 
+// Groq дээрх Qwen: gpt-oss-ийн reasoning_effort-ийг хүлээж авдаггүй тул нэр нь 'groq' биш (callProvider-ийг үз)
+const groqQwen = () => ({ ...PROVIDERS[1], name: 'groq-qwen', url: PROVIDERS[0].url, key: PROVIDERS[0].key });
+const QWEN = 'qwen/qwen3.8-27b';
+
 /**
- * Чатын хариулт: монгол хэлээр илүү чанартай бичдэг том загвар (Groq gpt-oss-120b, үнэгүй хязгаартай)-ыг эхэлж,
- * бүтэхгүй бол жижиг загвар → OpenRouter. GROQ_CHAT_MODEL-оор сольж болно.
+ * Чатын хариулт: монголоор хамгийн байгалийн бичдэг Qwen-ийг эхэлж (gpt-oss-120b англиас орчуулсан хэллэг их гаргадаг),
+ * бүтэхгүй бол gpt-oss-120b → жижиг загвар → OpenRouter. GROQ_CHAT_MODEL-оор үндсэн загварыг сольж болно.
  */
 export async function llmReply(messages: Msg[]) {
   const groq = PROVIDERS[0];
-  const big = process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b';
-  // Groq-ийн үнэгүй хязгаар минутад 8000 токен бөгөөд max_tokens ч тооцогддог тул бага байлгана.
-  // Хязгаар тулвал монгол хэл нь муу 20b руу шууд унахгүй, эхлээд Qwen-ийг оролдоно.
+  const main = process.env.GROQ_CHAT_MODEL || QWEN;
+  // Groq-ийн үнэгүй хязгаар минутад 8000 токен бөгөөд max_tokens ч тооцогддог тул бага байлгана
   const opts: Opts = { temperature: 0.6, maxTokens: 900, timeoutMs: 30_000, reasoning: 'low' };
-  return (await callProvider(groq, big, messages, opts))
-    ?? (await callProvider({ ...PROVIDERS[1], name: 'groq-qwen', url: groq.url, key: groq.key }, 'qwen/qwen3.8-27b', messages, { ...opts, maxTokens: 1500 }))
+  const first = main.startsWith('qwen/') ? groqQwen() : groq;
+  return (await callProvider(first, main, messages, { ...opts, maxTokens: main.startsWith('qwen/') ? 1500 : 900 }))
+    ?? (await callProvider(groq, 'openai/gpt-oss-120b', messages, opts))
     ?? llmChat(messages, opts);
+}
+
+const EDITOR = `Чи монгол хэлний туршлагатай редактор. Доорх чатын хариултыг утга, урт, бүтэц, асуултыг нь өөрчлөхгүйгээр зөв найруулгатай, байгалийн ярианы монгол хэлээр засна.
+Засах зүйл: үгийн дараалал (үйл үг өгүүлбэрийн төгсгөлд), нөхцөл дагавар, эгшиг зохицох ёс, англиас шууд орчуулсан хэллэг, монголд байхгүй эсвэл буруу утгатай үг, «чи», «та» холилдох (бүгдийг «чи» болго).
+Шинэ санаа, зөвлөгөө нэмэхгүй, хасахгүй. Хэрэв текст аль хэдийн зөв бол хэвээр нь буцаа. Зөвхөн засварласан хариултыг буцаа, тайлбар бичихгүй.`;
+
+/**
+ * Хариултын монгол найруулгыг редакторын нэг шатаар засна (~0.5 сек). Бүтэхгүй эсвэл утгыг хэт өөрчилсөн
+ * (урт нь эрс өөрчлөгдсөн) бол анхны текстийг буцаана.
+ */
+export async function polishMongolian(text: string) {
+  if (text.length < 20) return text;
+  const r = await callProvider(groqQwen(), QWEN, [{ role: 'system', content: EDITOR }, { role: 'user', content: text }], { temperature: 0.2, maxTokens: 1200, timeoutMs: 8_000 });
+  const out = r?.text.trim();
+  if (!out) return text;
+  const ratio = out.length / text.length;
+  return ratio > 0.7 && ratio < 1.4 ? out : text;
 }
 
 /** Монгол хэлээр бичих шаардлагатай ажил: том загвар → бүтэхгүй бол ердийн загвар */

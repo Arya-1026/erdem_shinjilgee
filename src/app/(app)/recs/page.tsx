@@ -8,10 +8,10 @@ import { useApp } from '@/components/providers/app-provider';
 import { RecCard } from '@/components/rec-tiles';
 import { Chip } from '@/components/segmented';
 import { ForYou, LikedSongs, MusicLibrary } from '@/components/music';
-import { MOODS } from '@/lib/data';
+import { MOODS, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
 import { cn } from '@/lib/utils';
-import type { RecType } from '@/lib/types';
+import type { MoodId, RecType } from '@/lib/types';
 
 type Tab = 'all' | RecType | 'song';
 const TABS: [Tab, string][] = [['all', 'Бүгд'], ['exercise', '🧘 Дасгал'], ['song', '🎵 Дуу'], ['movie', '🎬 Кино']];
@@ -31,7 +31,11 @@ const MSG = {
 };
 
 export default function RecsPage() {
-  const { profile, feedback, activeMood: cm, setLiveMood, setFeedback, musicSync, music } = useApp();
+  const { profile, feedback, activeMood: saved, setFeedback, musicSync, music } = useApp();
+  // Өөр mood-ын зөвлөмжийг зөвхөн энэ хуудсанд урьдчилан харна; хуудаснаас гарахад сүүлийн бүртгэл рүүгээ буцна
+  const [picked, setPicked] = useState<MoodId | null>(null);
+  const cm = picked ? moodById(picked) : saved;
+  const preview = cm.id !== saved.id;
   const [tab, setTab] = useState<Tab>('all');
   const list = scoredRecs(cm, profile.hobbies, feedback).filter(x => tab === 'all' || x.type === tab);
   const params = useSearchParams(), router = useRouter(), path = usePathname();
@@ -55,16 +59,17 @@ export default function RecsPage() {
       <section className="card-x checkin mb-3.5 flex items-center gap-3.5" style={{ '--mc': cm.color } as React.CSSProperties}>
         <MoodFace m={cm} className="size-14 text-[2.6rem]" />
         <div>
-          <div className="text-sm text-muted-foreground">Одоогийн сэтгэл хөдлөл</div>
+          <div className="text-sm text-muted-foreground">{preview ? 'Урьдчилан харж байна' : 'Сүүлийн бүртгэл'}</div>
           <b>{cm.label}</b>
           <div className="text-sm text-muted-foreground">Сонирхол: {profile.hobbies.slice(0, 3).join(', ')}{profile.hobbies.length > 3 ? '…' : ''}</div>
         </div>
+        {preview && <button className="ml-auto self-start text-sm font-semibold text-primary" onClick={() => setPicked(null)}>↺ {saved.emoji} {saved.label} руу буцах</button>}
       </section>
 
       <div className="mb-3 flex gap-2 overflow-x-auto no-scrollbar" aria-label="Сэтгэл хөдлөл солих">
         {MOODS.map(m => (
           // Design system «Mood chips»: өнгөтэй дэвсгэр, сонгосон нь ink хүрээтэй
-          <Chip key={m.id} onClick={() => setLiveMood(m.id)} style={{ background: m.color }}
+          <Chip key={m.id} onClick={() => setPicked(m.id)} style={{ background: m.color }}
             className={cn('border-2 border-transparent font-semibold text-[#2B2724] hover:border-foreground/30', m.id === cm.id && 'border-foreground hover:border-foreground')} aria-pressed={m.id === cm.id}>
             {m.emoji} {m.label}
           </Chip>

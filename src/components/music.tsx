@@ -46,6 +46,56 @@ function SongRow({ t, onPlay, extra }: { t: Track; onPlay: () => void; extra?: R
   );
 }
 
+/* ---------- Дуу хайх (YouTube). Квот хэмнэхийн тулд Enter/товч дарахад л хайна. ---------- */
+function SongSearch({ mood, isLiked, onLike }: { mood: Mood; isLiked: (r: SongRec) => boolean; onLike: (r: SongRec) => void }) {
+  const play = usePlay();
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ q: string; rows: SongRec[] } | null>(null);
+
+  async function search(e: React.FormEvent) {
+    e.preventDefault();
+    const term = q.trim();
+    if (term.length < 2) return void toast('Хамгийн багадаа 2 үсэг бичнэ үү');
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/music/search?q=${encodeURIComponent(term)}`);
+      const j: { results?: SongRec[]; error?: string } = await r.json().catch(() => ({}));
+      if (r.status === 429) return void toast.error('Өнөөдрийн YouTube хайлтын хязгаар дууссан. Маргааш дахин оролдоорой.');
+      if (!r.ok || !j.results) return void toast.error('Хайж чадсангүй. Дахин оролдоно уу.');
+      setRes({ q: term, rows: j.results });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const tracks = (res?.rows ?? []).map(r => ytTrack(r, mood.id));
+  return (
+    <div className="mt-3">
+      <form role="search" className="flex gap-2" onSubmit={e => void search(e)}>
+        <input type="search" aria-label="Дуу, дуучин хайх" placeholder="🔍 Дуу, дуучин хайх…" value={q} maxLength={80} onChange={e => setQ(e.target.value)}
+          className="min-h-11 min-w-0 flex-1 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none" />
+        <Button type="submit" size="xl" variant="secondary" className="h-11 flex-none" disabled={busy || q.trim().length < 2}>{busy ? '…' : 'Хайх'}</Button>
+      </form>
+      {res && (
+        <div className="mt-2 rounded-2xl bg-background/50 p-3" aria-live="polite">
+          <div className="flex items-center justify-between gap-2">
+            <b className="min-w-0 truncate text-sm">«{res.q}» хайлтын үр дүн</b>
+            <button className="flex-none text-sm font-semibold text-primary" onClick={() => { setRes(null); setQ(''); }}>✕ Хаах</button>
+          </div>
+          {res.rows.length ? res.rows.map((r, i) => (
+            <SongRow key={r.video_id} t={tracks[i]} onPlay={() => play.list(tracks, i)} extra={
+              <span className="mt-1 flex gap-1">
+                <button className={cn('rounded-md border px-2 text-xs', isLiked(r) && 'border-primary bg-secondary')} aria-label="Таалагдсан" aria-pressed={isLiked(r)} onClick={() => onLike(r)}>👍</button>
+              </span>
+            } />
+          )) : <p className="py-3 text-center text-sm text-muted-foreground">Апп дотор тоглуулж болох дуу олдсонгүй. Өөр үгээр хайгаарай.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Тухайн хүнд зориулсан дуунууд (AI + YouTube) ---------- */
 export function ForYou({ mood }: { mood: Mood }) {
   const { music, profile, feedback, setFeedback, likedSongs, toggleLike } = useApp();
@@ -76,6 +126,7 @@ export function ForYou({ mood }: { mood: Mood }) {
         <div><b>«{mood.label}» үед танд</b><div className="text-xs text-muted-foreground">{basis}</div></div>
         <button className="text-sm font-semibold text-primary disabled:opacity-50" disabled={loading} onClick={() => void refresh()}>↻ {kind === 'song' ? 'Шинэ дуунууд' : 'Шинэ аянууд'}</button>
       </div>
+      <SongSearch mood={mood} isLiked={isLiked} onLike={like} />
       <Segmented full label="Төрөл" className="mt-3" value={kind} onChange={setKind}
         options={[['song', '🎵 Дуу'], ['ambient', '🎼 Тайвшруулах ая']]} />
       {kind === 'song' && (

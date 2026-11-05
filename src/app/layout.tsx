@@ -31,7 +31,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: paletteScript }} />
       </head>
-      <body>
+      {/* Хөтчийн өргөтгөл body-д attribute нэмдэг (жишээ нь __processed_…__) тул hydration-ийн сэрэмжлүүлгийг дарна */}
+      <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           {children}
           {/* Дээд талд: доод хэсэгт байрлах YouTube тоглуулагчийг дарахгүйн тулд */}
