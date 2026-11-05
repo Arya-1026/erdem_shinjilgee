@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
-import { FriendsTile } from '@/components/friends-tile';
+import { FriendsSheet, FriendsTile, type SheetTab } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
@@ -236,6 +236,7 @@ function SocialSection() {
   const { profile: u, updateProfile, supabase } = useApp();
   const [counts, setCounts] = useState<SocialCounts | null>(null);
   const [handle, setHandle] = useState(u.handle ?? '');
+  const [sheet, setSheet] = useState<SheetTab | null>(null);
   useEffect(() => { social.counts(supabase).then(setCounts).catch(() => setCounts(null)); }, [supabase]);
 
   async function saveHandle(e: React.FormEvent) {
@@ -263,15 +264,22 @@ function SocialSection() {
     <section id="social" className="card-x desk:col-span-2">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold">👥 Найзууд</h3>
-        <Link href="/friends" className="text-sm font-semibold text-primary">Бүгдийг харах →</Link>
+        <Link href="/friends" className="text-sm font-semibold text-primary">💬 Зурвасууд →</Link>
       </div>
+      {/* Найз, хүсэлт, блок нь профайл дээрээ цонхоор нээгдэнэ (Instagram шиг); зурвас нь Найзууд хуудсанд */}
       <div className="mb-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {([['Найз', counts?.friends, '/friends'], ['Хүсэлт', counts?.incoming, '/friends?tab=requests'], ['Шинэ зурвас', counts?.unread, '/friends'], ['Блоклосон', counts?.blocked, '/friends?tab=blocked']] as const).map(([l, v, href]) => (
-          <Link key={l} href={href} className={cn('rounded-2xl border bg-card p-3.5', (l === 'Хүсэлт' || l === 'Шинэ зурвас') && v ? 'border-primary' : '')}>
-            <span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v ?? '–'}</b>
-          </Link>
-        ))}
+        {([['Найз', counts?.friends, 'friends'], ['Хүсэлт', counts?.incoming, 'requests'], ['Шинэ зурвас', counts?.unread, null], ['Блоклосон', counts?.blocked, 'blocked']] as const).map(([l, v, tab]) => {
+          const cls = cn('rounded-2xl border bg-card p-3.5 text-left transition hover:border-primary', (l === 'Хүсэлт' || l === 'Шинэ зурвас') && v ? 'border-primary' : '');
+          const inner = <><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v ?? '–'}</b></>;
+          return tab ? <button key={l} type="button" className={cls} onClick={() => setSheet(tab)}>{inner}</button>
+            : <Link key={l} href="/friends" className={cls}>{inner}</Link>;
+        })}
       </div>
+      <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => {
+        if (o) return;
+        setSheet(null);
+        social.counts(supabase).then(setCounts).catch(() => {});
+      }} />
 
       <form className="flex max-w-[460px] flex-col gap-1.5 border-b pb-3.5" onSubmit={e => void saveHandle(e)}>
         <label htmlFor="acc-handle" className="text-sm font-semibold">Хэрэглэгчийн нэр (@)</label>
