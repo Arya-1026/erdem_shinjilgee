@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MOODS } from '@/lib/data';
+import { EMOJI_SVG } from '@/lib/emoji-svgs';
 import { cn } from '@/lib/utils';
 import type { Mood } from '@/lib/types';
 import CircularCarousel from './circular-carousel';
@@ -20,7 +21,9 @@ function cardSrc(m: Mood, label: string, art: string, img?: string) {
     ? `<clipPath id="c"><circle cx="220" cy="190" r="118"/></clipPath><image href="${img}" x="102" y="72" width="236" height="236" clip-path="url(#c)" preserveAspectRatio="xMidYMid slice"/>`
     : art === 'art'
       ? renderToStaticMarkup(<FaceSVG m={m} />).replace('<svg', '<svg x="94" y="64" width="252" height="252"')
-      : `<text x="220" y="262" font-size="200" text-anchor="middle">${m.emoji}</text>`;
+      : EMOJI_SVG[m.id]
+        ? EMOJI_SVG[m.id]!.replace('<svg', '<svg x="70" y="40" width="300" height="300"')
+        : `<text x="220" y="262" font-size="200" text-anchor="middle">${m.emoji}</text>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440">`
     + `<rect width="440" height="440" fill="${m.color}"/><circle cx="220" cy="190" r="130" fill="#fff" opacity=".35"/>${face}`
     + `<text x="220" y="392" font-family="Nunito, 'Segoe UI', sans-serif" font-size="48" font-weight="800" fill="#2B2724" text-anchor="middle">${label}</text></svg>`;

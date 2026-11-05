@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Гал">
+  <defs>
+    <radialGradient id="glow" cx=".5" cy=".62" r=".5">
+      <stop offset="0" stop-color="#ff7a2f" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a2f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="outer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff5a3c"/><stop offset=".6" stop-color="#f0383a"/><stop offset="1" stop-color="#c81f3c"/>
+    </linearGradient>
+    <linearGradient id="mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb13b"/><stop offset="1" stop-color="#ff7b22"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff6b0"/><stop offset="1" stop-color="#ffd84a"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .glow  { transform-box: view-box; transform-origin: 32px 40px; animation: glow 1.6s ease-in-out infinite; }
+    .fire  { transform-box: view-box; transform-origin: 32px 58px; animation: flick .9s ease-in-out infinite alternate; }
+    .ember { transform-box: fill-box; transform-origin: center; opacity: 0; animation: ember 2.2s ease-out infinite; }
+    .e2 { animation-delay: -.7s; } .e3 { animation-delay: -1.4s; } .e4 { animation-delay: -1.9s; }
+    @keyframes glow  { 0%,100% { transform: scale(.9); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
+    @keyframes flick { 0% { transform: scale(1, 1) skewX(0); } 50% { transform: scale(1.03, .96) skewX(-2deg); } 100% { transform: scale(.98, 1.04) skewX(2deg); } }
+    @keyframes ember { 0% { opacity: 0; transform: translate(0,0) scale(1); } 20% { opacity: 1; }
+                       100% { opacity: 0; transform: translate(var(--dx), -26px) scale(.3); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .ember { opacity: 0; } }
+  </style>
+
+  <ellipse class="glow" cx="32" cy="40" rx="28" ry="22" fill="url(#glow)"/>
+
+  <g class="fire">
+    <path fill="url(#outer)" d="M32 5 C38 17 49 24 49 39 C49 51 41 59 32 59 C23 59 15 51 15 39 C15 27 27 20 32 5Z">
+      <animate attributeName="d" dur="1.3s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1;.45 0 .55 1"
+        values="M32 5 C38 17 49 24 49 39 C49 51 41 59 32 59 C23 59 15 51 15 39 C15 27 27 20 32 5Z;
+                M29 4 C37 15 50 25 49 39 C49 51 41 59 32 59 C23 59 15 51 15 40 C15 28 25 19 29 4Z;
+                M33 7 C39 18 48 25 48 39 C48 51 41 59 32 59 C23 59 16 51 16 39 C16 28 28 21 33 7Z;
+                M36 4 C40 17 49 25 49 40 C49 51 41 59 32 59 C23 59 15 51 15 39 C15 26 30 18 36 4Z;
+                M32 5 C38 17 49 24 49 39 C49 51 41 59 32 59 C23 59 15 51 15 39 C15 27 27 20 32 5Z"/>
+    </path>
+    <path fill="url(#mid)" d="M32 20 C36 28 43 32 43 42 C43 51 38 56 32 56 C26 56 21 51 21 42 C21 34 30 30 32 20Z">
+      <animate attributeName="d" dur=".95s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1"
+        values="M32 20 C36 28 43 32 43 42 C43 51 38 56 32 56 C26 56 21 51 21 42 C21 34 30 30 32 20Z;
+                M34 18 C37 27 43 33 43 42 C43 51 38 56 32 56 C26 56 21 51 21 43 C21 35 32 29 34 18Z;
+                M30 19 C35 28 43 32 42 42 C42 51 38 56 32 56 C26 56 21 51 21 42 C21 34 28 29 30 19Z;
+                M32 20 C36 28 43 32 43 42 C43 51 38 56 32 56 C26 56 21 51 21 42 C21 34 30 30 32 20Z"/>
+    </path>
+    <path fill="url(#core)" d="M32 33 C34 38 38 41 38 46 C38 51 35 54 32 54 C29 54 26 51 26 46 C26 41 31 38 32 33Z">
+      <animate attributeName="d" dur=".7s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"
+        values="M32 33 C34 38 38 41 38 46 C38 51 35 54 32 54 C29 54 26 51 26 46 C26 41 31 38 32 33Z;
+                M33 30 C35 37 38 41 38 46 C38 51 35 54 32 54 C29 54 26 51 26 46 C26 40 32 37 33 30Z;
+                M32 33 C34 38 38 41 38 46 C38 51 35 54 32 54 C29 54 26 51 26 46 C26 41 31 38 32 33Z"/>
+    </path>
+    <ellipse cx="26" cy="36" rx="2.2" ry="4" fill="#fff" opacity=".35" transform="rotate(20 26 36)"/>
+  </g>
+
+  <g fill="#ffb13b">
+    <circle class="ember"    style="--dx:-4px" cx="26" cy="22" r="1.6"/>
+    <circle class="ember e2" style="--dx:5px"  cx="37" cy="18" r="1.3"/>
+    <circle class="ember e3" style="--dx:-2px" cx="31" cy="14" r="1.1" fill="#ffe27a"/>
+    <circle class="ember e4" style="--dx:3px"  cx="40" cy="26" r="1.2" fill="#ff7a2f"/>
+  </g>
+</svg>

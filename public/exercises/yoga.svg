@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Иогийн сунгалт">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ece6ff"/><stop offset="1" stop-color="#c9bcf5"/></linearGradient>
+    <radialGradient id="aura"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".6" stop-color="#fff4d6" stop-opacity=".45"/><stop offset="1" stop-color="#fff4d6" stop-opacity="0"/></radialGradient>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd1c3"/><stop offset="1" stop-color="#55b0a2"/></linearGradient>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+  <style>
+    .a { transform-box: view-box; }
+    /* 8 s: arms rise overhead (inhale), hold, lower (exhale) */
+    .armR { transform-origin: 109px 100px; animation: armR 8s ease-in-out infinite; }
+    .armL { transform-origin: 91px 100px;  animation: armL 8s ease-in-out infinite; }
+    .torso { transform-origin: 100px 134px; animation: tall 8s ease-in-out infinite; }
+    .join  { transform-box: fill-box; transform-origin: center; animation: join 8s ease-in-out infinite; }
+    .aura  { transform-origin: 100px 100px; animation: aura 8s ease-in-out infinite; }
+    .ring  { transform-origin: 100px 100px; opacity: 0; animation: ring 8s ease-out infinite; }
+    .petal { transform-box: fill-box; transform-origin: center; opacity: 0; animation: petal 6s ease-in-out infinite; }
+    .p2 { animation-delay: -2s; } .p3 { animation-delay: -4s; }
+    .spark { transform-box: fill-box; transform-origin: center; animation: tw 2.6s ease-in-out infinite; }
+    .k2 { animation-delay: -.9s; } .k3 { animation-delay: -1.7s; }
+
+    @keyframes armR { 0%,8%,100% { transform: rotate(-38deg); } 40%,62% { transform: rotate(-188deg); } }
+    @keyframes armL { 0%,8%,100% { transform: rotate(38deg); }  40%,62% { transform: rotate(188deg); } }
+    @keyframes tall { 0%,8%,100% { transform: scaleY(1); } 40%,62% { transform: scaleY(1.05); } }
+    @keyframes join { 0%,36%,66%,100% { transform: scale(0); } 42%,60% { transform: scale(1); } }
+    @keyframes aura { 0%,100% { transform: scale(.85); opacity: .6; } 50% { transform: scale(1.1); opacity: 1; } }
+    @keyframes ring { 0%,40% { transform: scale(.7); opacity: 0; } 45% { opacity: .7; } 75%,100% { transform: scale(1.4); opacity: 0; } }
+    @keyframes petal { 0% { opacity: 0; transform: translate(0,0) rotate(0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(12px,-50px) rotate(160deg); } }
+    @keyframes tw { 0%,100% { transform: scale(.3); opacity: .2; } 50% { transform: scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .petal,.ring { opacity: 0; } .join { transform: scale(0); } }
+  </style>
+  <g clip-path="url(#card)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="28" cy="30" r="16" fill="#fff" opacity=".4"/><circle cx="178" cy="178" r="22" fill="#fff" opacity=".35"/>
+    <circle class="aura a" cx="100" cy="100" r="78" fill="url(#aura)"/>
+    <circle class="ring a" cx="100" cy="100" r="58" fill="none" stroke="#fff" stroke-width="2.5"/>
+
+    <g fill="#fff">
+      <path class="spark"    d="M30 96 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5z"/>
+      <path class="spark k2" d="M168 72 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5z"/>
+      <path class="spark k3" d="M150 30 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+    </g>
+    <g>
+      <path class="petal"    d="M44 150 q6 -8 12 0 q-6 8 -12 0z" fill="#ffb3c8"/>
+      <path class="petal p2" d="M150 146 q6 -8 12 0 q-6 8 -12 0z" fill="#ffd27a"/>
+      <path class="petal p3" d="M60 128 q5 -7 10 0 q-5 7 -10 0z" fill="#ffffff"/>
+    </g>
+
+    <!-- mat -->
+    <ellipse cx="100" cy="170" rx="70" ry="5" fill="#6a56b8" opacity=".25"/>
+    <rect x="34" y="156" width="132" height="12" rx="6" fill="url(#mat)"/>
+    <rect x="34" y="156" width="132" height="4" rx="2" fill="#a9e6dc" opacity=".8"/>
+
+    <!-- crossed legs -->
+    <path d="M58 150 q0 -14 22 -14 h40 q22 0 22 14 q0 8 -10 8 H68 q-10 0 -10 -8z" fill="#3b4a82"/>
+    <path d="M72 146 q28 -10 58 4" stroke="#2c3866" stroke-width="2" fill="none"/>
+    <ellipse cx="78" cy="152" rx="7" ry="4" fill="#f3c29b"/><ellipse cx="124" cy="152" rx="7" ry="4" fill="#f3c29b"/>
+
+    <!-- arms behind torso when raised are drawn first -->
+    <g class="armL a">
+      <line x1="91" y1="100" x2="91" y2="118" stroke="#a77ee8" stroke-width="8" stroke-linecap="round"/>
+      <line x1="91" y1="118" x2="91" y2="134" stroke="#f3c29b" stroke-width="6.5" stroke-linecap="round"/>
+      <circle cx="91" cy="136" r="4" fill="#f3c29b"/>
+    </g>
+    <g class="armR a">
+      <line x1="109" y1="100" x2="109" y2="118" stroke="#a77ee8" stroke-width="8" stroke-linecap="round"/>
+      <line x1="109" y1="118" x2="109" y2="134" stroke="#f3c29b" stroke-width="6.5" stroke-linecap="round"/>
+      <circle cx="109" cy="136" r="4" fill="#f3c29b"/>
+    </g>
+
+    <!-- torso + head (lengthens on inhale) -->
+    <g class="torso a">
+      <path d="M86 138 V104 q0 -10 14 -10 q14 0 14 10 V138Z" fill="#b48cf0"/>
+      <path d="M90 100 q10 6 20 0" stroke="#9a70e0" stroke-width="2" fill="none"/>
+      <rect x="96" y="84" width="8" height="10" rx="3" fill="#e9b48c"/>
+      <circle cx="100" cy="74" r="13" fill="#f6c9a2"/>
+      <path d="M87 74 q-1 -15 13 -15 q14 0 13 15 q-3 -8 -13 -9 q-10 1 -13 9z" fill="#3a2a2a"/>
+      <circle cx="100" cy="58" r="5" fill="#3a2a2a"/>
+      <path d="M92 75 q2.5 2.5 5 0 M103 75 q2.5 2.5 5 0" stroke="#2d2330" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M96 81 q4 3 8 0" stroke="#a5523e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <circle cx="91" cy="79" r="2.2" fill="#ff8f8f" opacity=".45"/><circle cx="109" cy="79" r="2.2" fill="#ff8f8f" opacity=".45"/>
+    </g>
+    <!-- joined palms overhead -->
+    <ellipse class="join" cx="100" cy="64" rx="4" ry="6" fill="#f3c29b" transform="translate(0 -34)"/>
+  </g>
+</svg>

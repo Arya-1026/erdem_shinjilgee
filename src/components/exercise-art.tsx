@@ -126,7 +126,17 @@ const SCENES: Record<string, { bg: string; art: React.ReactNode }> = {
   },
 };
 
+/* Хөдөлгөөнт SVG (public/exercises): дасгалын картууд дээр тоглоно. «Хөдөлгөөн багасгах» асаалттай бол зогсоно.
+   <img> хэлбэрээр оруулна: SVG-ийн дотоод id-ууд (bg, card…) хуудсанд давхцахгүй. */
+export const EXERCISE_ANIM: Record<string, string> = {
+  e1: 'breath', e3: 'walking', e4: 'yoga', e5: 'gratitude', e6: 'relax', e7: 'energy', e8: 'palette', e10: 'chat',
+};
+export const exerciseAnimSrc = (id: string) => EXERCISE_ANIM[id] && `/exercises/${EXERCISE_ANIM[id]}.svg`;
+
 export function ExerciseArt({ id, className }: { id: string; className?: string }) {
+  const src = exerciseAnimSrc(id);
+  // eslint-disable-next-line @next/next/no-img-element -- SVG анимаци next/image-ээр тоглохгүй
+  if (src) return <img src={src} alt="" aria-hidden="true" draggable={false} className={cn('block object-cover', className)} />;
   const s = SCENES[id];
   if (!s) return null;
   return <svg viewBox="0 0 120 120" className={cn('block', className)} style={{ background: s.bg }} aria-hidden="true">{s.art}</svg>;

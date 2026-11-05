@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ExerciseArt, exerciseAnimSrc } from '@/components/exercise-art';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useT } from '@/components/providers/locale-provider';
@@ -21,7 +22,10 @@ export function StepCoach({ recId, steps, onFinish }: { recId: string; steps: st
   return (
     <div className="mt-3">
       <div key={i} className="step-card flex min-h-[230px] flex-col items-center justify-center gap-3 rounded-[18px] bg-secondary p-5 text-center">
-        <span className="step-icon grid size-24 place-items-center rounded-full bg-card text-5xl" aria-hidden="true">{ICONS[recId]?.[i] ?? '✨'}</span>
+        {exerciseAnimSrc(recId)
+          ? <span className="relative"><ExerciseArt id={recId} className="size-36 rounded-3xl" />
+              <span className="step-icon absolute -right-2 -bottom-2 grid size-12 place-items-center rounded-full bg-card text-2xl shadow" aria-hidden="true">{ICONS[recId]?.[i] ?? '✨'}</span></span>
+          : <span className="step-icon grid size-24 place-items-center rounded-full bg-card text-5xl" aria-hidden="true">{ICONS[recId]?.[i] ?? '✨'}</span>}
         <p className="text-sm font-semibold text-muted-foreground">{tr('Алхам {0} / {1}', i + 1, steps.length)}</p>
         <p className="font-bold" aria-live="polite">{tr(steps[i])}</p>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { Flame } from '@/components/flame';
 import { useId } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { MOODS, WD, WD_SHORT } from '@/lib/data';
@@ -119,7 +120,7 @@ export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTit
               className={cn('relative grid aspect-square place-items-center rounded-[10px] text-[.8rem]', v == null ? 'bg-background' : `lvl-${scoreLevel(v)}`,
                 date === today && 'outline-2 outline-offset-1 outline-primary', selected === date && 'ring-2 ring-foreground')}>
               {onPick ? <button className="size-full rounded-[10px]" aria-label={`${tip}${counts?.[date] ? tr(', {0} ажил', counts[date]) : ''}${names ? `: ${names}` : ''}`} onClick={() => onPick(date)}>{label}</button> : label}
-              {fire?.has(date) && <span className="cal-fire pointer-events-none absolute bottom-0.5 left-1 text-[clamp(.6rem,1.5vw,.95rem)] leading-none" aria-hidden>🔥</span>}
+              {fire?.has(date) && <span className="cal-fire pointer-events-none absolute bottom-0.5 left-1 text-[clamp(.6rem,1.5vw,.95rem)] leading-none" aria-hidden><Flame /></span>}
               {!!counts?.[date] && <span className="pointer-events-none absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-primary text-[.6rem] font-bold text-primary-foreground">{counts[date]}</span>}
             </div>
           );
@@ -129,7 +130,7 @@ export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTit
         {([[5, tr('Маш сайн')], [4, tr('Сайн')], [3, tr('Дунд')], [2, tr('Муу')], [1, tr('Маш муу')]] as const).map(([s, l]) => (
           <span key={s} className="inline-flex items-center gap-1"><i className={cn('inline-block size-3 rounded', `lvl-${s}`)} />{l}</span>
         ))}
-        {fire && <span className="inline-flex items-center gap-1">{tr('🔥 Идэвхтэй өдөр')}</span>}
+        {fire && <span className="inline-flex items-center gap-1"><Flame /> {tr('Идэвхтэй өдөр')}</span>}
       </div>
     </>
   );

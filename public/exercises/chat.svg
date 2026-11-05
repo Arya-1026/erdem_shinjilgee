@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Хайртай хүнтэйгээ тайван ярилцах">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0f3"/><stop offset="1" stop-color="#ffd3dc"/></linearGradient>
+    <linearGradient id="b1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe7ec"/></linearGradient>
+    <linearGradient id="b2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9f4ee"/><stop offset="1" stop-color="#b3e6db"/></linearGradient>
+    <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8fa3"/><stop offset="1" stop-color="#e8576f"/></linearGradient>
+    <path id="heart" d="M0 6 C-10 -1 -12 -8 -7 -11 C-4 -13 -1 -11 0 -8 C1 -11 4 -13 7 -11 C12 -8 10 -1 0 6Z"/>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+  <style>
+    .a { transform-box: view-box; }
+    /* 8 s loop: pink bubble appears, then the reply is typed, both stay, then reset */
+    .bub1 { transform-origin: 46px 104px; animation: pop1 8s cubic-bezier(.3,1.5,.5,1) infinite; }
+    .bub2 { transform-origin: 158px 160px; animation: pop2 8s cubic-bezier(.3,1.5,.5,1) infinite; }
+    .heart { transform-origin: 76px 72px; animation: beat 1.4s ease-in-out infinite; }
+    .dt { transform-box: fill-box; transform-origin: center; animation: type 1.1s ease-in-out infinite; }
+    .t2 { animation-delay: .18s; } .t3 { animation-delay: .36s; }
+    .mini { opacity: 0; animation: rise 4s ease-out infinite; }
+    .m2 { animation-delay: -1.3s; } .m3 { animation-delay: -2.6s; }
+    .float1 { animation: fl 4s ease-in-out infinite; }
+    .float2 { animation: fl 4s ease-in-out infinite; animation-delay: -2s; }
+
+    @keyframes pop1 { 0%,3% { transform: scale(0); opacity: 0; } 10% { transform: scale(1); opacity: 1; } 90% { transform: scale(1); opacity: 1; } 97%,100% { transform: scale(.9); opacity: 0; } }
+    @keyframes pop2 { 0%,22% { transform: scale(0); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 90% { transform: scale(1); opacity: 1; } 97%,100% { transform: scale(.9); opacity: 0; } }
+    @keyframes beat { 0%,45%,100% { transform: scale(1); } 12% { transform: scale(1.15); } 22% { transform: scale(1.02); } 32% { transform: scale(1.1); } }
+    @keyframes type { 0%,60%,100% { transform: translateY(0); opacity: .55; } 30% { transform: translateY(-5px); opacity: 1; } }
+    @keyframes rise { 0% { opacity: 0; transform: translateY(0) scale(.5); } 20% { opacity: .9; } 100% { opacity: 0; transform: translateY(-50px) scale(1); } }
+    @keyframes fl { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .mini { opacity: 0; } }
+  </style>
+  <g clip-path="url(#card)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="170" cy="34" r="18" fill="#fff" opacity=".45"/><circle cx="26" cy="176" r="20" fill="#fff" opacity=".4"/>
+
+    <!-- floating hearts -->
+    <g class="mini a" style="transform-box: fill-box; transform-origin: center"><use href="#heart" transform="translate(150 70) scale(.5)" fill="#ff8fa3"/></g>
+    <g class="mini m2 a" style="transform-box: fill-box; transform-origin: center"><use href="#heart" transform="translate(166 86) scale(.38)" fill="#ffb3c1"/></g>
+    <g class="mini m3 a" style="transform-box: fill-box; transform-origin: center"><use href="#heart" transform="translate(140 92) scale(.42)" fill="#e8576f"/></g>
+
+    <!-- pink bubble with heart -->
+    <g class="bub1 a"><g class="float1 a">
+      <path d="M34 36 H120 q14 0 14 14 V92 q0 14 -14 14 H60 L42 122 L46 106 H34 q-14 0 -14 -14 V50 q0 -14 14 -14Z" fill="#e9a4b2" transform="translate(3 4)" opacity=".4"/>
+      <path d="M34 36 H120 q14 0 14 14 V92 q0 14 -14 14 H60 L42 122 L46 106 H34 q-14 0 -14 -14 V50 q0 -14 14 -14Z" fill="url(#b1)" stroke="#2f2b4d" stroke-width="3.5" stroke-linejoin="round"/>
+      <g class="heart a"><use href="#heart" transform="translate(76 74) scale(1.9)" fill="url(#hg)"/>
+        <ellipse cx="66" cy="62" rx="3.5" ry="2.2" fill="#fff" opacity=".6" transform="rotate(-30 66 62)"/></g>
+    </g></g>
+
+    <!-- teal reply bubble, typing -->
+    <g class="bub2 a"><g class="float2 a">
+      <path d="M86 112 H164 q14 0 14 14 V150 q0 14 -14 14 H160 L164 180 L144 164 H86 q-14 0 -14 -14 V126 q0 -14 14 -14Z" fill="#8ccfc2" transform="translate(3 4)" opacity=".4"/>
+      <path d="M86 112 H164 q14 0 14 14 V150 q0 14 -14 14 H160 L164 180 L144 164 H86 q-14 0 -14 -14 V126 q0 -14 14 -14Z" fill="url(#b2)" stroke="#2f2b4d" stroke-width="3.5" stroke-linejoin="round"/>
+      <circle class="dt"    cx="104" cy="138" r="6.5" fill="#3e8f82"/>
+      <circle class="dt t2" cx="125" cy="138" r="6.5" fill="#3e8f82"/>
+      <circle class="dt t3" cx="146" cy="138" r="6.5" fill="#3e8f82"/>
+    </g></g>
+  </g>
+</svg>

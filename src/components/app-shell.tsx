@@ -1,5 +1,6 @@
 'use client';
 
+import { Flame } from '@/components/flame';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { streak } from '@/lib/analytics';
@@ -21,7 +22,6 @@ const NAV = [
   ['/recs', '✨', 'Зөвлөмж', 'Зөвлөмж'],
   ['/todo', '🗓️', 'Хуваарь', 'Төлөвлөгөө'],
   ['/experts', '🧑‍⚕️', 'Зөвлөгч', 'Сэтгэл зүйчид'],
-  ['/friends', '👥', 'Найзууд', 'Найзууд'],
   ['/profile', '👤', 'Профайл', 'Профайл'],
 ] as const;
 
@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href === '/profile' && 'hidden desk:flex',
                 on && 'font-bold text-primary desk:bg-secondary')}>
               <span className="relative text-[1.35rem] leading-none">{icon}<SantaHat />
-                {href === '/friends' && badge > 0 && <b className="absolute -top-1.5 -right-2.5 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground" aria-label={tr('{0} шинэ', badge)}>{badge > 9 ? '9+' : badge}</b>}
+                {href === '/profile' && badge > 0 && <b className="absolute -top-1.5 -right-2.5 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground" aria-label={tr('{0} шинэ', badge)}>{badge > 9 ? '9+' : badge}</b>}
               </span><span>{tr(label)}</span>
             </Link>
           );
@@ -65,9 +65,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <h1 className="m-0 text-xl font-bold">{tr(active[3])}</h1>
           <div className="topbar-actions flex items-center gap-2">
             <ThemeToggle />
-            <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title={tr('Тасралтгүй бүртгэсэн өдөр')}>🔥 {streak(entries)}</span>
-            <Link href="/profile" aria-label={tr('Профайл')} className="rounded-full desk:hidden">
+            <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title={tr('Тасралтгүй бүртгэсэн өдөр')}><Flame /> {streak(entries)}</span>
+            <Link href="/profile" aria-label={badge ? tr('Профайл, {0} найзын хүсэлт', badge) : tr('Профайл')} className="relative rounded-full desk:hidden">
               <Avatar className="size-10" />
+              {badge > 0 && <b className="absolute -top-1 -right-1 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground">{badge > 9 ? '9+' : badge}</b>}
             </Link>
           </div>
         </header>

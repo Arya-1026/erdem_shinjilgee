@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Botgo3D } from '@/components/botgo-3d';
+import { FriendsMoods } from '@/components/friends-moods';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
 import { MoodFace } from '@/components/mood-face';
@@ -40,6 +41,7 @@ export default function HomePage() {
         <TodayStatus entries={todays} />
       </div>
       <SeasonalGreeting />
+      <FriendsMoods />
       <div className="mt-4 grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
         <CheckinCard moodIdx={moodIdx} setMoodIdx={setMoodIdx} />
         <div className="flex min-w-0 flex-col gap-4">
@@ -154,7 +156,7 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
       {!touched && <p className="nudge-x m-0 text-center text-[.8rem] text-muted-foreground">{tr('👆 Хажуу тийш гүйлгээд сонгоорой →')}</p>}
       <MoodCarousel index={moodIdx} onChange={onChange} />
       <p key={m.id} className="fade-up mb-3.5 min-h-[1.5em] text-center font-semibold">{tr(MOOD_CAP[m.id])}</p>
-      {/* Өнөөдрийн сэтгэл санаанд тохирсон 3D Ботгоо: хүрч, эргүүлж болно */}
+      {/* Өнөөдрийн сэтгэл санаанд тохирсон 3D дүр (хэрэглэгчийн сонгосон амьтан): хүрч, эргүүлж болно */}
       <Botgo3D mood={m.id} className="mb-3.5 h-[320px]" />
 
       <Range id="int" label={<>{tr('Эрч хүч:')}{' '}<b>{intensity}</b> / 5</>} min={1} max={5} value={intensity} onChange={setIntensity} />

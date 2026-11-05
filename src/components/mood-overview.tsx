@@ -1,5 +1,6 @@
 'use client';
 
+import { Flame } from '@/components/flame';
 import { useState } from 'react';
 import { DailyChart, WeekdayChart, type DayPoint } from '@/components/charts';
 import { MoodFace } from '@/components/mood-face';
@@ -56,7 +57,7 @@ export function MoodOverview() {
       <div className="my-3 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Tile label={tr('Дундаж оноо')}>{avg ? avg.toFixed(1) : '–'}<small className="text-muted-foreground"> / 5</small></Tile>
         <Tile label={tr('Бүртгэсэн өдөр')}>{logged.length}<small className="text-muted-foreground"> / {range}</small></Tile>
-        <Tile label={tr('Дараалсан өдөр')}>🔥 {streak(entries)}</Tile>
+        <Tile label={tr('Дараалсан өдөр')}><Flame /> {streak(entries)}</Tile>
         <Tile label={tr('Их давтагдсан')}>{top ? `${moodById(top[0]).emoji} ${tr(moodById(top[0]).label)}` : '–'}</Tile>
       </div>
 
