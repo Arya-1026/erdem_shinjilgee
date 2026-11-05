@@ -3,7 +3,40 @@ import { clampOffset, nearestCorner } from '@/components/use-drag';
 import { ageGroup, artistOptions, hardAllowed, MN_ARTISTS, rankArtists } from './artists';
 import { interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './mn-songs';
 import { balanceByGoal, MOOD_GOALS, parsePicks, parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
-import { songKey } from './spotify-parse';
+import { CATEGORY_GENRES, GENRE_QUERY, tasteGenres, tasteRank, tasteReason } from './music-taste';
+import { GENRE_CAT, HOBBIES } from './data';
+import { songKey, spotifyTrackUrl } from './spotify-parse';
+
+describe('Spotify холбоос', () => {
+  it('track uri-г вэб холбоос болгоно', () => {
+    expect(spotifyTrackUrl('spotify:track:3kZ6bCM4JaTGApkchBTrCP')).toBe('https://open.spotify.com/track/3kZ6bCM4JaTGApkchBTrCP');
+    expect(spotifyTrackUrl('spotify:album:abc')).toBeNull();
+    expect(spotifyTrackUrl(undefined)).toBeNull();
+  });
+});
+
+describe('хоббиос дууны төрөл', () => {
+  it('ангилал бүр төрөлтэй, төрөл бүр Spotify-ийн нэртэй', () => {
+    for (const cat of Object.keys(HOBBIES)) if (cat !== GENRE_CAT) expect(CATEGORY_GENRES[cat], cat).toBeTruthy();
+    for (const g of SONG_GENRES) expect(GENRE_QUERY[g], g).toBeTruthy();
+  });
+  it('сонгосон төрөл түрүүнд, хоббиос гарсныг давтахгүй', () => {
+    const t = tasteGenres(['Рок', 'Програмчлал', 'Гитар']);
+    expect(t[0]).toEqual({ genre: 'Рок' });
+    expect(t.slice(1).every(x => x.hobby)).toBe(true);
+    expect(t.filter(x => x.genre === 'Рок')).toHaveLength(1);
+    expect(t.map(x => x.genre)).toContain('Lo-fi');
+  });
+  it('олон хоббид давтагдсан төрөл эхэнд, өөрөө нэмсэн хобби төрөлгүй', () => {
+    expect(tasteGenres(['Програмчлал', 'Сэтгэл судлал', 'Уран зохиол'])[0].genre).toBe('Lo-fi');
+    expect(tasteGenres(['Миний өөрийн хобби'])).toEqual([]);
+  });
+  it('эрэмбэ, шалтгаан', () => {
+    expect(tasteRank({ genre: 'Рок' })).toBeLessThan(tasteRank({ genre: 'Рок', hobby: 'Гитар' }));
+    expect(tasteRank({ genre: 'Рок', hobby: 'Гитар' })).toBeLessThan(tasteRank(undefined));
+    expect(tasteReason({ genre: 'Рок', hobby: 'Гитар' })).toContain('Гитар');
+  });
+});
 
 describe('Cache-ийн түлхүүр', () => {
   it('том жижиг үсэг, тэмдэгт үл тооно', () => {
@@ -104,7 +137,7 @@ describe('Монгол дуу', () => {
     expect(o.international.length).toBeGreaterThan(5);
   });
   it('AI-ийн сонголтыг задлана, буруу дугаарыг хасна', () => {
-    expect(parsePicks('{"mn":[{"i":1,"why":"тохирно"},{"i":1},{"i":9},{"i":"x"}]}', 3)).toEqual([{ i: 1, why: 'тохирно' }]);
+    expect(parsePicks('{"picks":[{"i":1,"why":"тохирно"},{"i":1},{"i":9},{"i":"x"}]}', 3)).toEqual([{ i: 1, why: 'тохирно' }]);
     expect(parsePicks('биш', 3)).toEqual([]);
   });
   it('ээлжлэн холино', () => {
@@ -157,11 +190,11 @@ describe('mood-ийн зорилго', () => {
     const c = suggestPrompt({ mood: 'sad', hobbies: [], artists: [], liked: [], disliked: [], exclude: [], count: 5, genres: ['Рок'], favArtists: ['Adele'] })[1].content;
     expect(c).toContain('"comfort"');
     expect(c).toContain('"uplift"');
-    expect(c).toContain('must be by these artists');
-    expect(c).toContain('must be in these genres');
+    expect(c).toContain('Their favorite artists: Adele');
+    expect(c).toContain('Genres they chose: rock');
   });
   it('зорилгыг задлана', () => {
-    expect(parsePicks('{"mn":[{"i":0,"goal":"uplift","why":"x"}]}', 1)).toEqual([{ i: 0, goal: 'uplift', why: 'x' }]);
+    expect(parsePicks('{"picks":[{"i":0,"goal":"uplift","why":"x"}]}', 1)).toEqual([{ i: 0, goal: 'uplift', why: 'x' }]);
     expect(parseSuggestions('{"s":[{"t":"A","a":"B","goal":"comfort","why":""}]}', 3)[0].goal).toBe('comfort');
   });
 });

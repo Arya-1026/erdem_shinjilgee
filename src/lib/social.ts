@@ -1,6 +1,7 @@
 /* ---------- Найз, зурвас (supabase/migrations/0012_social.sql-ийн функцүүд) ----------
    Бусдын мэдээллийг зөвхөн нууцлал, блокийг шалгадаг RPC-ээр уншина. */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { translator, type Translate } from './i18n';
 import type { Audience, MoodId } from './types';
 
 export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'none';
@@ -72,15 +73,15 @@ export const noteLive = (at: string | null, now = Date.now()) => !!at && now - n
 export const isActive =(at: string | null, now = Date.now()) => !!at && now - new Date(at).getTime() < 2 * 60_000;
 
 /** Messenger маягийн богино хугацаа: «одоо», «5 мин», «3 цаг», «2 өдөр», «7 долоо хоног» */
-export function shortAgo(at: string | null, now = Date.now()) {
+export function shortAgo(at: string | null, now = Date.now(), tr: Translate = translator('mn')) {
   if (!at) return '';
   const m = Math.max(0, Math.round((now - new Date(at).getTime()) / 60_000));
-  return m < 1 ? 'одоо' : m < 60 ? `${m} мин` : m < 1440 ? `${Math.round(m / 60)} цаг` : m < 10080 ? `${Math.round(m / 1440)} өдөр` : `${Math.round(m / 10080)} долоо хоног`;
+  return m < 1 ? tr('одоо') : m < 60 ? tr('{0} мин', m) : m < 1440 ? tr('{0} цаг', Math.round(m / 60)) : m < 10080 ? tr('{0} өдөр', Math.round(m / 1440)) : tr('{0} долоо хоног', Math.round(m / 10080));
 }
 
 /** Сүүлийн mood-ийн огноог «өнөөдөр / өчигдөр / 3 өдрийн өмнө» болгоно */
-export function moodAgo(date: string | null, today: string) {
+export function moodAgo(date: string | null, today: string, tr: Translate = translator('mn')) {
   if (!date) return '';
   const d = Math.round((new Date(today + 'T12:00').getTime() - new Date(date + 'T12:00').getTime()) / 864e5);
-  return d <= 0 ? 'өнөөдөр' : d === 1 ? 'өчигдөр' : `${d} өдрийн өмнө`;
+  return d <= 0 ? tr('өнөөдөр') : d === 1 ? tr('өчигдөр') : tr('{0} өдрийн өмнө', d);
 }

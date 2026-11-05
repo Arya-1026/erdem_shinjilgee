@@ -6,6 +6,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PUBLIC = ['/login', '/auth', '/setup'];
 
 export async function proxy(request: NextRequest) {
+  // Spotify localhost-ийг зөвшөөрдөггүй, session cookie ч хаяг бүрт тусдаа тул локалд нэг л хаягаар ажиллана
+  const app = process.env.NEXT_PUBLIC_APP_URL;
+  const host = request.headers.get('host') ?? '';
+  if (app && host.startsWith('localhost') && new URL(app).hostname === '127.0.0.1') {
+    // Location ашиглаж болохгүй: Next.js 127.0.0.1-ийг localhost-той ижил гэж үзээд /login болгож хувиргадаг тул
+    // хөтөч localhost дээрээ эргэлддэг (ERR_TOO_MANY_REDIRECTS). URL.href нь < > " тэмдэгтийг кодолдог тул HTML-д аюулгүй.
+    const to = new URL(request.nextUrl.pathname + request.nextUrl.search, app).href;
+    return new Response(`<!doctype html><meta http-equiv="refresh" content="0;url=${to}"><a href="${to}">${to}</a>`, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8', Refresh: `0;url=${to}`, 'Cache-Control': 'no-store' },
+    });
+  }
+
   // .env.local-д Supabase-ийн түлхүүр алга бол бүх хуудсыг тохиргооны заавар руу шилжүүлнэ
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     if (request.nextUrl.pathname === '/setup') return NextResponse.next();
@@ -44,7 +56,8 @@ export async function proxy(request: NextRequest) {
     url.search = '';
     return NextResponse.redirect(url);
   }
-  if (data?.claims && path === '/login') {
+  // reauth: сервер session-ийг хүчингүй гэж үзсэн (lib/server/dal.ts) тул JWT хүчинтэй ч нэвтрэх хуудсыг харуулна
+  if (data?.claims && path === '/login' && !request.nextUrl.searchParams.has('reauth')) {
     const url = request.nextUrl.clone();
     url.pathname = '/home';
     return NextResponse.redirect(url);

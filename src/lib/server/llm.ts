@@ -1,4 +1,5 @@
 import 'server-only';
+import { matchesLocale, type Locale } from '@/lib/i18n';
 
 // Groq болон OpenRouter хоёулаа OpenAI-тай ижил форматтай тул нэг функцээр дуудна.
 // Эхлээд Groq (өдөрт ~1000 хүсэлт), бүтэхгүй бол OpenRouter (нөөц). Хоёулаа унавал null буцаана.
@@ -88,6 +89,20 @@ export async function polishMongolian(text: string) {
   if (!out) return text;
   const ratio = out.length / text.length;
   return ratio > 0.7 && ratio < 1.4 ? out : text;
+}
+
+const TRANSLATOR = 'Translate the text into natural, plain English. Keep the meaning, length, line breaks, emoji and any bullet points. Keep people\'s names as they are. Reply with only the translation.';
+
+/**
+ * Хэрэглэгч англи сонгосон ч загвар монголоор бичвэл (жишээ нь өмнөх яриа монгол) англи руу орчуулна.
+ * Бүтэхгүй бол null: дуудсан тал нөөц хариулт ашиглана.
+ */
+export async function ensureLocale(text: string, locale: Locale) {
+  if (matchesLocale(text, locale)) return text;
+  if (locale !== 'en') return null;
+  const r = await llmSmart([{ role: 'system', content: TRANSLATOR }, { role: 'user', content: text }], { temperature: 0.2, maxTokens: 1200, timeoutMs: 15_000 });
+  const out = r?.text.trim();
+  return out && matchesLocale(out, locale) ? out : null;
 }
 
 /**

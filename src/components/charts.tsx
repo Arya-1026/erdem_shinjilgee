@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Tooltip, XAxis, YA
 import { MOODS, WD, WD_SHORT } from '@/lib/data';
 import { scoreLevel } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { useT } from '@/components/providers/locale-provider';
 
 /* Графикийн өнгийг globals.css-ийн token-оос авна → харанхуй горимд өөрөө солигдоно */
 const AXIS = { stroke: 'var(--chart-axis)', fontSize: 11, tickLine: false, axisLine: false } as const;
@@ -13,14 +14,15 @@ const scoreLabel = (v: number) => `${v.toFixed(1)} / 5`;
 const nearestMood = (v: number) => MOODS.reduce((a, b) => (Math.abs(b.score - v) < Math.abs(a.score - v) ? b : a));
 
 function Tip({ active, payload, title }: { active?: boolean; payload?: readonly { payload?: unknown }[]; title: (p: Record<string, unknown>) => string }) {
+  const tr = useT();
   const row = payload?.[0]?.payload as Record<string, unknown> | undefined;
   if (!active || !row) return null;
   const v = row.v as number | null;
   return (
     <div className="rounded-xl border bg-popover px-3 py-2 text-sm shadow-lg">
       <div className="text-muted-foreground">{title(row)}</div>
-      <b>{v == null ? 'Бүртгэлгүй' : `${scoreLabel(v)} · ${nearestMood(v).emoji} ${nearestMood(v).label}`}</b>
-      {typeof row.n === 'number' && row.n > 0 && <div className="text-xs text-muted-foreground">{row.n} бүртгэл</div>}
+      <b>{v == null ? tr('Бүртгэлгүй') : `${scoreLabel(v)} · ${nearestMood(v).emoji} ${tr(nearestMood(v).label)}`}</b>
+      {typeof row.n === 'number' && row.n > 0 && <div className="text-xs text-muted-foreground">{tr('{0} бүртгэл', row.n)}</div>}
     </div>
   );
 }
@@ -65,7 +67,8 @@ function MoodDot({ cx, cy, payload, r }: { cx?: number; cy?: number; payload?: D
 
 /* Гаригийн хэв маяг: баганан график, Даваагаас эхэлнэ. Багана бүр дундаж сэтгэл санааныхаа өнгөтэй. */
 export function WeekdayChart({ stats }: { stats: { w: number; avg: number | null; n: number }[] }) {
-  const data = [1, 2, 3, 4, 5, 6, 0].map(w => ({ label: WD_SHORT[w], title: WD[w] + ' гараг', v: stats[w].avg, n: stats[w].n }));
+  const tr = useT();
+  const data = [1, 2, 3, 4, 5, 6, 0].map(w => ({ label: tr(WD_SHORT[w]), title: tr(WD[w]) + tr(' гараг'), v: stats[w].avg, n: stats[w].n }));
   return (
     <BarChart responsive data={data} style={{ width: '100%', height: 190 }} margin={{ top: 8, right: 8, bottom: 0, left: -24 }} accessibilityLayer>
       <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
@@ -83,16 +86,17 @@ export function WeekdayChart({ stats }: { stats: { w: number; avg: number | null
 export type CalendarMark = { id: string; emoji: string; title: string };
 
 export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTitles, fire, selected, onPick, onMark }: { year: number; month: number; today: string; avgOf: (date: string) => number | null; counts?: Record<string, number>; /** 🔥 тавих өдрүүд (бүртгэл хийсэн, идэвхтэй) */ fire?: Set<string>; marks?: Record<string, CalendarMark[]>; /** Том дэлгэцэд ажлын нэрийг (2 хүртэл) нүдэнд харуулна */ showTitles?: boolean; selected?: string; onPick?: (date: string) => void; onMark?: (id: string) => void }) {
+  const tr = useT();
   const dim = new Date(year, month + 1, 0).getDate(), off = (new Date(year, month, 1).getDay() + 6) % 7;
   const ds = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   return (
     <>
-      <div className="grid grid-cols-7 gap-1.5" role="grid" aria-label="Сарын mood календарь">
-        {['Да', 'Мя', 'Лх', 'Пү', 'Ба', 'Бя', 'Ня'].map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground">{d}</div>)}
+      <div className="grid grid-cols-7 gap-1.5" role="grid" aria-label={tr('Сарын mood календарь')}>
+        {[tr('Да'), tr('Мя'), tr('Лх'), tr('Пү'), tr('Ба'), tr('Бя'), tr('Ня')].map(d => <div key={d} className="text-center text-xs font-semibold text-muted-foreground">{d}</div>)}
         {Array.from({ length: off }, (_, i) => <div key={'e' + i} />)}
         {Array.from({ length: dim }, (_, i) => {
           const date = ds(i + 1), v = avgOf(date), em = marks?.[date] ?? [];
-          const tip = v == null ? `${date}: бүртгэлгүй` : `${date}: ${scoreLabel(v)}`;
+          const tip = v == null ? tr('{0}: бүртгэлгүй', date) : `${date}: ${scoreLabel(v)}`;
           // Тухайн өдрийн төлөвлөгөөний эможи: 3 хүртэл, үлдсэнийг +n. Хулгана аваачихад нэр нь гарна, дарвал засна.
           const label = em.length ? (
             <span className="flex flex-col items-center leading-none">
@@ -115,7 +119,7 @@ export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTit
             <div key={date} title={tip} role="gridcell" aria-selected={selected === date}
               className={cn('relative grid aspect-square place-items-center rounded-[10px] text-[.8rem]', v == null ? 'bg-background' : `lvl-${scoreLevel(v)}`,
                 date === today && 'outline-2 outline-offset-1 outline-primary', selected === date && 'ring-2 ring-foreground')}>
-              {onPick ? <button className="size-full rounded-[10px]" aria-label={`${tip}${counts?.[date] ? `, ${counts[date]} ажил` : ''}${names ? `: ${names}` : ''}`} onClick={() => onPick(date)}>{label}</button> : label}
+              {onPick ? <button className="size-full rounded-[10px]" aria-label={`${tip}${counts?.[date] ? tr(', {0} ажил', counts[date]) : ''}${names ? `: ${names}` : ''}`} onClick={() => onPick(date)}>{label}</button> : label}
               {fire?.has(date) && <span className="cal-fire pointer-events-none absolute bottom-0.5 left-1 text-[clamp(.6rem,1.5vw,.95rem)] leading-none" aria-hidden><Flame /></span>}
               {!!counts?.[date] && <span className="pointer-events-none absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-primary text-[.6rem] font-bold text-primary-foreground">{counts[date]}</span>}
             </div>
@@ -123,10 +127,10 @@ export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTit
         })}
       </div>
       <div className="mt-2.5 flex flex-wrap gap-2.5 text-xs text-muted-foreground">
-        {([[5, 'Маш сайн'], [4, 'Сайн'], [3, 'Дунд'], [2, 'Муу'], [1, 'Маш муу']] as const).map(([s, l]) => (
+        {([[5, tr('Маш сайн')], [4, tr('Сайн')], [3, tr('Дунд')], [2, tr('Муу')], [1, tr('Маш муу')]] as const).map(([s, l]) => (
           <span key={s} className="inline-flex items-center gap-1"><i className={cn('inline-block size-3 rounded', `lvl-${s}`)} />{l}</span>
         ))}
-        {fire && <span className="inline-flex items-center gap-1"><Flame /> Идэвхтэй өдөр</span>}
+        {fire && <span className="inline-flex items-center gap-1"><Flame /> {tr('Идэвхтэй өдөр')}</span>}
       </div>
     </>
   );

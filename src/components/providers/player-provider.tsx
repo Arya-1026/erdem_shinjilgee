@@ -7,6 +7,7 @@ import { embed, embedPlay, initSdk, PremiumRequired, sdk, sdkPlay, type SpState 
 import { cn } from '@/lib/utils';
 import type { MoodId } from '@/lib/types';
 import { useApp } from './app-provider';
+import { useT } from '@/components/providers/locale-provider';
 
 /* =========================================================
    ТОГЛУУЛАГЧ: хуудас солиход тасрахгүй ((app) layout дотор нэг удаа mount хийгддэг).
@@ -69,6 +70,7 @@ export function useTicker(active: boolean) {
 const MODE_KEY = 'setgel_sp_mode';
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
+  const tr = useT();
   const { profile } = useApp();
   const [queue, setQueue] = useState<Track[]>([]);
   const [idx, setIdx] = useState(0);
@@ -112,7 +114,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const playSpotify = useCallback((t: Track, at: number) => {
     sp.current = { position: at, duration: t.dur, paused: false, at: performance.now() };
-    const viaEmbed = () => embedPlay(hostIn(embedWrap, embedHost), t.uri!, at, onSpState).catch(() => toast.error('Spotify тоглуулагч ачаалагдсангүй'));
+    const viaEmbed = () => embedPlay(hostIn(embedWrap, embedHost), t.uri!, at, onSpState).catch(() => toast.error(tr('Spotify тоглуулагч ачаалагдсангүй')));
     // Spotify холбоогүй хэрэглэгч SDK-гийн токенгүй: сонголтоо хадгалахгүй, дараа нь холбовол бүтэн тоглоно
     if (live.current.spMode === 'embed' || !connected.current) return void viaEmbed();
     initSdk(onSpState).then(() => sdkPlay(t.uri!, at)).catch(e => {
@@ -120,10 +122,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(MODE_KEY, 'embed');
       live.current.spMode = 'embed';
       setSpMode('embed');
-      if (e instanceof PremiumRequired) toast('Spotify Premium биш тул Spotify embed-ээр тоглуулж байна');
+      if (e instanceof PremiumRequired) toast(tr('Spotify Premium биш тул Spotify embed-ээр тоглуулж байна'));
       void viaEmbed();
     });
-  }, [onSpState, hostIn]);
+  }, [onSpState, hostIn, tr]);
 
   const startAt = useCallback((q: Track[], i: number, at: number) => {
     const t = q[i]; if (!t) return;
@@ -228,13 +230,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       {children}
       {/* Spotify Embed: DOM-д байнга байна (iframe дахин ачаалагдахгүй), шаардлагагүй үед дэлгэцээс гадна */}
       <div className={cn('embed-bar fixed z-36 flex items-center gap-1 rounded-2xl bg-[#121212] p-1 shadow-[0_10px_30px_rgba(0,0,0,.3)]', !usesSpEmbed && 'embed-off', full && 'z-56')}
-        aria-hidden={!usesSpEmbed} role="region" aria-label="Spotify тоглуулагч">
+        aria-hidden={!usesSpEmbed} role="region" aria-label={tr('Spotify тоглуулагч')}>
         <div ref={embedWrap} className="h-20 min-w-0 flex-1 overflow-hidden rounded-xl" />
         <div className="flex flex-col">
-          <button className="grid size-9 place-items-center text-white" aria-label="Дараах" onClick={() => skip(1)}>⏭</button>
-          <button className="grid size-9 place-items-center text-white" aria-label="Дараалал" onClick={() => setFull(!full)}>☰</button>
+          <button className="grid size-9 place-items-center text-white" aria-label={tr('Дараах')} onClick={() => skip(1)}>⏭</button>
+          <button className="grid size-9 place-items-center text-white" aria-label={tr('Дараалал')} onClick={() => setFull(!full)}>☰</button>
         </div>
-        <button className="grid size-9 place-items-center self-start text-white/70" aria-label="Хаах" onClick={stop}>✕</button>
+        <button className="grid size-9 place-items-center self-start text-white/70" aria-label={tr('Хаах')} onClick={stop}>✕</button>
       </div>
     </Ctx>
   );

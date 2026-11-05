@@ -1,0 +1,55 @@
+group,label,text
+cyr_direct,1,Би үхмээр байна
+cyr_direct,1,Амиа хорломоор санагдаад байна
+cyr_direct,1,Өөрийгөө гэмтээмээр байна
+cyr_direct,1,Өөрийгөө алмаар байна
+cyr_direct,1,Амьдрах хүсэл алга
+cyr_direct,1,Амьдрах хүсэл байхгүй болсон
+cyr_direct,1,Амьдрахыг хүсэхгүй байна
+cyr_direct,1,Алга болмоор байна
+cyr_direct,1,Бүх юм дуусаасай гэж бодогдоод байна
+cyr_direct,1,Амиа хорлох тухай бодоод байна
+cyr_para,1,Үхчихмээр байна
+cyr_para,1,Үхье гэж бодож байна
+cyr_para,1,Энэ амьдралаас явмаар байна
+cyr_para,1,Амиа егүүтгэмээр байна
+cyr_para,1,Амьдрах хэрэггүй юм шиг санагдаж байна
+cyr_para,1,Намайг байхгүй бол бүгдэд дээр байх
+cyr_para,1,Өөрийгөө зүсмээр байна
+cyr_para,1,Дахиж сэрэхгүй унтмаар байна
+cyr_para,1,Өөртөө гар хүрмээр байна
+cyr_para,1,Цаашид амьдрах утга алга
+cyr_para,1,Амьдармааргүй байна
+cyr_para,1,Амьдралаа дуусгамаар байна
+lat,1,bi uhmeer baina
+lat,1,uhmeer bn
+lat,1,amia horlomoor baina
+lat,1,amia horlmoor sanagdaad bn
+lat,1,uuriiguu gemteemeer baina
+lat,1,amidrah husel alga
+lat,1,amidarmaargui bn
+lat,1,alga bolmoor baina
+lat,1,buh yum duusaasai
+lat,1,uhchimeer bn
+lat,1,uuriigee alamaar bn
+lat,1,ene amidralaas yavmaar bn
+neg_cyr,0,Өнөөдөр үнэхээр ядарч байна
+neg_cyr,0,Шалгалтаасаа айгаад байна
+neg_cyr,0,Инээгээд үхлээ
+neg_cyr,0,Ичээд үхмээр байна
+neg_cyr,0,Өлсөөд үхэх нь ээ
+neg_cyr,0,Хичээлээ өөрийгөө албадаж хийлээ
+neg_cyr,0,Өөрийгөө алдаршуулах сонирхолгүй
+neg_cyr,0,Тэр дуулаад өөрийгөө алдчихлаа
+neg_cyr,0,Киноны баатар амиа хорлосон тухай уншлаа
+neg_cyr,0,Шалгалт дуусаасай гэж хүлээж байна
+neg_cyr,0,Амьдрах орчноо цэвэрлэлээ
+neg_cyr,0,Сэтгэл зүйчтэй уулзмаар байна
+neg_cyr,0,Найзтайгаа муудалцсан
+neg_cyr,0,Ажил их байгаад стресс авч байна
+neg_cyr,0,Унтмаар байна ядарлаа
+neg_lat,0,ineegeed uhlee
+neg_lat,0,yadarch baina
+neg_lat,0,shalgaltaasaa aigaad bn
+neg_lat,0,naiztaigaa muudaltssan
+neg_lat,0,untmaar baina

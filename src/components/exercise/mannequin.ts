@@ -24,6 +24,8 @@ export type Rig = {
 };
 
 export function buildMannequin(): Rig {
+  // Цамц хэрэглэгчийн сонгосон өнгөөр
+  const top = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || TOP;
   const mats = new Map<Region, THREE.MeshStandardMaterial[]>();
   const mat = (color: string, region: Region) => {
     const m = new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.02, emissive: GLOW, emissiveIntensity: 0 });
@@ -31,7 +33,7 @@ export function buildMannequin(): Rig {
     return m;
   };
   const skinLeg = mat(SKIN, 'legs'), skinArm = mat(SKIN, 'arms'), skinHead = mat(SKIN, 'head');
-  const shirt = mat(TOP, 'core'), sleeve = mat(TOP, 'shoulders'), shorts = mat(SHORTS, 'core'), shoe = mat(SHOE, 'legs');
+  const shirt = mat(top, 'core'), sleeve = mat(top, 'shoulders'), shorts = mat(SHORTS, 'core'), shoe = mat(SHOE, 'legs');
   const hair = new THREE.MeshStandardMaterial({ color: HAIR, roughness: 0.8 });
 
   const mesh = (geo: THREE.BufferGeometry, m: THREE.Material, parent: THREE.Object3D, pos?: [number, number, number], scale?: [number, number, number]) => {

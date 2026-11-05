@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { BOOKING_COLS } from '@/lib/db';
 import { weekdayOf } from '@/lib/date';
 import { sendBookingConfirmation, sendExpertNotice } from '@/lib/server/email';
+import { requestLocale } from '@/lib/server/locale';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
 
   const info = { expert: expert.name, date, slot: b.slot, kind: b.kind };
   const { data: profile } = await supabase.from('profiles').select('name,email').eq('id', user.id).single();
-  if (profile?.email) await sendBookingConfirmation(profile.email, profile.name, info);
+  if (profile?.email) await sendBookingConfirmation(profile.email, profile.name, info, await requestLocale());
 
   // Сэтгэл зүйч портал-тай бол түүнд ч мэдэгдэнэ
   if (process.env.SUPABASE_SECRET_KEY) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isMoodId } from '@/lib/data';
 import { isMusicKind } from '@/lib/music-suggest';
+import { requestLocale } from '@/lib/server/locale';
 import { songRecs } from '@/lib/server/music-recs';
 import { createClient } from '@/lib/supabase/server';
 
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   const kindParam = url.searchParams.get('kind') ?? 'song';
   if (!isMusicKind(kindParam)) return NextResponse.json({ error: 'invalid kind' }, { status: 400 });
   try {
-    return NextResponse.json(await songRecs(supabase, user.id, mood, url.searchParams.get('refresh') === '1', kindParam), { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json(await songRecs(supabase, user.id, mood, url.searchParams.get('refresh') === '1', kindParam, await requestLocale()), { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     console.error('[music] recs', e);
     return NextResponse.json({ error: 'failed' }, { status: 502 });

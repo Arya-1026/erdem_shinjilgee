@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useT } from '@/components/providers/locale-provider';
 
 export type MenuItem = { label: string; onSelect: () => void; danger?: boolean } | false | null | undefined;
 
@@ -9,7 +10,8 @@ const GAP = 4, PAD = 8;
 
 /* «⋯» товч: дарахад үйлдлийн жагсаалт гарна. Гадна дарах, Esc, гүйлгэхэд хаагдана.
    Цэс position:fixed тул гүйлгэдэг жагсаалт (overflow) дотор хавчигдахгүй. Доор зай хүрэхгүй бол дээшээ нээгдэнэ. */
-export function ActionMenu({ items, label = 'Үйлдэл', className, align = 'right' }: { items: MenuItem[]; label?: string; className?: string; align?: 'left' | 'right' }) {
+export function ActionMenu({ items, label, className, align = 'right' }: { items: MenuItem[]; label?: string; className?: string; align?: 'left' | 'right' }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -48,7 +50,7 @@ export function ActionMenu({ items, label = 'Үйлдэл', className, align = '
   const list = items.filter(Boolean) as Exclude<MenuItem, false | null | undefined>[];
   return (
     <div ref={box} className={cn('relative flex-none', className)}>
-      <button ref={btn} type="button" aria-label={label} aria-haspopup="menu" aria-expanded={open}
+      <button ref={btn} type="button" aria-label={label ?? tr('Үйлдэл')} aria-haspopup="menu" aria-expanded={open}
         className="grid size-9 place-items-center rounded-full text-lg text-muted-foreground hover:bg-secondary"
         onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(o => !o); }}>⋯</button>
       {open && (

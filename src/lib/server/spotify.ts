@@ -22,8 +22,12 @@ export const redirectUri = () => `${appUrl()}/api/spotify/callback`;
 export const spotifyConfigured = () => Boolean(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET && tokenKeyConfigured());
 
 export class SpotifyError extends Error {
-  constructor(public status: number, msg: string) { super(msg); }
+  /** retryAfterSec: 429 үед Spotify-ийн хэлсэн хүлээх хугацаа */
+  constructor(public status: number, msg: string, public retryAfterSec?: number) { super(msg); }
 }
+
+/** Үүнээс удаан Retry-After бол хүлээлгүй шууд алдаа шиднэ: квот дууссан үед хэдэн цаг хүртэл үргэлжилдэг */
+const MAX_WAIT_SEC = 10;
 
 const basicAuth = () => 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64');
 
@@ -50,15 +54,16 @@ async function tokenRequest(body: Record<string, string>): Promise<TokenRes> {
 
 export const exchangeCode = (code: string) => tokenRequest({ grant_type: 'authorization_code', code, redirect_uri: redirectUri() });
 
-/** Spotify Web API дуудлага. 429 үед Retry-After хүлээгээд нэг удаа давтана. */
+/** Spotify Web API дуудлага. 429 үед богино Retry-After-ийг хүлээгээд нэг удаа давтана, урт бол шууд алдаа шиднэ. */
 export async function api<T>(token: string, path: string, init?: RequestInit, retry = true): Promise<T> {
   const res = await fetch(path.startsWith('http') ? path : API + path, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...init?.headers },
     signal: AbortSignal.timeout(15_000),
   });
-  if (res.status === 429 && retry) {
-    const wait = Math.min(10, Number(res.headers.get('retry-after') ?? 2));
+  if (res.status === 429) {
+    const wait = Number(res.headers.get('retry-after')) || 2;
+    if (!retry || wait > MAX_WAIT_SEC) throw new SpotifyError(429, `${path}: rate limited`, wait);
     await new Promise(r => setTimeout(r, wait * 1000));
     return api<T>(token, path, init, false);
   }

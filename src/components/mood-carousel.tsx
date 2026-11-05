@@ -9,13 +9,14 @@ import type { Mood } from '@/lib/types';
 import CircularCarousel from './circular-carousel';
 import { FaceSVG } from './mood-face';
 import { useApp } from './providers/app-provider';
+import { useT } from './providers/locale-provider';
 
 const N = MOODS.length;
 const ARROWS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End']);
 
 /** CircularCarousel зөвхөн зураг харуулдаг тул mood-ийн картыг SVG зураг болгоно:
  *  өнгөт дэвсгэр + өөрийн зураг / 2D дүр / emoji + нэр */
-function cardSrc(m: Mood, art: string, img?: string) {
+function cardSrc(m: Mood, label: string, art: string, img?: string) {
   const face = img
     ? `<clipPath id="c"><circle cx="220" cy="190" r="118"/></clipPath><image href="${img}" x="102" y="72" width="236" height="236" clip-path="url(#c)" preserveAspectRatio="xMidYMid slice"/>`
     : art === 'art'
@@ -25,7 +26,7 @@ function cardSrc(m: Mood, art: string, img?: string) {
         : `<text x="220" y="262" font-size="200" text-anchor="middle">${m.emoji}</text>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" width="440" height="440">`
     + `<rect width="440" height="440" fill="${m.color}"/><circle cx="220" cy="190" r="130" fill="#fff" opacity=".35"/>${face}`
-    + `<text x="220" y="392" font-family="Nunito, 'Segoe UI', sans-serif" font-size="48" font-weight="800" fill="#2B2724" text-anchor="middle">${m.label}</text></svg>`;
+    + `<text x="220" y="392" font-family="Nunito, 'Segoe UI', sans-serif" font-size="48" font-weight="800" fill="#2B2724" text-anchor="middle">${label}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
@@ -33,6 +34,7 @@ function cardSrc(m: Mood, art: string, img?: string) {
    Хэрэглэгч хөндөх хүртэл өөрөө эргэнэ. Хөндсөний дараа эргэлт зогсож сонголт нь хэвээр үлдэнэ. */
 export function MoodCarousel({ index, onChange }: { index: number; onChange: (i: number, byUser: boolean) => void }) {
   const { profile } = useApp();
+  const tr = useT();
   // Carousel 0-р картаас эхэлдэг тул эхний mood урд ирэхээр жагсаалтыг эргүүлнэ
   const [start] = useState(index);
   const [auto, setAuto] = useState(true);
@@ -41,8 +43,8 @@ export function MoodCarousel({ index, onChange }: { index: number; onChange: (i:
 
   const items = useMemo(() => Array.from({ length: N }, (_, k) => {
     const m = MOODS[(start + k) % N];
-    return { src: cardSrc(m, profile.art_mode, profile.mood_images?.[m.id]), alt: m.label, title: m.label };
-  }), [start, profile.art_mode, profile.mood_images]);
+    return { src: cardSrc(m, tr(m.label), profile.art_mode, profile.mood_images?.[m.id]), alt: tr(m.label), title: tr(m.label) };
+  }), [start, profile.art_mode, profile.mood_images, tr]);
 
   return (
     <>

@@ -1295,7 +1295,22 @@ grant execute on function public.my_friends() to authenticated;
 
 notify pgrst, 'reload schema';
 
--- >>>>>>>>>> 0017_block_keeps_friends.sql
+-- >>>>>>>>>> 0017_theme_colors.sql
+-- =========================================================
+-- 0017: Апп-ын өнгө: градиент, гүн тод, өөрийн өнгө (custom:#rrggbb эсвэл custom:#rrggbb:#rrggbb)
+-- =========================================================
+alter table public.profiles drop constraint if exists profiles_theme_check;
+alter table public.profiles add constraint profiles_theme_check
+  check (theme ~ '^([a-z]{3,20}|custom:#[0-9a-f]{6}(:#[0-9a-f]{6})?)$');
+
+-- >>>>>>>>>> 0018_language.sql
+-- =========================================================
+-- 0018: Апп-ын хэл (mn, en). Имэйл, push зэрэг серверээс илгээх бичвэрт хэрэглэнэ.
+-- null: хэрэглэгч хэлээ хараахан сонгоогүй.
+-- =========================================================
+alter table public.profiles add column if not exists language text check (language in ('mn', 'en'));
+
+-- >>>>>>>>>> 0019_block_keeps_friends.sql
 -- Блоклоход найзын холбоог устгахгүй: блок цуцлахад найз хэвээр үлдэнэ.
 -- Блоклогдсон хооронд найз гэж тооцогдохгүй (is_friend → false), жагсаалт, тоонд харагдахгүй.
 

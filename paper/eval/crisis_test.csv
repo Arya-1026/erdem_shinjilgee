@@ -1,0 +1,44 @@
+group,label,text
+test_cyr,1,Амьдрахаас залхлаа
+test_cyr,1,Би энэ ертөнцөөс явмаар байна
+test_cyr,1,Амиа хорлоод бүх зүйл дуусна
+test_cyr,1,Надад амьдрах шалтгаан үлдсэнгүй
+test_cyr,1,Ямар ч утгагүй амиа хорлоё
+test_cyr,1,Өөрийгөө шатаамаар байна
+test_cyr,1,Гараа зүссэн
+test_cyr,1,Дэндүү их эм уумаар байна
+test_cyr,1,Бүгдээс салж явмаар байна
+test_cyr,1,Өөрийгөө үзэн ядаж үхмээр санагдаж байна
+test_cyr,1,Үхэхээс өөр гарцгүй
+test_cyr,1,Маргааш сэрэхгүй байгаасай
+test_lat,1,amidrahaas zalhlaa
+test_lat,1,ene yertontsoos yavmaar bn
+test_lat,1,amia horloy
+test_lat,1,amidrah shaltgaan alga
+test_lat,1,bi uhmeer sanagdaad bgaa
+test_lat,1,garaa zuschihlee
+test_lat,1,uhehees uur gartsgui
+test_lat,1,margaash serehgui baigaasai
+test_lat,1,ooriigoo alna
+test_lat,1,uhsen deer
+test_lat,1,buh yum duusaasai gej bodood bn
+test_lat,1,dahij sereh hereggui
+test_neg_cyr,0,Ээжийн минь найз өнгөрчээ
+test_neg_cyr,0,Амиа бодсон хүн шиг аашилж байна
+test_neg_cyr,0,Цаг алга болчихлоо
+test_neg_cyr,0,Тоглоомд алуулчихлаа
+test_neg_cyr,0,Хичээлээ дуусгамаар байна
+test_neg_cyr,0,Амьдрах чадвар сайжирлаа
+test_neg_cyr,0,Өөрөө алхаад ирлээ
+test_neg_cyr,0,Үхлийн аюул кино үзлээ
+test_neg_cyr,0,Сэтгэл санаа муу байна
+test_neg_cyr,0,Бүх ажил дуусаасай гэж хүсэж байна
+test_neg_cyr,0,Би ядарч үхэх нь
+test_neg_lat,0,tsag alga bolchihloo
+test_neg_lat,0,togloomd aluulchihlaa
+test_neg_lat,0,hicheelee duusgamaar bn
+test_neg_lat,0,uuruu alhaad irlee
+test_neg_lat,0,buh ajil duusaasai
+test_neg_lat,0,setgel sanaa muu bn
+test_neg_lat,0,lan togloy
+test_neg_lat,0,untahgui uzeh gej bn

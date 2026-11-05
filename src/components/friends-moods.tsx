@@ -8,6 +8,7 @@ import { MoodHalo, NoteBubble } from '@/components/note-bubble';
 import { NoteEditor } from '@/components/note-editor';
 import { PersonAvatar } from '@/components/person-avatar';
 import { useApp } from '@/components/providers/app-provider';
+import { useT } from '@/components/providers/locale-provider';
 import { today } from '@/lib/date';
 import { moodAgo, noteLive, social, type FriendRow } from '@/lib/social';
 
@@ -16,6 +17,7 @@ const firstName = (n: string) => n.split(/[\s.]+/).filter(Boolean).pop() ?? n;
 /* Нүүр хуудас: найзууд маань ямар сэтгэл санаатай байна (аватарын дээрх бөмбөлөг).
    Чат, зурвас байхгүй. Найз нэмэх, хүсэлт, блок нь профайлын «Найзууд» цонхонд. */
 export function FriendsMoods() {
+  const tr = useT();
   const { supabase, profile, entries } = useApp();
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -41,18 +43,18 @@ export function FriendsMoods() {
   return (
     <section className="card-x mt-4" aria-labelledby="friends-moods">
       <div className="flex items-center justify-between gap-2">
-        <h3 id="friends-moods" className="font-semibold">👥 Найзууд маань ямар байна?</h3>
-        <button type="button" className="text-sm font-semibold text-primary" onClick={() => setSheet(true)}>Найзууд</button>
+        <h3 id="friends-moods" className="font-semibold">{tr('👥 Найзууд маань ямар байна?')}</h3>
+        <button type="button" className="text-sm font-semibold text-primary" onClick={() => setSheet(true)}>{tr('Найзууд')}</button>
       </div>
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pt-[50px] pb-1 no-scrollbar">
         {/* Өөрийн аватар дээр дарж бодол (Messenger-ийн Note шиг) хуваалцана */}
-        <button type="button" onClick={() => setNoteOpen(true)} aria-label={myNote ? 'Бодлоо засах' : 'Бодол хуваалцах'}
+        <button type="button" onClick={() => setNoteOpen(true)} aria-label={myNote ? tr('Бодлоо засах') : tr('Бодол хуваалцах')}
           className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
           <span className="relative">
-            <NoteBubble mood={myMood} sub={mySub} placeholder="＋ Бодол…" />
+            <NoteBubble mood={myMood} sub={mySub} placeholder={tr('＋ Бодол…')} />
             <MoodHalo mood={myMood}><Avatar className="size-14 text-xl ring-2 ring-card" /></MoodHalo>
           </span>
-          <span className="w-full truncate text-xs text-muted-foreground">Та</span>
+          <span className="w-full truncate text-xs text-muted-foreground">{tr('Та')}</span>
         </button>
         {list.map(f => {
           const fm = f.note_mood ?? f.mood;
@@ -70,7 +72,7 @@ export function FriendsMoods() {
         {friends !== null && !friends.length && (
           <button type="button" onClick={() => setSheet(true)} className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
             <span className="grid size-[72px] place-items-center rounded-full border-2 border-dashed border-primary text-2xl text-primary">＋</span>
-            <span className="w-full truncate text-xs text-primary">Найз нэмэх</span>
+            <span className="w-full truncate text-xs text-primary">{tr('Найз нэмэх')}</span>
           </button>
         )}
       </div>

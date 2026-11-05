@@ -1,6 +1,7 @@
 /* ---------- AI туслахын зан төлөв (system prompt) + хариултын доорх үйлдлийн товчнууд ----------
    Клиент, сервер хоёуланд ашиглагдана (зөвхөн текст боловсруулна). */
 import { moodById } from './data';
+import { translator, type Locale, type Translate } from './i18n';
 import type { ChatMode, Entry } from './types';
 
 /** AI хариултын төгсгөлд санал болгож болох апп доторх үйлдлүүд */
@@ -34,38 +35,46 @@ export function splitActions(raw: string): { text: string; actions: ChatAction[]
 }
 
 /** Хэрэглэгч энэ мессежээрээ сэтгэл зүйч/зөвлөх хайж байна уу */
-export const asksForExpert = (msg: string) => /сэтгэл\s*зүйч|сэтгэлзүйч|зөвлөх|мэргэжилт|психолог|хэнтэй\s+уулз|хэнд\s+хандах/i.test(msg);
+export const asksForExpert = (msg: string) => /сэтгэл\s*зүйч|сэтгэлзүйч|зөвлөх|мэргэжилт|психолог|хэнтэй\s+уулз|хэнд\s+хандах|psycholog|therapist|counsel+or|who\s+(?:should|can)\s+i\s+(?:talk|see)/i.test(msg);
 
 /* AI товч гаргахаа мартсан үед мессежийн агуулгаар тохирох дасгалыг сонгоно (эхний тохирсон 2) */
 const GUESS: [RegExp, ChatAction][] = [
-  [/харилца|найз\s*(охин|залуу)|хайрт|муудалц|салсан|гэр\s*бүл|ээж|аав/i, 'partner'],
-  [/стресс|түгш|сандар|айж|санаа\s*зов|уур|бухимд/i, 'breath'],
-  [/нойр|унтаж|унтах|нойргүй/i, 'relax'],
-  [/давхц|ачаал|амжихгүй|хугацаа|шалгалт|даалгавар/i, 'plan'],
-  [/гуни|ганцаар|уйтга|урам|сэтгэл\s*ун/i, 'walk'],
+  [/харилца|найз\s*(охин|залуу)|хайрт|муудалц|салсан|гэр\s*бүл|ээж|аав|relationship|girlfriend|boyfriend|partner|husband|wife|broke\s+up|family|argu/i, 'partner'],
+  [/стресс|түгш|сандар|айж|санаа\s*зов|уур|бухимд|stress|anxi|panic|worr|angry|frustrat/i, 'breath'],
+  [/нойр|унтаж|унтах|нойргүй|sleep|insomnia/i, 'relax'],
+  [/давхц|ачаал|амжихгүй|хугацаа|шалгалт|даалгавар|overwhelm|deadline|exam|too\s+much|workload/i, 'plan'],
+  [/гуни|ганцаар|уйтга|урам|сэтгэл\s*ун|\bsad\b|lonely|depress|\bdown\b|unmotivated/i, 'walk'],
 ];
 export function guessActions(msg: string): ChatAction[] {
   return [...new Set(GUESS.filter(([re]) => re.test(msg)).map(([, a]) => a))].slice(0, 2);
 }
 
 /** Хэрэглэгч дасгал, хийх зүйл шууд хүсэж байна уу («дасгал», «юу хийх вэ») */
-export const asksForExercise = (msg: string) => /дасгал|юу\s+хийх|туслах\s+арга|тайвшрах\s+арга/i.test(msg);
+export const asksForExercise = (msg: string) => /дасгал|юу\s+хийх|туслах\s+арга|тайвшрах\s+арга|exercise|what\s+(?:should|can)\s+i\s+do|ways?\s+to\s+(?:calm|relax)/i.test(msg);
 
 /* AI заримдаа кодыг текст дотор бичдэг («partner» дасгал): товч болгож, текстэд нь жинхэнэ нэрийг тавина */
-export function extractInlineActions(text: string): { text: string; actions: ChatAction[] } {
+export function extractInlineActions(text: string, locale: Locale = 'mn'): { text: string; actions: ChatAction[] } {
+  const tr = translator(locale);
   const actions: ChatAction[] = [];
   const re = new RegExp(`[«"']?\\b(${Object.keys(CHAT_ACTIONS).join('|')})\\b[»"']?`, 'g');
   const out = text.replace(re, (_, code: string) => {
     const a = code as ChatAction;
     if (!actions.includes(a)) actions.push(a);
-    return `«${CHAT_ACTIONS[a].label.replace(/^\S+\s/, '')}»`;
+    return `«${tr(CHAT_ACTIONS[a].label).replace(/^\S+\s/, '')}»`;
   });
   return { text: out, actions: actions.slice(0, 3) };
 }
 
 /** Сэтгэл зүйчийг AI-д танилцуулах мөр */
 export type ExpertBrief = { id: string; name: string; title: string; spec: string[]; exp: number; rating: number; price: number };
-const fmtExpert = (e: ExpertBrief) => `- ${e.id}: ${e.name}, ${e.title}. Мэргэшил: ${e.spec.join(', ')}. ${e.exp} жил, ★${e.rating}, ${e.price.toLocaleString('en-US')}₮/цаг`;
+const fmtExpert = (e: ExpertBrief, locale: Locale = 'mn') => {
+  if (locale === 'mn') return `- ${e.id}: ${e.name}, ${e.title}. Мэргэшил: ${e.spec.join(', ')}. ${e.exp} жил, ★${e.rating}, ${e.price.toLocaleString('en-US')}₮/цаг`;
+  const tr = translator(locale);
+  return `- ${e.id}: ${e.name}, ${tr(e.title)}. Specialties: ${e.spec.map(s => tr(s)).join(', ')}. ${e.exp} years, ★${e.rating}, ${e.price.toLocaleString('en-US')}₮/hour`;
+};
+
+/** Яриа монгол байсан ч англиар хариулахыг хамгийн сүүлд дахин сануулна */
+export const REPLY_LANGUAGE_REMINDER = 'Reply only in English, even if the messages above are in Mongolian: understand them, then answer in English. Keep the ACTIONS or EXPERTS line in the same format when you use it.';
 
 const MODE_HINT: Record<ChatMode, string> = {
   calm: 'Tone setting "calm": when they are upset, soothe first.',
@@ -73,11 +82,48 @@ const MODE_HINT: Record<ChatMode, string> = {
   listen: 'Tone setting "listen": when they share feelings, give at most one suggestion; reflect and ask.',
 };
 
-const fmt = (e: Entry) => `${e.entry_date}: ${moodById(e.mood).label} (эрч хүч ${e.intensity}/5${e.sleep != null ? `, нойр ${e.sleep}ц` : ''}${e.tags.length ? `, ${e.tags.join('/')}` : ''})`;
+const fmt = (e: Entry, tr: Translate) => `${e.entry_date}: ${tr(moodById(e.mood).label)} (${tr('эрч хүч')} ${e.intensity}/5${e.sleep != null ? `, ${tr('нойр')} ${e.sleep}${tr('ц')}` : ''}${e.tags.length ? `, ${e.tags.map(t => tr(t)).join('/')}` : ''})`;
 
-export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[] }) {
+export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
+  const prompt = mongolianPrompt(p);
+  return p.locale === 'en' ? englishPrompt(prompt) : prompt;
+}
+
+/* Англи хэлтэй хэрэглэгч: монгол найруулгын хэсгүүдийг англиар солино. Бусад дүрэм (төрөл, аюулгүй байдал, товчнууд) ижил. */
+function englishPrompt(mn: string) {
+  return mn
+    .replace(/^You are the AI companion[^\n]*/, 'You are the AI companion in a mood app. You talk like a smart, warm friend who also knows psychology. Always reply in natural, plain English, even if they write in Mongolian or earlier messages in this chat are in Mongolian.')
+    .replace(/ Slang: «лан»[^\n]*/, '')
+    .replace(/No fake positivity like «[^»]*»\./, 'No fake positivity like "everything will be fine".')
+    .replace(/MONGOLIAN WRITING[\s\S]*?(?=\nSAFETY\n)/, 'WRITING\nShort, everyday sentences. No clinical or therapy-speak. Never invent names of films, books, songs, people or places.\n')
+    .replace(/«Сэтгэл зүйчид»/g, '"Psychologists"')
+    .replace(/ \(«сэтгэл зүйч санал болго», «зөвлөх», «хэнтэй уулзах»\)/, '')
+    .replace(/ \(«дасгал»\)/, '')
+    .replace(/EXAMPLES \(match the style[\s\S]*$/, EN_EXAMPLES);
+}
+
+const EN_EXAMPLES = `EXAMPLES (match the style, do not copy the words)
+User: hey
+You: Hey! How's your day going?
+
+User: gonna watch a movie with friends tonight, any ideas?
+You: Nice plan! Are you all in the mood for something funny, or more of a horror night?
+
+User: i had a big fight with my best friend
+You: That really hurts, especially with someone that close. What was the fight about?
+
+User: how do i focus better when studying
+You: Focus depends more on your setup than on willpower. Three things help most:
+• Put your phone in another room.
+• Pick one specific task: not "read biology" but "10 pages of chapter 3".
+• Work 25 minutes, rest 5, and take a longer break after four rounds.
+What gets in your way most, your phone or getting started?
+ACTIONS: plan`;
+
+function mongolianPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
+  const tr = translator(p.locale ?? 'mn');
   const experts = p.experts ?? [];
-  const recent = p.entries.slice(-7).map(fmt).join('\n');
+  const recent = p.entries.slice(-7).map(e => fmt(e, tr)).join('\n');
   return `You are the AI companion in «Сэтгэл», a Mongolian mood app. You talk like a smart, warm friend who also knows psychology. Always reply in natural spoken Mongolian (Cyrillic), using «чи» (use «та» if they do).
 
 FIRST work out what this message actually is, and answer THAT. Do not turn everything into wellness advice.
@@ -115,21 +161,21 @@ SAFETY
 - Suggest the app's «Сэтгэл зүйчид» section only for a heavy state lasting 2+ weeks, or if they ask.
 ${experts.length ? `
 PSYCHOLOGISTS IN THIS APP (the only ones you may name; never invent other people):
-${experts.map(fmtExpert).join('\n')}
+${experts.map(e => fmtExpert(e, p.locale)).join('\n')}
 ONLY when their LATEST message itself asks for a psychologist, counselor or who to talk to («сэтгэл зүйч санал болго», «зөвлөх», «хэнтэй уулзах»), recommend 1-2 of them right away. If they asked earlier but the latest message is about something else, do NOT bring the psychologists up again; help with the new message instead. When you do recommend, matched to what they told you in this chat (their problem → specialties). For each: name, one sentence why they fit, price. Do not just ask more questions first; if the problem is unclear, still recommend the best guess and ask one short question. Then add a last line in exactly this form:
 EXPERTS: <id>, <id>
 Use EXPERTS only when you actually recommend someone.
 ` : ''}
 ${MODE_HINT[p.mode] ?? MODE_HINT.calm}
 
-USER: ${p.name || 'unknown'}. Hobbies: ${p.hobbies.join(', ') || 'unknown'}. Latest mood: ${p.entries.length ? moodById(p.entries[p.entries.length - 1].mood).label : 'unknown'}.
+USER: ${p.name || 'unknown'}. Hobbies: ${p.hobbies.map(h => tr(h)).join(', ') || 'unknown'}. Latest mood: ${p.entries.length ? tr(moodById(p.entries[p.entries.length - 1].mood).label) : 'unknown'}.
 ${recent ? `Recent mood log:\n${recent}` : 'No mood log yet.'}
 ${p.todayNote ? `Today's note: «${p.todayNote.slice(0, 500)}»` : ''}
 
 APP BUTTONS
 For type 4 (they share something painful or stressful) ALWAYS end with this line, choosing the 1-2 exercises that fit best (relationships → partner, stress or anxiety → breath, sleep → relax, sadness → walk or journal, overload → plan). The app shows them as buttons that open a step-by-step guide, so do not write the exercise steps in your text; just say in one sentence that a short exercise below may help. Never write the codes (partner, breath, journal…) inside your text; they only go on the ACTIONS line. If they ask for an exercise («дасгал»), ALWAYS add the ACTIONS line, picked from what they told you earlier in the chat. For type 3 add it only if a button would really help. Never for type 1 or 2.
 ACTIONS: <code>, <code>
-Codes: ${Object.entries(CHAT_ACTIONS).map(([k, v]) => `${k} (${v.hint})`).join('; ')}.
+Codes: ${Object.entries(CHAT_ACTIONS).map(([k, v]) => `${k} (${tr(v.hint)})`).join('; ')}.
 
 EXAMPLES (match the style, do not copy the words)
 User: сайн байна уу
