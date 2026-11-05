@@ -1,4 +1,4 @@
-import { moodById } from '@/lib/data';
+import { MoodEmoji } from '@/components/mood-emoji';
 import type { MoodId } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -10,7 +10,7 @@ export function PersonAvatar({ name, avatar, mood, className }: { name: string; 
         // eslint-disable-next-line @next/next/no-img-element -- data URL
         ? <img src={avatar} alt="" className="size-full rounded-full object-cover" />
         : name[0] || '?'}
-      {mood && <span className="absolute -right-1 -bottom-1 grid size-[45%] min-w-5 place-items-center rounded-full bg-card text-[clamp(.7rem,40%,1.2rem)] leading-none shadow" title={moodById(mood).label}>{moodById(mood).emoji}</span>}
+      {mood && <span className="absolute -right-1 -bottom-1 grid size-[45%] min-w-5 place-items-center rounded-full bg-card text-[clamp(.7rem,40%,1.2rem)] leading-none shadow"><MoodEmoji mood={mood} /></span>}
     </span>
   );
 }

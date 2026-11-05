@@ -65,6 +65,10 @@ export type Profile = {
   friends_visibility: Audience;
   /** Найзууддаа «идэвхтэй» ногоон цэгээ харуулах */
   show_active: boolean;
+  /** Бодол (Messenger-ийн Note шиг): найзуудад 24 цаг харагдана */
+  note_text: string | null;
+  note_mood: MoodId | null;
+  note_at: string | null;
 };
 
 /** Нууцлалын түвшин: хэнд зөвшөөрөх */

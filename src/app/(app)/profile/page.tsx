@@ -24,7 +24,13 @@ import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // Сервер дээр theme тодорхойгүй тул hydration-ий дараа л switch-ийг харуулна
-const useMounted = () => useSyncExternalStore(() => () => {}, () => true, () => false);
+const MOOD_AUDIENCE_ICON: Record<Audience, string> = { everyone: '🌐', friends: '👥', nobody: '🔒' };
+const MOOD_AUDIENCE_TOAST: Record<Audience, string> = {
+  everyone: 'Сэтгэл санаа тань бүх хүнд харагдана 🌐',
+  friends: 'Сэтгэл санаа тань зөвхөн найзуудад харагдана 👥',
+  nobody: 'Сэтгэл санаагаа нууллаа 🔒',
+};
+const useMounted =() => useSyncExternalStore(() => () => {}, () => true, () => false);
 
 export default function ProfilePage() {
   const app = useApp();
@@ -80,6 +86,17 @@ export default function ProfilePage() {
                 onClick={() => void navigator.clipboard?.writeText(shortId(u.id)).then(() => toast('ID хуулагдлаа'))}>#{shortId(u.id)}</button>
             </h2>
             <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p>
+            {/* Аватар дээрх сэтгэл санааны эможиг хэн харахыг эндээс шууд солино (Нууцлал хэсгийнхтэй ижил тохиргоо) */}
+            <label className="mt-1.5 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-semibold">
+              <span aria-hidden="true">{MOOD_AUDIENCE_ICON[u.mood_visibility]}</span>
+              <span className="sr-only">Сэтгэл санаагаа хэнд харуулах</span>
+              <select value={u.mood_visibility} className="cursor-pointer bg-transparent focus:outline-none"
+                onChange={e => { const v = e.target.value as Audience; void updateProfile({ mood_visibility: v }).then(() => toast(MOOD_AUDIENCE_TOAST[v])); }}>
+                <option value="everyone">Сэтгэл санаа: Нийтэд</option>
+                <option value="friends">Сэтгэл санаа: Найзуудад</option>
+                <option value="nobody">Сэтгэл санаа: Нууц</option>
+              </select>
+            </label>
           </div>
         </div>
         <div className="my-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">

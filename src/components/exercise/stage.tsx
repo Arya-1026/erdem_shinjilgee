@@ -25,16 +25,18 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
 
   useEffect(() => {
     const el = host.current!;
+    // Утас (хүрэлтийн дэлгэц): нягтрал, сүүдэр, antialias-ийг багасгаж GPU-г хөнгөлнө. 3x дэлгэцийг бүтэн нягтралаар зурах нь хамгийн их ачаалалтай.
+    const lite = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ antialias: !lite, alpha: true, powerPreference: lite ? 'low-power' : 'default' });
     } catch {
       fail.current?.();
       return;
     }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, lite ? 1.5 : 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = lite ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
     // Хэмжээг CSS-ээр өгнө: пикселээр тогтоовол утсан дээр цонхыг дэлгэцнээс өргөн болгож тэлдэг байсан
     Object.assign(renderer.domElement.style, { display: 'block', width: '100%', height: '100%' });
@@ -45,7 +47,7 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     const sun = new THREE.DirectionalLight('#FFFFFF', 2.1);
     sun.position.set(1.6, 4.2, 2.6);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(lite ? 512 : 1024, lite ? 512 : 1024);
     sun.shadow.radius = 5;
     sun.shadow.normalBias = 0.03;
     Object.assign(sun.shadow.camera, { left: -2, right: 2, top: 2.4, bottom: -1.6, far: 10 });
@@ -94,8 +96,14 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     let curAnim = live.current.anim, curCycle = live.current.cycle, curView = live.current.view;
     let from = ANIMS[curAnim](0), now = from;
 
+    // Дэлгэцэн дээр харагдахгүй (гүйлгэж өнгөрсөн, таб нуугдсан) үед зурахгүй
+    let visible = true;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; });
+    io.observe(el);
+
     const tick = (at: number) => {
       frame = requestAnimationFrame(tick);
+      if (!visible || document.hidden) { last = at; return; }
       // Хөдөлгөөн бодит цагаар явна (удаан төхөөрөмж дээр ч тоолууртай таарна), камер зөөлрөлт нь таслагдсан dt-ээр
       const real = (at - last) / 1000, dt = Math.min(0.05, real);
       last = at;
@@ -124,6 +132,7 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
+      io.disconnect();
       el.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);

@@ -8,12 +8,14 @@ import { ActionMenu, type MenuItem } from '@/components/action-menu';
 import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-actions';
 import { FriendsSheet, type SheetTab } from '@/components/friends-tile';
+import { MoodHalo, NoteBubble } from '@/components/note-bubble';
+import { NoteEditor } from '@/components/note-editor';
 import { PersonAvatar } from '@/components/person-avatar';
 import { useApp } from '@/components/providers/app-provider';
 import { Chip } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
-import { moodById } from '@/lib/data';
-import { filterChats, isActive, shortAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow, type SearchRow } from '@/lib/social';
+import { today } from '@/lib/date';
+import { filterChats, isActive, moodAgo, noteLive, shortAgo, social, socialError, type ChatFilter, type ChatRow, type FriendRow, type SearchRow } from '@/lib/social';
 import { cn } from '@/lib/utils';
 
 const preview = (s: string | null) => (s && s.length > 60 ? s.slice(0, 60) + '…' : s);
@@ -22,7 +24,7 @@ const firstName = (n: string) => n.split(/[\s.]+/).filter(Boolean).pop() ?? n;
 /* Messenger шиг чатын жагсаалт: хайлт, идэвхтэй найзуудын эгнээ, яриа (сүүлийн зурвас, хугацаа, уншаагүй).
    Хайлт нь хүн ч олж нэмнэ. Хүсэлт, блок нь найзын цонхонд (FriendsSheet). */
 export default function ChatsPage() {
-  const { supabase, profile } = useApp();
+  const { supabase, profile, entries } = useApp();
   const params = useSearchParams();
   // Хуучин холбоос (/friends?tab=requests) ирвэл цонхыг тэр табаар нээнэ
   const initial = params.get('tab');
@@ -33,6 +35,12 @@ export default function ChatsPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<ChatFilter>('all');
   const [now, setNow] = useState(() => Date.now());
+  const [noteOpen, setNoteOpen] = useState(false);
+  const myNote = noteLive(profile.note_at, now);
+  const lastEntry = entries.at(-1);
+  // Бөмбөлөгт: бодлын эможи, үгүй бол сүүлийн бүртгэлийн сэтгэл санаа. 2-р мөрөнд бодол, үгүй бол хэзээ.
+  const myMood = (myNote ? profile.note_mood : null) ?? lastEntry?.mood ?? null;
+  const mySub = (myNote ? profile.note_text : null) || (lastEntry ? moodAgo(lastEntry.entry_date, today()) : null);
 
   const load = useCallback(async () => {
     try {
@@ -74,7 +82,7 @@ export default function ChatsPage() {
   // Нэг жагсаалт: найзуудтай болон бусадтай хийсэн яриа, сүүлийн зурвасаар эрэмбэлнэ
   const all: (FriendRow & { isFriend: boolean })[] = [
     ...(friends ?? []).map(f => ({ ...f, isFriend: true })),
-    ...chats.map(c => ({ ...c, mood: null, mood_date: null, mood_hidden: false, favorite: false, active_at: null, isFriend: false })),
+    ...chats.map(c => ({ ...c, mood: null, mood_date: null, mood_hidden: false, favorite: false, active_at: null, note_text: null, note_mood: null, note_at: null, isFriend: false })),
   ];
   const list = filterChats(all, q, filter).sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? '') || Number(b.favorite) - Number(a.favorite));
   // Идэвхтэй эгнээ: онлайн нь эхэнд, дараа нь favorite, сүүлд идэвхтэй байсан
@@ -89,23 +97,26 @@ export default function ChatsPage() {
 
       {/* Идэвхтэй найзууд (Messenger-ийн дээд эгнээ): эхэнд өөрөө, дараа нь найзууд */}
       {!q.trim() && (
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 no-scrollbar" aria-label="Найзууд">
-          <Link href="/profile#social" className="flex w-16 flex-none flex-col items-center gap-1 text-center">
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pt-[50px] pb-1 no-scrollbar" aria-label="Найзууд">
+          {/* Өөрийн аватар дээр дарж бодол (Messenger-ийн Note шиг) хуваалцана */}
+          <button type="button" onClick={() => setNoteOpen(true)} aria-label={myNote ? 'Бодлоо засах' : 'Бодол хуваалцах'}
+            className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
             <span className="relative">
-              <Avatar className="size-14 text-xl" />
-              {profile.show_active && <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Та идэвхтэй" />}
+              <NoteBubble mood={myMood} sub={mySub} placeholder="＋ Бодол…" />
+              <MoodHalo mood={myMood}><Avatar className="size-14 text-xl ring-2 ring-background" /></MoodHalo>
+              {profile.show_active && <i className="absolute right-1 bottom-1 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Та идэвхтэй" />}
             </span>
-            <span className="w-full truncate text-xs text-muted-foreground">Та</span>
-          </Link>
+            <span className="w-full truncate text-xs text-muted-foreground">Таны бодол</span>
+          </button>
           {strip.map(f => {
-            const on = isActive(f.active_at, now);
+            const on = isActive(f.active_at, now), fm = f.note_mood ?? f.mood;
             return (
-              <Link key={f.id} href={`/friends/${f.id}`} className="flex w-16 flex-none flex-col items-center gap-1 text-center">
+              <Link key={f.id} href={`/friends/${f.id}`} className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
                 <span className="relative">
-                  <PersonAvatar name={f.name} avatar={f.avatar} className="size-14 text-xl" />
-                  {on ? <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Идэвхтэй" />
+                  {fm && <NoteBubble mood={fm} sub={f.note_text || moodAgo(f.mood_date, today())} />}
+                  <MoodHalo mood={fm}><PersonAvatar name={f.name} avatar={f.avatar} className="size-14 text-xl ring-2 ring-background" /></MoodHalo>
+                  {on ? <i className="absolute right-1 bottom-1 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Идэвхтэй" />
                     : f.active_at && <span className="absolute -right-1 bottom-0 rounded-full border-2 border-background bg-secondary px-1 text-[.6rem] font-bold text-green-600">{shortAgo(f.active_at, now)}</span>}
-                  {f.mood && <span className="absolute -top-1 -right-1 text-base" title={moodById(f.mood).label}>{moodById(f.mood).emoji}</span>}
                 </span>
                 <span className="w-full truncate text-xs">{firstName(f.name)}</span>
               </Link>
@@ -134,12 +145,12 @@ export default function ChatsPage() {
               <div key={c.id} className="group flex items-center gap-1 rounded-2xl px-2 hover:bg-secondary/60">
                 <Link href={`/friends/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2">
                   <span className="relative flex-none">
-                    <PersonAvatar name={c.name} avatar={c.avatar} className="size-14 text-xl" />
+                    <PersonAvatar name={c.name} avatar={c.avatar} mood={c.mood} className="size-14 text-xl" />
                     {on && <i className="absolute right-0 bottom-0 size-4 rounded-full border-[3px] border-background bg-green-500" aria-label="Идэвхтэй" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className={cn('block truncate', bold ? 'font-bold' : 'font-medium')}>
-                      {c.favorite && '⭐ '}{c.name}{c.mood && ` ${moodById(c.mood).emoji}`}{c.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}
+                      {c.favorite && '⭐ '}{c.name}{c.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}
                     </span>
                     <span className={cn('flex min-w-0 gap-1 text-sm', bold ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
                       <span className="truncate">{c.last_body ? `${c.last_mine ? 'Та: ' : ''}${preview(c.last_body)}` : on ? 'Идэвхтэй байна · Сайн уу гэж бичээрэй 👋' : 'Зурвас бичих'}</span>
@@ -176,6 +187,7 @@ export default function ChatsPage() {
       )}
       {q.trim().length >= 2 && people && !people.length && !list.length && <p className="text-center text-sm text-muted-foreground">Хүн олдсонгүй. Нууц профайлтай хүнийг ID-аар нь хайна.</p>}
 
+      {noteOpen && <NoteEditor open onOpenChange={setNoteOpen} />}
       <FriendsSheet open={sheet !== null} tab={sheet ?? 'friends'} onOpenChange={o => { if (!o) { setSheet(null); void load(); } }} />
     </div>
   );

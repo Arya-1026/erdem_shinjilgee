@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/password-input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 
@@ -33,11 +33,11 @@ export default function ResetPasswordPage() {
         <h1 className="text-lg font-semibold">🔑 Шинэ нууц үг тохируулах</h1>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="new-pw" className="font-semibold">Шинэ нууц үг</Label>
-          <Input id="new-pw" type="password" autoComplete="new-password" placeholder="Хамгийн багадаа 6 тэмдэгт" className="h-12 rounded-xl" value={pw} onChange={e => setPw(e.target.value)} />
+          <PasswordInput id="new-pw" autoComplete="new-password" placeholder="Хамгийн багадаа 6 тэмдэгт" className="h-12 rounded-xl" value={pw} onChange={e => setPw(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="new-pw2" className="font-semibold">Шинэ нууц үг дахин</Label>
-          <Input id="new-pw2" type="password" autoComplete="new-password" className="h-12 rounded-xl" value={pw2} onChange={e => setPw2(e.target.value)} />
+          <PasswordInput id="new-pw2" autoComplete="new-password" className="h-12 rounded-xl" value={pw2} onChange={e => setPw2(e.target.value)} />
         </div>
         <Button type="submit" size="xl" className="w-full" disabled={busy || !pw}>{busy ? 'Хадгалж байна…' : 'Нууц үг солих'}</Button>
       </form>
