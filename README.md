@@ -123,14 +123,7 @@ public/sw.js          push мэдэгдлийн service worker
 3. **Authentication → URL Configuration**:
    - Site URL: `http://127.0.0.1:3000`
    - Redirect URLs: `http://127.0.0.1:3000/auth/callback`, `https://<таны-апп>.vercel.app/auth/callback`
-4. **Нууц үгээ мартсан**: анхдагч байдлаар имэйлээр холбоос ирнэ (`/auth/callback` → `/reset-password`). Нэмэлт тохиргоо шаардлагагүй.
-   Холбоосын оронд **код** илгээх бол эхлээд **Authentication → Emails → SMTP Settings**-д Resend (эсвэл Gmail SMTP) тохируулна. Supabase загвар засахыг зөвхөн өөрийн SMTP-тэй үед зөвшөөрдөг. Дараа нь **Templates → Reset password**-д кодыг нэмнэ:
-   ```html
-   <h2>Нууц үг сэргээх</h2>
-   <p>Таны баталгаажуулах код: <b>{{ .Token }}</b></p>
-   <p>Эсвэл <a href="{{ .ConfirmationURL }}">энд дарж</a> сэргээнэ.</p>
-   ```
-   Supabase-ийн үндсэн имэйл сервер цагт хэдхэн имэйл, зөвхөн төслийн гишүүдийн хаяг руу илгээдэг. Жинхэнэ хэрэглэгчидтэй болбол SMTP заавал хэрэгтэй.
+4. **Имэйл илгээдэггүй**: бүртгэлийг `/api/auth/register` шууд үүсгэнэ (`email_confirm`), нэвтрэхэд нууц үгийг Supabase шалгана. Нууц үгээ мартвал бүртгүүлэхдээ авсан сэргээх кодоор солино (`/api/auth/recover`), hash нь `auth.users.app_metadata`-д хадгалагдана. Шинэ кодыг Профайлаас авна.
 
 ### 2. Spotify
 

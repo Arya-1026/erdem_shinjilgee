@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { hashRecoveryCode, newRecoveryCode, rateLimited, recoveryCodeMatches } from './server/recovery';
 import { fallbackReply } from './chat-fallback';
 import { isCrisisText } from './crisis';
 import { moodById } from './data';
@@ -88,5 +89,21 @@ describe('db туслах', () => {
   it('normalizeEntry numeric, time-ийг хөрвүүлнэ', () => {
     expect(normalizeEntry({ sleep: '7.5', entry_time: '21:05:00' })).toEqual({ sleep: 7.5, entry_time: '21:05' });
     expect(normalizeEntry({ sleep: null, entry_time: '08:00' }).sleep).toBeNull();
+  });
+});
+
+describe('сэргээх код', () => {
+  it('хэлбэр, том жижиг үсэг, зураасаас хамаарахгүй шалгана', () => {
+    const c = newRecoveryCode();
+    expect(c).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    const h = hashRecoveryCode(c);
+    expect(h).not.toContain(c);
+    expect(recoveryCodeMatches(c.toLowerCase().replaceAll('-', ' '), h)).toBe(true);
+    expect(recoveryCodeMatches('AAAA-AAAA-AAAA', h)).toBe(false);
+    expect(recoveryCodeMatches(c, undefined)).toBe(false);
+  });
+  it('оролдлогын хязгаар цонх дуусахад шинэчлэгдэнэ', () => {
+    expect([1, 2, 3].map(() => rateLimited('t', 2, 1000, 5000))).toEqual([false, false, true]);
+    expect(rateLimited('t', 2, 1000, 7000)).toBe(false);
   });
 });

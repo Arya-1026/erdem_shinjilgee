@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
 import { FriendsTile } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
-import { PasswordReset } from '@/components/password-reset';
+import { PasswordReset, RecoveryCode } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
 import { useSeasonPref } from '@/components/seasonal';
 import { isSeasonPref, saveSeasonPref } from '@/lib/season';
@@ -185,13 +185,14 @@ export default function ProfilePage() {
 
 const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
 
-/* Нэр, нууц үг солих. Нууц үгээ мартсан (эсвэл Google-ээр бүртгүүлсэн) бол имэйлээр код авч тохируулна. */
+/* Нэр, нууц үг солих. Нууц үгээ мартсан бол сэргээх кодоор тохируулна (имэйл илгээдэггүй). */
 function AccountSection() {
   const tr = useT();
   const { profile: u, updateProfile, supabase } = useApp();
   const [name, setName] = useState(u.name);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
-  const [mode, setMode] = useState<'idle' | 'change' | 'reset'>('idle');
+  const [mode, setMode] = useState<'idle' | 'change' | 'reset' | 'code'>('idle');
+  const [newCode, setNewCode] = useState<string | null>(null);
   const [cur, setCur] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -202,7 +203,7 @@ function AccountSection() {
     return () => { alive = false; };
   }, [supabase]);
 
-  const close = () => { setMode('idle'); setCur(''); setPw(''); setPw2(''); };
+  const close = () => { setMode('idle'); setCur(''); setPw(''); setPw2(''); setNewCode(null); };
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
@@ -225,6 +226,17 @@ function AccountSection() {
     close();
   }
 
+  async function makeCode(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const res = await fetch('/api/account/recovery-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: cur }) });
+    const j: { recoveryCode?: string } = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (res.status === 403) return void toast.error(tr('Одоогийн нууц үг буруу байна'));
+    if (!res.ok || !j.recoveryCode) return void toast.error(tr('Код үүсгэж чадсангүй'));
+    setNewCode(j.recoveryCode);
+  }
+
   return (
     <section className="card-x desk:col-span-2">
       <h3 className="mb-2 font-semibold">{tr('Аккаунт')}</h3>
@@ -240,8 +252,13 @@ function AccountSection() {
         <b>{tr('Нууц үг')}</b>
         {mode === 'idle' && (
           <>
-            <div className="mb-2.5 text-sm text-muted-foreground">{hasPassword === false ? tr('Та Google-ээр нэвтэрсэн. Имэйлээр код авч нууц үг тохируулж болно.') : tr('Нэвтрэхэд ашигладаг нууц үгээ солих')}</div>
-            <Button size="xl" variant="outline" className="w-full" disabled={hasPassword === null} onClick={() => setMode(hasPassword ? 'change' : 'reset')}>🔑 {hasPassword === false ? tr('Нууц үг тохируулах') : tr('Нууц үг солих')}</Button>
+            <div className="mb-2.5 text-sm text-muted-foreground">{hasPassword === false ? tr('Та Google-ээр нэвтэрсэн тул нууц үг шаардлагагүй.') : tr('Нууц үгээ мартвал сэргээх кодоор сэргээнэ.')}</div>
+            {hasPassword && (
+              <div className="flex flex-col gap-2">
+                <Button size="xl" variant="outline" className="w-full" onClick={() => setMode('change')}>{tr('🔑 Нууц үг солих')}</Button>
+                <Button size="xl" variant="outline" className="w-full" onClick={() => setMode('code')}>{tr('🔐 Шинэ сэргээх код авах')}</Button>
+              </div>
+            )}
           </>
         )}
         {mode === 'change' && (
@@ -250,11 +267,19 @@ function AccountSection() {
             <input className={FIELD} type="password" autoComplete="new-password" placeholder={tr('Шинэ нууц үг (6+ тэмдэгт)')} aria-label={tr('Шинэ нууц үг')} value={pw} onChange={e => setPw(e.target.value)} />
             <input className={FIELD} type="password" autoComplete="new-password" placeholder={tr('Шинэ нууц үг дахин')} aria-label={tr('Шинэ нууц үг дахин')} value={pw2} onChange={e => setPw2(e.target.value)} />
             <Button type="submit" size="xl" className="w-full" disabled={busy || !cur || !pw}>{busy ? tr('Сольж байна…') : tr('Нууц үг солих')}</Button>
-            <button type="button" className="min-h-10 text-sm font-semibold text-primary" onClick={() => setMode('reset')}>{tr('Одоогийн нууц үгээ мартсан уу? Имэйлээр код авах')}</button>
+            <button type="button" className="min-h-10 text-sm font-semibold text-primary" onClick={() => setMode('reset')}>{tr('Одоогийн нууц үгээ мартсан уу? Сэргээх кодоор солих')}</button>
             <Button type="button" size="xl" variant="outline" className="w-full" onClick={close}>{tr('Болих')}</Button>
           </form>
         )}
-        {mode === 'reset' && <div className="mt-2"><PasswordReset email={u.email} onDone={() => { setHasPassword(true); close(); }} onCancel={close} /></div>}
+        {mode === 'reset' && <div className="mt-2"><PasswordReset email={u.email} onDone={close} onCancel={close} /></div>}
+        {mode === 'code' && (newCode ? <div className="mt-2"><RecoveryCode code={newCode} onDone={close} /></div> : (
+          <form className="mt-2 flex flex-col gap-2.5" onSubmit={e => void makeCode(e)} noValidate>
+            <p className="text-sm text-muted-foreground">{tr('Шинэ код үүсгэхэд хуучин код хүчингүй болно.')}</p>
+            <input className={FIELD} type="password" autoComplete="current-password" placeholder={tr('Одоогийн нууц үг')} aria-label={tr('Одоогийн нууц үг')} value={cur} onChange={e => setCur(e.target.value)} />
+            <Button type="submit" size="xl" className="w-full" disabled={busy || !cur}>{busy ? tr('Шалгаж байна…') : tr('Код үүсгэх')}</Button>
+            <Button type="button" size="xl" variant="outline" className="w-full" onClick={close}>{tr('Болих')}</Button>
+          </form>
+        ))}
       </div>
     </section>
   );

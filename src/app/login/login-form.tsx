@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/password-input';
 import { Label } from '@/components/ui/label';
-import { PasswordReset } from '@/components/password-reset';
+import { PasswordReset, RecoveryCode } from '@/components/password-reset';
 import { Segmented } from '@/components/segmented';
 import { createClient } from '@/lib/supabase/client';
 import { LanguageSwitch, useT } from '@/components/providers/locale-provider';
@@ -27,7 +27,7 @@ export function LoginForm() {
   const router = useRouter();
   const [tab, setTab] = useState<'register' | 'login'>('register');
   const [busy, setBusy] = useState(false);
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [recovery, setRecovery] = useState<string | null>(null);
   const [forgot, setForgot] = useState(false);
   const reg = tab === 'register';
   const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -42,15 +42,27 @@ export function LoginForm() {
 
     setBusy(true);
     const supabase = createClient();
-    const { data, error } = reg
-      ? await supabase.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: callback('/onboarding') } })
-      : await supabase.auth.signInWithPassword({ email, password });
+    // Бүртгэл шууд өгөгдлийн санд үүснэ, имэйл явахгүй (/api/auth/register)
+    let code: string | undefined;
+    if (reg) {
+      const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
+      const j: { recoveryCode?: string } = await res.json().catch(() => ({}));
+      if (!res.ok || !j.recoveryCode) {
+        setBusy(false);
+        return void toast.error(res.status === 409 ? tr('Энэ имэйлээр бүртгэл аль хэдийн байна. Нэвтэрнэ үү.') : res.status === 429 ? tr('Хэт олон удаа оролдлоо. Түр хүлээгээд дахин оролдоно уу.') : tr('Бүртгэл үүсгэж чадсангүй. Дахин оролдоно уу.'));
+      }
+      code = j.recoveryCode;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
 
-    if (error) return toast.error(error.message === 'Invalid login credentials' ? tr('Имэйл эсвэл нууц үг буруу байна') : error.message);
-    // Supabase-д имэйл баталгаажуулалт асаалттай бол session шууд үүсэхгүй
-    if (!data.session) return setSentTo(email);
-    router.replace(reg ? '/onboarding' : '/home');
+    if (error) return toast.error(error.code === 'email_not_confirmed' ? tr('Энэ бүртгэл идэвхжээгүй байна. «Бүртгүүлэх» хэсгээс дахин бүртгүүлнэ үү.') : error.message === 'Invalid login credentials' ? tr('Имэйл эсвэл нууц үг буруу байна') : error.message);
+    if (code) return setRecovery(code);
+    enter('/home');
+  }
+
+  function enter(href: string) {
+    router.replace(href);
     router.refresh();
   }
 
@@ -59,20 +71,16 @@ export function LoginForm() {
     if (error) toast.error(error.message);
   }
 
-  if (sentTo) return (
-    <div className="card-x w-full max-w-[420px] text-center">
-      <div className="text-4xl">📬</div>
-      <h2 className="my-2 text-lg font-semibold">{tr('Имэйлээ шалгана уу')}</h2>
-      <p className="text-sm text-muted-foreground"><b>{sentTo}</b>{' '}{tr('хаяг руу баталгаажуулах холбоос илгээлээ. Холбоос дээр дарахад бүртгэл идэвхжинэ.')}</p>
-      <Button variant="secondary" size="xl" className="mt-4 w-full" onClick={() => { setSentTo(null); setTab('login'); }}>{tr('Нэвтрэх хуудас руу')}</Button>
-    </div>
-  );
+  if (recovery) return <div className="card-x w-full max-w-[420px]"><RecoveryCode code={recovery} onDone={() => enter('/onboarding')} /></div>;
 
-  // Код баталгаажмагц session үүссэн тул шууд апп руу орно
   if (forgot) return (
     <div className="card-x w-full max-w-[420px]">
       <h2 className="mb-2 text-lg font-semibold">{tr('🔑 Нууц үг сэргээх')}</h2>
-      <PasswordReset onDone={() => { router.replace('/home'); router.refresh(); }} onCancel={() => setForgot(false)} />
+      <PasswordReset onCancel={() => setForgot(false)} onDone={async (email, password) => {
+        const { error } = await createClient().auth.signInWithPassword({ email, password });
+        if (error) { setForgot(false); return void toast(tr('Шинэ нууц үгээрээ нэвтэрнэ үү')); }
+        enter('/home');
+      }} />
     </div>
   );
 
