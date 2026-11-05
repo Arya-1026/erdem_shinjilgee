@@ -72,9 +72,10 @@ export function Botgo3D({ mood, className }: { mood: MoodId; className?: string 
 
   return (
     <div className={cn('relative', className)}>
-      {/* key: амьтан солиход iframe шинээр ачаална (өмнөх WebGL-ийг бүрэн чөлөөлнө) */}
+      {/* key: амьтан солиход iframe шинээр ачаална (өмнөх WebGL-ийг бүрэн чөлөөлнө).
+          EMBED_CSS зөвхөн load-ийн дараа орох тул тэр хүртэл нууна: үгүй бол хуудасны өөрийн mood товчнууд анивчина */}
       <iframe key={pet.src} ref={frame} src={pet.src} title={tr('{0} 3D дүр', tr(pet.name))} onLoad={onLoad} loading="lazy"
-        className="block size-full rounded-2xl border-0" />
+        className={cn('block size-full rounded-2xl border-0 transition-opacity duration-200', !ready && 'opacity-0')} />
       {!ready && <span className="pointer-events-none absolute inset-0 grid place-items-center text-5xl opacity-60" aria-hidden="true">{pet.emoji}</span>}
       {/* Баруун дээд буланд: дүр солих товч → жижиг цонхонд амьтдаас сонгоно */}
       <button type="button" onClick={() => setPicking(v => !v)} aria-expanded={picking} aria-label={tr('Дүрээ солих')}
