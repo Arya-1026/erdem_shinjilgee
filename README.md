@@ -16,7 +16,6 @@
 Next.js Route Handlers (Vercel) ─────────┘
   ├─ /api/chat         түлхүүр үг + OpenAI Moderation + утгын ангилал → Groq gpt-oss-20b → OpenRouter → дүрэмд суурилсан хариулт
   ├─ /api/music/recs   хэрэглэгчийн амт → Groq-оор дуу санал болгох → Spotify хайлт (cache)
-  ├─ /api/spotify/*    (заавал биш) OAuth, playlist татах → mood ангилах
   ├─ /api/bookings     хуваарь шалгах + давхар захиалгаас хамгаалах + Resend
   ├─ /api/push/test    туршилтын push
   └─ /api/account      бүртгэл устгах
@@ -32,7 +31,7 @@ Next.js Route Handlers (Vercel) ─────────┘
 | Сануулга | pg_cron + pg_net → имэйл + Web Push | `supabase/migrations/0002_cron.sql`, `public/sw.js` |
 | LLM | Groq `openai/gpt-oss-20b`, нөөц нь OpenRouter | `src/lib/server/llm.ts` |
 | Crisis | Түлхүүр үг (кирилл, латин) + OpenAI Moderation + LLM утгын ангилал | `src/lib/crisis.ts`, `src/lib/server/crisis-check.ts`, `src/lib/server/moderation.ts` |
-| Хөгжим | Spotify Web API, Web Playback SDK, Embed | `src/lib/server/spotify.ts`, `src/lib/server/spotify-search.ts`, `src/lib/server/music-recs.ts` |
+| Хөгжим | Spotify Web API (апп-ын токен), Embed | `src/lib/server/spotify.ts`, `src/lib/server/spotify-search.ts`, `src/lib/server/music-recs.ts` |
 | График | Recharts | `src/components/charts.tsx` |
 | Имэйл | Resend | `src/lib/server/email.ts` |
 | Design system | «Emotion tracker»: Nunito фонт, дулаан суурь өнгө, emotion-* өнгө, 5 палитр (анх орохдоо сонгоно) | `src/app/globals.css`, `src/lib/palettes.ts` |
@@ -42,7 +41,7 @@ Next.js Route Handlers (Vercel) ─────────┘
 
 ### Хөгжим: хүн бүрт өөр өөр дуу
 
-**1. Танд зориулсан дуунууд** (бүх хэрэглэгчид, Spotify холбоогүй ч ажиллана): `/api/music/recs?mood=sad`
+**1. Танд зориулсан дуунууд** (бүх хэрэглэгчид): `/api/music/recs?mood=sad`
 - **Нийтлэг сан**: дууны төрөл, уран бүтээлч бүрээр Spotify-аас апп-ын токеноор хайж (`genre:"pop"`, `artist:"..."`), үр дүнг `song_cache`-д 30 хоног хадгална. Бүх хэрэглэгч хуваалцах тул хэрэглэгч нэмэгдэхэд Spotify-ийн дуудлага нэмэгдэхгүй. Spotify холбох шаардлагагүй.
 - **Хобби**: сонгоогүй ч хобби нь төрөл болж нөлөөлнө (`src/lib/music-taste.ts`, жишээ нь Програмчлал → Lo-fi, Гитар → Рок). Өөрөө нэмсэн хобби зөвхөн AI-д текстээр очно.
 - **Эрэмбэ**: дуртай дуучин → сонгосон төрөл → хоббиос гарсан төрөл → бусад. Тал нь монгол, тал нь олон улсын дуу.
@@ -53,12 +52,11 @@ Next.js Route Handlers (Vercel) ─────────┘
 
 **1б. Тайвшруулах ая** (`/api/music/recs?mood=anxious&kind=ambient`): үггүй хөгжим, байгалийн дуу, морин хуур, lo-fi. LLM тухайн mood, хобби, өнөөдрийн шалтгаанаас хамаарч нэрээр нь санал болгож, Spotify дээр байгаа эсэхийг шалгана.
 
-**2. Миний сан** (Spotify-аа холбосон үед)
-- **Spotify**: liked songs болон өөрийн playlist-үүдийг татна. Spotify 2024.11-ээс `audio-features`-ийг хаасан тул нэр, уран бүтээлчээр нь LLM ангилна.
 - OAuth token-ууд AES-256-GCM-ээр шифрлэгдэж, RLS policy-гүй хүснэгтэд хадгалагдана. Тиймээс зөвхөн сервер уншина.
 
+
 **3. Тоглуулах**
-- **Хослуулсан тоглуулалт**: дуу, хайлт, санал нь Spotify-аас, тоглуулалт нь YouTube-ээс. Дууг тоглуулах үед YouTube Data API-аар бичлэг хайж (`/api/music/youtube`), олдсоныг `song_cache`-д бүх хэрэглэгчид хадгална (`search.list` өдөрт 100 удаа). Бичлэг олдоогүй, квот дууссан, эсвэл бичлэг тоглохгүй үед Spotify Embed-ийн 30 орчим секундын Preview руу шилжинэ. Premium бүртгэлээ холбосон хэрэглэгч Web Playback SDK-аар сонсоно. **Анхаар:** Spotify-ийн мэдээллийг өөр үйлчилгээний дуутай хослуулах нь Spotify-ийн хөгжүүлэгчийн бодлоготой зөрчилдөж болзошгүй.
+- **Spotify**: Embed-ээр 30 орчим секунд тоглоно. Бүтэн дууг «Spotify-д нээх» холбоосоор сонсоно.
 - Хөгжмийн эх үүсвэр тохируулаагүй бол mood-ийн аялгууг браузер дээр үүсгэж тоглуулна (демо).
 
 ### Дуу сонгох зарчим
@@ -97,7 +95,7 @@ src/
     manifest.ts       PWA
   components/
     providers/        AppProvider (өгөгдөл + үйлдлүүд), PlayerProvider (демо / Spotify)
-    music.tsx         Танд зориулсан дуунууд, Миний сан
+    music.tsx         Танд зориулсан дуунууд, таалагдсан дуунууд
     dialogs/          бүртгэгдлээ, дасгал, амьсгал, кино, цаг захиалах цонхнууд
     ui/               shadcn компонентууд
   lib/
@@ -137,21 +135,21 @@ public/sw.js          push мэдэгдлийн service worker
 ### 2. Spotify
 
 Апп эзэмшигч **Spotify Premium** байх ёстой (2026 оны дүрэм).
-1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → **Create app** дарна. Redirect URI нь `http://127.0.0.1:3000/api/spotify/callback`, APIs-д **Web API**, **Web Playback SDK** сонгоно.
+1. [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → **Create app** дарна. Redirect URI-г апп ашиглахгүй ч талбар заавал бөглөнө: `http://127.0.0.1:3000/api/spotify/callback`, APIs-д **Web API**, **Web Playback SDK** сонгоно.
 2. Client ID, secret-ээ `.env.local`-д хуулна. **User Management**-д хэрэглэгчдийг нэмнэ (5 хүртэл).
 
 ### 3. Орчны хувьсагч
 
 ```bash
 cp .env.example .env.local
-npm run keys            # TOKEN_ENCRYPTION_KEY, CRON_SECRET, VAPID түлхүүрүүдийг үүсгэнэ → .env.local-д хуулна
+npm run keys            # CRON_SECRET, VAPID түлхүүрүүдийг үүсгэнэ → .env.local-д хуулна
 ```
 
 | Хувьсагч | Байхгүй бол |
 |---|---|
 | Supabase-ийн 3 түлхүүр | **Апп ажиллахгүй** |
 | `GROQ_API_KEY` | Чат дүрэмд суурилна. Дууны санал хүн бүрт адилхан, ангилал түлхүүр үгээр явагдана |
-| `SPOTIFY_*` | "Spotify холбох" харагдахгүй |
+| `SPOTIFY_*` | Дууны санал, хайлт ажиллахгүй |
 | `OPENAI_API_KEY` | Crisis-ийг зөвхөн түлхүүр үгээр шүүнэ |
 | `RESEND_API_KEY` | Имэйлийг зөвхөн server log-д бичнэ |
 | `*VAPID*` | Push мэдэгдлийн тохиргоо харагдахгүй |
@@ -168,7 +166,7 @@ npm test                # unit тест
 
 1. GitHub руу push хийгээд Vercel дээр import хийнэ.
 2. `.env.local`-ийн утгуудыг Vercel → Settings → Environment Variables-д хуулна. `NEXT_PUBLIC_APP_URL`-ийг Vercel хаягаар солино.
-3. Supabase URL Configuration, Google OAuth client, Spotify Dashboard-д Vercel хаягийг нэмнэ.
+3. Supabase URL Configuration, Google OAuth client-д Vercel хаягийг нэмнэ.
 4. **Сануулга**: Supabase SQL Editor дээр:
    ```sql
    select vault.create_secret('https://<таны-апп>.vercel.app', 'app_url');
@@ -199,13 +197,11 @@ update experts set user_id = (select id from auth.users where email = 'psycholog
 | «Өгөгдлийн сангийн хүснэгтүүд үүсээгүй байна» (`Could not find the table 'public.profiles'`) | Supabase SQL Editor дээр `supabase/setup.sql`-ийг бүтнээр нь ажиллуулаагүй. |
 | `Route "/home": Next.js encountered the unstable value Date.now()` | Засагдсан: `getAppData()` дотор `connection()` дуудаж байна. Хуучин `.next` хавтас үлдсэн бол устгаад дахин эхлүүлнэ. |
 | `permission denied for table ...` | Шинэ Supabase төсөл хүснэгтэд эрх автоматаар олгодоггүй. [0007_grants.sql](supabase/migrations/0007_grants.sql)-ийг SQL Editor дээр ажиллуулна. |
-| Spotify холбоход `wrong-host` | Апп-ыг `localhost` биш `http://127.0.0.1:3000` хаягаар нээнэ. |
 
 ## Аюулгүй байдал
 
 - Хүснэгт бүр дээр **RLS** асаалттай. Хэрэглэгч зөвхөн өөрийн мөрийг уншиж, бичнэ.
 - Сэтгэл зүйч бусдын өгөгдлийг зөвхөн `security definer` функцээр, өөрт нь хийгдсэн захиалга болон үйлчлүүлэгч зөвшөөрсөн тохиолдолд л харна.
-- Spotify-ийн refresh token клиент рүү хэзээ ч гарахгүй. Spotify SDK-д зөвхөн богино хугацаат access token өгнө.
 - OAuth `state`-ийг httpOnly cookie-оор шалгаж CSRF-ээс хамгаална.
 - Давхар захиалгаас `unique (expert_id, booking_date, slot)` constraint хамгаална.
 - Crisis илэрвэл чатын хариу бичихгүй, 103 / 108 утасны дугаар болон сэтгэл зүйчийн холбоосыг шууд харуулна.

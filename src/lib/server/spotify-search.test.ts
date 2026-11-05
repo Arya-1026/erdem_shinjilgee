@@ -15,7 +15,6 @@ const fakeDb = {
 };
 vi.mock('@/lib/supabase/server', () => ({ createServiceClient: () => fakeDb }));
 vi.mock('./llm', () => ({ llmConfigured: () => false, llmChat: vi.fn() }));
-vi.mock('./crypto', () => ({ tokenKeyConfigured: () => true, encrypt: (s: string) => s, decrypt: (s: string) => s }));
 
 const track = (id: string, name: string, artist = 'A') => ({ id, name, uri: `spotify:track:${id}`, duration_ms: 1000, artists: [{ id: 'art', name: artist }] });
 const json = (body: unknown, init?: ResponseInit) => new Response(JSON.stringify(body), init);

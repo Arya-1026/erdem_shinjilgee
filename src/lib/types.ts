@@ -51,7 +51,6 @@ export type Profile = {
   reminder_enabled: boolean;
   art_mode: 'emoji' | 'art';
   chat_mode: ChatMode;
-  spotify_connected: boolean;
   exercises_done: number;
   birth_year: number | null;
   fav_artists: string[];
@@ -103,9 +102,8 @@ export type Booking = {
 /** expert_id → гараг (0 = Ням) → цагууд */
 export type ExpertSlots = Record<string, Record<number, string[]>>;
 
-export type SpotifyStatus = { display_name: string; synced_at: string | null; track_count: number };
 /** Сервер дээр аль хөгжмийн үйлчилгээ тохируулагдсан бэ (түлхүүр байгаа эсэх) */
-export type MusicConfig = { spotify: boolean; discovery: boolean };
+export type MusicConfig = { discovery: boolean };
 /** video_id: Spotify track id. Өгөгдлийн сангийн баганын нэрийг хадгалсан. */
 export type SongRow = { video_id: string; title: string; artist: string; thumbnail: string | null; duration_s: number };
 export type SongRec = SongRow & { reason: string };

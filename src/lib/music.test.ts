@@ -6,38 +6,6 @@ import { balanceByGoal, MOOD_GOALS, parsePicks, parseSuggestions, suggestPrompt,
 import { CATEGORY_GENRES, GENRE_QUERY, tasteGenres, tasteRank, tasteReason } from './music-taste';
 import { GENRE_CAT, HOBBIES } from './data';
 import { songKey, spotifyTrackUrl } from './spotify-parse';
-import { playsWithoutSdk } from './spotify-playback';
-import { pickVideo, videoQuery } from './youtube-parse';
-
-describe('Spotify тоглуулах горим', () => {
-  it('холбоогүй эсвэл Premium биш хэрэглэгч SDK ашиглахгүй', () => {
-    expect(playsWithoutSdk('sdk', false)).toBe(true);
-    expect(playsWithoutSdk('embed', true)).toBe(true);
-    expect(playsWithoutSdk('sdk', true)).toBe(false);
-  });
-});
-
-describe('YouTube бичлэг сонгох', () => {
-  const v = (id: string, title: string, channel = 'X') => ({ id, title, channel });
-  it('хайлтын үгэнд хаалтан доторхыг хасаж, эхний дуучныг авна', () => {
-    expect(videoQuery('Magnolian, Tselmuun', 'Өвөлжөө (Mongolian Version)')).toBe('Magnolian Өвөлжөө');
-    expect(videoQuery('', 'Woods - Remastered')).toBe('Woods');
-  });
-  it('албан ёсны дууг cover, караокегоос дээгүүр сонгоно', () => {
-    expect(pickVideo([v('a', 'Easy On Me (Karaoke)'), v('b', 'Adele - Easy On Me (Cover)'), v('c', 'Easy On Me', 'Adele - Topic')], 'Adele', 'Easy On Me')).toBe('c');
-  });
-  it('дууны нэр таарахгүй бичлэгийг сонгохгүй', () => {
-    expect(pickVideo([v('a', 'Adele - Hello')], 'Adele', 'Easy On Me')).toBeNull();
-    expect(pickVideo([], 'Adele', 'Hello')).toBeNull();
-  });
-  it('HTML тэмдэгт, кирилл нэрийг ойлгоно', () => {
-    expect(pickVideo([v('a', 'Don&#39;t Stop Me Now')], 'Queen', "Don't Stop Me Now")).toBe('a');
-    expect(pickVideo([v('a', 'Хурд - Амар мэндийн дуу')], 'Хурд', 'Амар мэндийн дуу')).toBe('a');
-  });
-  it('хүссэн дуу нь remix бол remix-ийг хасахгүй', () => {
-    expect(pickVideo([v('a', 'Song Remix')], 'A', 'Song Remix')).toBe('a');
-  });
-});
 
 describe('Spotify холбоос', () => {
   it('track uri-г вэб холбоос болгоно', () => {

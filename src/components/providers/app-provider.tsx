@@ -41,13 +41,6 @@ type AppCtx = Omit<AppData, 'restored'> & {
   /** 👍: дууг «Таалагдсан дуунууд»-д хадгална, дахин дарвал хасна */
   toggleLike: (s: LikedSong) => void;
   setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
-  /** Хөгжмийн эх үүсвэр (Spotify): холбох (OAuth руу шилжинэ), синк хийх, салгах */
-  musicConnect: (p: MusicProvider) => void;
-  musicSync: (p: MusicProvider) => Promise<void>;
-  musicDisconnect: (p: MusicProvider) => Promise<void>;
-  musicSyncing: MusicProvider | null;
-  /** Синк, салгах бүрт нэмэгдэнэ → хэрэглэгчийн сангийн дууг дахин татна */
-  libraryVersion: number;
   dialog: DialogState;
   openDialog: (d: DialogState) => void;
   /** Хөвөгч чатын самбар */
@@ -55,8 +48,6 @@ type AppCtx = Omit<AppData, 'restored'> & {
   setChatOpen: (b: boolean) => void;
 };
 
-export type MusicProvider = 'spotify';
-const PROVIDER_NAME: Record<MusicProvider, string> = { spotify: 'Spotify' };
 
 const Ctx = createContext<AppCtx | null>(null);
 
@@ -81,11 +72,8 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [tint, setTint] = useState(moodById('neutral').color);
   const [dialog, openDialog] = useState<DialogState>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [spotify, setSpotify] = useState(initial.spotify);
   const [likedSongs, setLiked] = useState(initial.likedSongs);
   const [todos, setTodos] = useState(initial.todos);
-  const [musicSyncing, setSyncing] = useState<MusicProvider | null>(null);
-  const [libraryVersion, setLibraryVersion] = useState(0);
 
   // Хэрэглэгчийн сонгосон өнгө (өөр төхөөрөмж дээр сонгосон байж болно → localStorage-тай тааруулна)
   useEffect(() => { applyPalette(isPaletteId(profile.theme) ? profile.theme : DEFAULT_PALETTE); }, [profile.theme]);
@@ -102,40 +90,6 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   // Устгах хүсэлт гаргасан бүртгэлээр 30 хоногийн дотор нэвтэрвэл сэргээгдсэнийг мэдэгдэнэ
   useEffect(() => { if (initial.restored) toast(tr('Тавтай морил! Таны бүртгэл сэргээгдлээ, устгах хүсэлт цуцлагдсан 💜')); }, [initial.restored, tr]);
 
-  // API route нь Google/Spotify руу redirect хийдэг тул client navigation биш, бүтэн хуудсаар шилжинэ
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  const musicConnect = useCallback((p: MusicProvider) => { location.href = `/api/${p}/login`; }, []);
-
-  const musicSync = useCallback(async (p: MusicProvider) => {
-    const name = PROVIDER_NAME[p];
-    setSyncing(p);
-    const t = toast.loading(tr('{0}-аас дуунуудыг татаж, сэтгэл хөдлөлөөр ангилж байна…', name));
-    try {
-      const res = await fetch(`/api/${p}/sync`, { method: 'POST' });
-      const j = await res.json().catch(() => ({ error: 'sync-failed' }));
-      if (!res.ok) throw new Error(j.error);
-      const { data: st } = await supabase.rpc('spotify_status');
-      setSpotify((st as AppData['spotify'][])?.[0] ?? null);
-      setProfile(x => ({ ...x, spotify_connected: true }));
-      toast.success(tr('{0} дуу {1} playlist-ээс бэлэн боллоо 🎧', j.tracks, j.playlists), { id: t });
-      setLibraryVersion(v => v + 1);
-    } catch (e) {
-      const lost = e instanceof Error && e.message === 'not-connected';
-      if (lost) { setProfile(x => ({ ...x, [`${p}_connected`]: false })); setSpotify(null); }
-      toast.error(lost ? tr('{0} холболт салсан байна. Дахин холбоно уу.', name) : tr('Синк амжилтгүй боллоо. Дахин оролдоно уу.'), { id: t });
-    } finally {
-      setSyncing(null);
-    }
-  }, [supabase, tr]);
-
-  const musicDisconnect = useCallback(async (p: MusicProvider) => {
-    const res = await fetch(`/api/${p}/disconnect`, { method: 'POST' });
-    if (!res.ok) return void toast.error(tr('Салгаж чадсангүй'));
-    setSpotify(null);
-    setProfile(x => ({ ...x, [`${p}_connected`]: false }));
-    setLibraryVersion(v => v + 1);
-    toast(tr('{0} салгагдлаа', PROVIDER_NAME[p]));
-  }, [tr]);
   const updateProfile = useCallback(async (patch: Partial<Profile>) => {
     const prev = profile;
     setProfile(p => ({ ...p, ...patch }));
@@ -200,14 +154,13 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
 
   const value = useMemo<AppCtx>(() => ({
     supabase, profile, entries, feedback, watchlist, bookings,
-    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, spotify, likedSongs, todos, setTodos, toggleLike,
+    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, likedSongs, todos, setTodos, toggleLike,
     activeMood: lastMood(entries),
     tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion,
     dialog, openDialog, chatOpen, setChatOpen,
-  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, spotify, likedSongs, todos, toggleLike,
+  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, likedSongs, todos, toggleLike,
     tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    musicConnect, musicSync, musicDisconnect, musicSyncing, libraryVersion, dialog, chatOpen]);
+    dialog, chatOpen]);
 
   return <Ctx value={value}>{children}</Ctx>;
 }

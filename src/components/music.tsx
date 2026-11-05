@@ -10,17 +10,12 @@ import { cn } from '@/lib/utils';
 import type { Mood, SongRec } from '@/lib/types';
 import { Eq } from './player';
 import { useApp } from './providers/app-provider';
-import { songTrack, spTrack, usePlayer, type Track } from './providers/player-provider';
+import { songTrack, usePlayer, type Track } from './providers/player-provider';
 import { Segmented } from './segmented';
 import { Button } from './ui/button';
-import { usePlay, useSongRecs, useSpotifyTracks } from './use-play';
+import { usePlay, useSongRecs } from './use-play';
 import { useLocale, useT } from '@/components/providers/locale-provider';
-import { translateReason, type Translate } from '@/lib/i18n';
-
-const ago = (iso: string, tr: Translate) => {
-  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  return m < 1 ? tr('дөнгөж сая') : m < 60 ? tr('{0} мин өмнө', m) : m < 1440 ? tr('{0} цагийн өмнө', Math.round(m / 60)) : tr('{0} өдрийн өмнө', Math.round(m / 1440));
-};
+import { translateReason } from '@/lib/i18n';
 
 /* Нэг дууны мөр */
 function SongRow({ t, onPlay, extra }: { t: Track; onPlay: () => void; extra?: React.ReactNode }) {
@@ -111,9 +106,7 @@ export function ForYou({ mood }: { mood: Mood }) {
   const visible = (recs ?? []).filter(r => feedback['sp:' + r.video_id] !== -1);
   const tracks = visible.map(r => songTrack(r, mood.id));
   const taste = [...profile.fav_artists.slice(0, 3), ...pickGenres(profile.hobbies).slice(0, 3).map(g => tr(g))];
-  const basis = profile.spotify_connected
-    ? tr('Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан')
-    : tr('Таны хобби, үнэлгээнд тулгуурласан');
+  const basis = tr('Таны хобби, үнэлгээнд тулгуурласан');
   const isLiked = (r: SongRec) => likedSongs.some(x => x.video_id === r.video_id);
   const like = (r: SongRec) => {
     toast(isLiked(r) ? tr('Таалагдсан дуунаас хасагдлаа') : tr('Таалагдсан дуунд хадгалагдлаа 💚'));
@@ -181,59 +174,6 @@ export function LikedSongs({ mood }: { mood: Mood }) {
           <button className="mt-1 rounded-md border px-2 text-xs" aria-label={tr('{0} хасах', t.title)} onClick={() => toggleLike(likedSongs[i])}>{tr('Хасах')}</button>
         } />
       ))}
-    </section>
-  );
-}
-
-const META = {
-  name: 'Spotify',
-  note: 'Premium бол апп дотроо Spotify-аар бүтэн тоглоно. Бусад үед YouTube-ээр тоглоно.',
-};
-
-
-/* ---------- Хэрэглэгчийн өөрийн Spotify сан ---------- */
-export function MusicLibrary({ mood }: { mood: Mood }) {
-  const tr = useT();
-  const app = useApp();
-  const meta = META, provider = 'spotify' as const;
-  const connected = app.profile.spotify_connected;
-  const status = app.spotify && { name: app.spotify.display_name, synced_at: app.spotify.synced_at, count: app.spotify.track_count };
-  const spRows = useSpotifyTracks(mood.id);
-  const play = usePlay();
-  if (!app.music.spotify) return null;
-
-  const syncing = app.musicSyncing === provider;
-  if (!connected) return null;
-
-  const tracks: Track[] | null = spRows === null ? null : spRows.map(r => spTrack(r, mood.id));
-
-  return (
-    <section className="card-x">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-muted-foreground">
-          <b>{meta.name}</b>{tr('{0} · {1} дуу', status?.name && ` · ${status.name}`, status?.count ?? 0)}{status?.synced_at && tr(' · {0} шинэчилсэн', ago(status.synced_at, tr))}
-        </span>
-        <div className="flex gap-3 text-sm">
-          <button className="font-semibold text-primary disabled:opacity-50" disabled={syncing} onClick={() => void app.musicSync(provider)}>{syncing ? tr('Татаж байна…') : tr('↻ Шинэчлэх')}</button>
-          <button className="text-muted-foreground" onClick={() => void app.musicDisconnect(provider)}>{tr('Салгах')}</button>
-        </div>
-      </div>
-      {!status?.synced_at ? (
-        <div className="py-4 text-center">
-          <p className="mb-2 text-sm text-muted-foreground">{tr('Таны дуунуудыг хараахан татаагүй байна.')}</p>
-          <Button size="xl" disabled={syncing} onClick={() => void app.musicSync(provider)}>{syncing ? tr('Татаж байна…') : tr('Дуунуудаа татах')}</Button>
-        </div>
-      ) : tracks === null ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">{tr('Ачаалж байна…')}</p>
-      ) : !tracks.length ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">{tr('Таны сангаас «{0}» мэдрэмжид тохирох дуу олдсонгүй.', tr(mood.label))}</p>
-      ) : (
-        <>
-          <p className="mt-1 text-sm">{tr('«{0}» үед таны сангаас {1} дуу:', tr(mood.label), tracks.length)}</p>
-          {tracks.map((t, i) => <SongRow key={t.id} t={t} onPlay={() => play.list(tracks, i)} />)}
-          <p className="mt-2 text-xs text-muted-foreground">{tr('Дуунуудыг AI сэтгэл хөдлөлөөр ангилсан. {0}', tr(meta.note))}</p>
-        </>
-      )}
     </section>
   );
 }

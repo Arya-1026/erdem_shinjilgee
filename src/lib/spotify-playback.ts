@@ -1,24 +1,9 @@
 /* =========================================================
-   Spotify тоглуулалт (зөвхөн браузерт).
-   1) Web Playback SDK: Premium хэрэглэгчид апп дотроо бүтэн дуу тоглуулна.
-   2) Embed (iFrame API): YouTube-ээс дуу олдоогүй үеийн нөөц. 30 орчим сек preview: Spotify-д үнэгүй бүртгэлээр нэвтэрсэн ч ялгаагүй (2026.11-д туршсан).
-   2026.02-оос /me нь `product` (Premium эсэх) буцаахгүй тул SDK-ийн account_error-оор ялгана.
+   Spotify тоглуулалт (зөвхөн браузерт): Embed (iFrame API).
+   Spotify бүртгэл холбодоггүй тул апп дотор 30 орчим секундын хэсэг тоглоно. Бүтэн дууг UI-ийн «Spotify-д нээх» холбоосоор сонсоно.
    ========================================================= */
 export type SpState = { position: number; duration: number; paused: boolean };
-
-/** Spotify холбоогүй эсвэл Premium биш хэрэглэгч SDK ашиглаж чадахгүй: YouTube, түүний дараа Embed-ээр тоглоно */
-export const playsWithoutSdk = (mode: 'sdk' | 'embed', connected: boolean) => mode === 'embed' || !connected;
 type OnState = (s: SpState) => void;
-
-/* ---------- Access token (/api/spotify/token) ---------- */
-let tok: { token: string; expiresAt: number } | null = null;
-async function token() {
-  if (tok && tok.expiresAt - Date.now() > 60_000) return tok.token;
-  const res = await fetch('/api/spotify/token', { cache: 'no-store' });
-  if (!res.ok) throw new Error('token ' + res.status);
-  tok = await res.json();
-  return tok!.token;
-}
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -29,53 +14,6 @@ function loadScript(src: string) {
   });
 }
 
-/* ---------- 1) Web Playback SDK ---------- */
-let sdkPlayer: Spotify.Player | null = null;
-let sdkDevice: Promise<string> | null = null;
-
-export class PremiumRequired extends Error {}
-
-/** SDK-г ачаалж, апп-ыг Spotify "төхөөрөмж" болгоно. Premium биш бол PremiumRequired шиднэ. */
-export function initSdk(onState: OnState): Promise<string> {
-  if (sdkDevice) return sdkDevice;
-  sdkDevice = new Promise<string>((resolve, reject) => {
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      const p = new window.Spotify.Player({ name: 'Сэтгэл (вэб)', volume: 0.8, getOAuthToken: cb => { token().then(cb).catch(() => reject(new Error('auth'))); } });
-      p.addListener('ready', ({ device_id }) => resolve(device_id));
-      p.addListener('account_error', () => reject(new PremiumRequired('premium')));
-      p.addListener('authentication_error', ({ message }) => reject(new Error(message)));
-      p.addListener('initialization_error', ({ message }) => reject(new Error(message)));
-      p.addListener('player_state_changed', s => { if (s) onState({ position: s.position / 1000, duration: s.duration / 1000, paused: s.paused }); });
-      void p.connect();
-      sdkPlayer = p;
-    };
-    loadScript('https://sdk.scdn.co/spotify-player.js').catch(reject);
-  });
-  sdkDevice.catch(() => { sdkPlayer?.disconnect(); sdkPlayer = null; });
-  return sdkDevice;
-}
-
-export async function sdkPlay(uri: string, atSec: number) {
-  void sdkPlayer?.activateElement(); // гар утсан дээр autoplay зөвшөөрүүлэх (хэрэглэгчийн үйлдлийн дотор)
-  const device = await sdkDevice!;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${await token()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uris: [uri], position_ms: Math.round(atSec * 1000) }),
-    });
-    if (res.ok) return;
-    if (res.status === 404 && attempt === 0) { await new Promise(r => setTimeout(r, 1000)); continue; } // төхөөрөмж бүртгэгдэж амжаагүй
-    throw new Error('play ' + res.status);
-  }
-}
-export const sdk = {
-  pause: () => sdkPlayer?.pause(),
-  resume: () => sdkPlayer?.resume(),
-  seek: (sec: number) => sdkPlayer?.seek(Math.round(sec * 1000)),
-};
-
-/* ---------- 2) Embed (iFrame API) ---------- */
 let embedCtl: Promise<SpotifyEmbedController> | null = null;
 
 /** `host` элементийг Spotify embed-ээр солино. Энэ элемент DOM-д байнга байх ёстой. */
