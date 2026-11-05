@@ -5,16 +5,18 @@ import type { Audience, MoodId } from './types';
 
 export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'none';
 export type Person = { id: string; name: string; handle: string | null; avatar: string | null };
-export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; unread: number };
-export type ChatRow = Person & { last_body: string | null; last_at: string | null; unread: number };
+/** archived: архивласан, шинэ зурвас ирэхэд false болно. mood_hidden: би энэ хүнээс сэтгэл санаагаа нуусан */
+export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean; mood_hidden: boolean };
+export type ChatRow = Person & { last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean };
 export type RequestRow = Person & { direction: 'incoming' | 'outgoing'; created_at: string };
 export type SearchRow = Person & { relation: Relation };
 export type UserCard = Person & {
   relation: Relation; mood: MoodId | null; mood_date: string | null;
   friends_count: number | null; friends_visible: boolean; can_message: boolean; is_private: boolean;
+  mood_hidden: boolean; archived: boolean;
 };
 export type Message = { id: number; sender: string; recipient: string; body: string; created_at: string; read_at: string | null };
-export type SocialCounts = { friends: number; incoming: number; unread: number };
+export type SocialCounts = { friends: number; incoming: number; unread: number; blocked: number };
 
 export const AUDIENCE: [Audience, string][] = [['everyone', 'Бүгд'], ['friends', 'Зөвхөн найзууд'], ['nobody', 'Хэн ч биш']];
 
@@ -40,8 +42,16 @@ const rows = async <T,>(p: PromiseLike<{ data: unknown; error: unknown }>) => {
   return (data ?? []) as T[];
 };
 
+/** Найзын жагсаалтын шүүлтүүр: нэр/@нэрээр, мөн бүгд / уншаагүй / архив */
+export type ChatFilter = 'all' | 'unread' | 'archived';
+export function filterChats<T extends Person & { unread: number; archived: boolean }>(list: T[], q: string, f: ChatFilter) {
+  const t = q.trim().toLowerCase().replace(/^@/, '');
+  return list.filter(x => (f === 'archived' ? x.archived : !x.archived) && (f !== 'unread' || x.unread > 0)
+    && (!t || x.name.toLowerCase().includes(t) || (x.handle ?? '').includes(t)));
+}
+
 export const social = {
-  counts: async (db: Db) => (await rows<SocialCounts>(db.rpc('social_counts')))[0] ?? { friends: 0, incoming: 0, unread: 0 },
+  counts: async (db: Db) => (await rows<SocialCounts>(db.rpc('social_counts')))[0] ?? { friends: 0, incoming: 0, unread: 0, blocked: 0 },
   friends: (db: Db) => rows<FriendRow>(db.rpc('my_friends')),
   otherChats: (db: Db) => rows<ChatRow>(db.rpc('other_chats')),
   requests: (db: Db) => rows<RequestRow>(db.rpc('friend_requests')),

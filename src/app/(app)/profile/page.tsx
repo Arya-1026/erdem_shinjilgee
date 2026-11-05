@@ -263,9 +263,9 @@ function SocialSection() {
         <h3 className="font-semibold">👥 Найзууд</h3>
         <Link href="/friends" className="text-sm font-semibold text-primary">Бүгдийг харах →</Link>
       </div>
-      <div className="mb-3.5 grid grid-cols-3 gap-3">
-        {([['Найз', counts?.friends, '/friends'], ['Хүсэлт', counts?.incoming, '/friends'], ['Шинэ зурвас', counts?.unread, '/friends']] as const).map(([l, v, href]) => (
-          <Link key={l} href={href} className={cn('rounded-2xl border bg-card p-3.5', l !== 'Найз' && v ? 'border-primary' : '')}>
+      <div className="mb-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {([['Найз', counts?.friends, '/friends'], ['Хүсэлт', counts?.incoming, '/friends?tab=requests'], ['Шинэ зурвас', counts?.unread, '/friends'], ['Блоклосон', counts?.blocked, '/friends?tab=blocked']] as const).map(([l, v, href]) => (
+          <Link key={l} href={href} className={cn('rounded-2xl border bg-card p-3.5', (l === 'Хүсэлт' || l === 'Шинэ зурвас') && v ? 'border-primary' : '')}>
             <span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v ?? '–'}</b>
           </Link>
         ))}
