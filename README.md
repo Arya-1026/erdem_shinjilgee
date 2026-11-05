@@ -14,7 +14,7 @@
   │  fetch /api/*                        │        ▼ pg_net
   ▼                                      │   /api/cron/reminders → Resend имэйл + Web Push
 Next.js Route Handlers (Vercel) ─────────┘
-  ├─ /api/chat         түлхүүр үг + OpenAI Moderation → Groq gpt-oss-20b → OpenRouter → дүрэмд суурилсан хариулт
+  ├─ /api/chat         түлхүүр үг + OpenAI Moderation + утгын ангилал → Groq gpt-oss-20b → OpenRouter → дүрэмд суурилсан хариулт
   ├─ /api/music/recs   хэрэглэгчийн амт → Groq-оор дуу санал болгох → YouTube хайлт (cache)
   ├─ /api/youtube/*    OAuth, playlist/like татах → Groq: дуу мөн эсэх + mood ангилах
   ├─ /api/spotify/*    (заавал биш) OAuth, playlist татах → mood ангилах
@@ -32,7 +32,7 @@ Next.js Route Handlers (Vercel) ─────────┘
 | Нэвтрэлт | Supabase Auth (имэйл, Google) | `src/app/login`, `src/app/auth/callback`, `src/proxy.ts` |
 | Сануулга | pg_cron + pg_net → имэйл + Web Push | `supabase/migrations/0002_cron.sql`, `public/sw.js` |
 | LLM | Groq `openai/gpt-oss-20b`, нөөц нь OpenRouter | `src/lib/server/llm.ts` |
-| Crisis | Түлхүүр үг + OpenAI Moderation | `src/lib/crisis.ts`, `src/lib/server/moderation.ts` |
+| Crisis | Түлхүүр үг (кирилл, латин) + OpenAI Moderation + LLM утгын ангилал | `src/lib/crisis.ts`, `src/lib/server/crisis-check.ts`, `src/lib/server/moderation.ts` |
 | Хөгжим | YouTube Data API + IFrame Player (үндсэн), Spotify Web API (заавал биш) | `src/lib/server/youtube.ts`, `src/lib/server/music-recs.ts`, `src/lib/server/spotify.ts` |
 | График | Recharts | `src/components/charts.tsx` |
 | Имэйл | Resend | `src/lib/server/email.ts` |
@@ -84,7 +84,7 @@ Next.js Route Handlers (Vercel) ─────────┘
 ```
 src/
   app/
-    (app)/            нэвтэрсэн хэрэглэгчийн хуудсууд: home, chat, recs, stats, experts, profile
+    (app)/            нэвтэрсэн хэрэглэгчийн хуудсууд: home, recs, todo (хуваарь + миний тойм), experts, profile
     expert/           сэтгэл зүйчийн портал (захиалга, уулзалтын холбоос, үйлчлүүлэгчийн тайлан)
     login/, onboarding/, auth/callback/
     api/              Route Handlers
@@ -221,7 +221,7 @@ update experts set user_id = (select id from auth.users where email = 'psycholog
 - YouTube, Spotify-ийн refresh token клиент рүү хэзээ ч гарахгүй. Spotify SDK-д зөвхөн богино хугацаат access token өгнө.
 - OAuth `state`-ийг httpOnly cookie-оор шалгаж CSRF-ээс хамгаална.
 - Давхар захиалгаас `unique (expert_id, booking_date, slot)` constraint хамгаална.
-- Crisis илэрвэл LLM-ийг огт дуудахгүй, 103 / 108 утасны дугаар болон сэтгэл зүйчийн холбоосыг шууд харуулна.
+- Crisis илэрвэл чатын хариу бичихгүй, 103 / 108 утасны дугаар болон сэтгэл зүйчийн холбоосыг шууд харуулна.
 - Гарах үед тухайн төхөөрөмжийн push бүртгэл цуцлагдана.
 
 ## Хязгаарлалт

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { isCrisisText } from '@/lib/crisis';
 import { WD } from '@/lib/data';
 import { ENTRY_COLS, normalizeEntry } from '@/lib/db';
 import { weekdayOf } from '@/lib/date';
+import { detectCrisis } from '@/lib/server/crisis-check';
 import { llmChat, llmConfigured } from '@/lib/server/llm';
-import { flagsSelfHarm } from '@/lib/server/moderation';
 import { fallbackSupport, isSupportDate, parseSupport, supportPrompt, type Support } from '@/lib/support';
 import { createClient } from '@/lib/supabase/server';
 import type { Entry } from '@/lib/types';
@@ -43,7 +42,7 @@ async function handle(req: Request, date: unknown, refresh: boolean) {
 
   // Тэмдэглэлд өөрийгөө гэмтээх агуулга байвал LLM-ийг дуудахгүй, тусламжийн утас харуулна
   const notes = today.map(e => e.note).join('\n');
-  if (notes.trim() && (isCrisisText(notes) || (await flagsSelfHarm(notes)))) return NextResponse.json({ crisis: true } satisfies Out);
+  if (notes.trim() && (await detectCrisis(notes))) return NextResponse.json({ crisis: true } satisfies Out);
 
   const profile = profileRes.data ?? { name: '', hobbies: [] as string[] };
   let support: Support | null = null, source = 'fallback';

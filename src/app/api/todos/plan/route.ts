@@ -4,10 +4,11 @@ import { TODO_COLS } from '@/lib/db';
 import { weekdayOf } from '@/lib/date';
 import { llmConfigured, llmSmart } from '@/lib/server/llm';
 import { createClient } from '@/lib/supabase/server';
-import { explainPrompt, isFixed, parseExplain, parseTaskList, planTodos, statsSummary, taskPrompt, weekdayProfile } from '@/lib/todo-plan';
+import { explainPrompt, isFixed, parseExplain, parseTaskList, planGentle, planTodos, recentState, statsSummary, taskLoad, taskPrompt, weekdayProfile } from '@/lib/todo-plan';
 import type { Todo } from '@/lib/types';
 
-// POST /api/todos/plan { text?: "чөлөөт бичвэр", today: "YYYY-MM-DD", replan?: boolean }
+// POST /api/todos/plan { text?: "чөлөөт бичвэр", today: "YYYY-MM-DD", replan?: boolean, gentle?: boolean }
+// gentle: дуусаагүй бүх ажлыг сэтгэл санаанд тааруулж, ачаалал багаар дахин тараана.
 // text байвал AI ажлын жагсаалт болгож нэмнэ. Дараа нь товлоогүй (replan бол бүх дуусаагүй) ажлыг өдрүүдэд хуваарилна.
 export const maxDuration = 60;
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const body = await req.json().catch(() => null) as { text?: unknown; today?: unknown; replan?: unknown } | null;
+  const body = await req.json().catch(() => null) as { text?: unknown; today?: unknown; replan?: unknown; gentle?: unknown } | null;
   const today = typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today) ? body.today : null;
   if (!today) return NextResponse.json({ error: 'invalid today' }, { status: 400 });
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
@@ -43,21 +44,38 @@ export async function POST(req: Request) {
 
   const open = todos.filter(t => !t.done);
   // Өдрийг нь хэрэглэгч өөрөө заасан ажлыг дахин хуваарилахад ч хөдөлгөхгүй
-  const tasks = open.filter(t => !t.planned_date || (body?.replan === true && !isFixed(t)));
+  const gentle = body?.gentle === true;
+  const tasks = open.filter(t => !t.planned_date || ((body?.replan === true || gentle) && !isFixed(t)));
   const moving = new Set(tasks.map(t => t.id));
   // Өмнө товлосон ажлын ачааллыг тооцно
   const busy: Record<string, number> = {};
-  for (const t of open) if (t.planned_date && !moving.has(t.id)) busy[t.planned_date] = (busy[t.planned_date] ?? 0) + t.minutes;
+  const busyLoad: Record<string, number> = {};
+  for (const t of open) if (t.planned_date && !moving.has(t.id)) {
+    busy[t.planned_date] = (busy[t.planned_date] ?? 0) + t.minutes;
+    busyLoad[t.planned_date] = (busyLoad[t.planned_date] ?? 0) + taskLoad(t);
+  }
 
-  const plan = planTodos(tasks, stats, today, busy);
+  const plan = gentle ? planGentle(tasks, stats, today, recentState(entries.data ?? [], today), busy, busyLoad) : planTodos(tasks, stats, today, busy);
   const byId = new Map(tasks.map(t => [t.id, t]));
   let summary = plan.length ? `${plan.length} ажлыг таны сэтгэл санаа, эрч хүч сайн өдрүүдэд тааруулж хуваариллаа.` : 'Хуваарилах шинэ ажил алга.';
+  if (gentle) {
+    const peak = (rows: { planned_date: string | null; minutes: number }[]) => {
+      const sum: Record<string, number> = {};
+      for (const r of rows) if (r.planned_date && r.planned_date >= today) sum[r.planned_date] = (sum[r.planned_date] ?? 0) + r.minutes;
+      return Math.max(0, ...Object.values(sum));
+    };
+    const where = new Map(plan.map(p => [p.id, p.planned_date]));
+    const before = peak(open), after = peak(open.map(t => ({ planned_date: where.get(t.id) ?? t.planned_date, minutes: t.minutes })));
+    summary = plan.length
+      ? `${plan.length} ажлыг сэтгэл санаанд тань тааруулж тараалаа. Хамгийн ачаалалтай өдөр ${before} минутаас ${after} минут болсон.`
+      : 'Дахин тараах ажил алга. Таны өөрөө өдрийг нь заасан ажлууд хэвээр үлдэнэ.';
+  }
 
   if (plan.length && llmConfigured()) {
     const rows = plan.map(p => { const t = byId.get(p.id)!; return { title: t.title, date: p.planned_date, day: WD[weekdayOf(p.planned_date)], effort: t.effort, note: p.reason }; });
     const r = parseExplain((await llmSmart(explainPrompt(rows, statsSummary(stats)), { temperature: 0.5, maxTokens: 1600, timeoutMs: 25_000 }))?.text ?? '', plan.length);
     r?.why.forEach((w, i) => { if (w) plan[i].reason = w; });
-    if (r?.summary) summary = r.summary;
+    if (r?.summary && !gentle) summary = r.summary;
   }
 
   if (pinned.length) {

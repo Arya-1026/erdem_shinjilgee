@@ -84,4 +84,3 @@ export const MOOD_CAP: Record<MoodId, string> = {
 };
 
 export const QUICK = ['Стресстэй байна 😣', 'Хичээл, ажил давхцаад байна 📚', 'Харилцаа хүндэрсэн 💔', 'Нойр хүрэхгүй байна 🌙', 'Ганцаардаж байна', 'Урам хэрэгтэй байна 💪'];
-export const REC_ICON = { exercise: '🧘', movie: '🎬' } as const;

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { streak } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { Avatar } from './avatar';
+import { ChatWidget } from './chat-widget';
 import { DialogHost } from './dialogs/dialog-host';
 import { Logo } from './logo';
 import { SantaHat, SeasonalNav } from './seasonal';
@@ -16,10 +17,8 @@ import { useSocialBadge } from './use-social-badge';
 
 const NAV = [
   ['/home', '🏠', 'Нүүр', 'Өнөөдөр'],
-  ['/chat', '💬', 'Чат', 'AI туслах'],
   ['/recs', '✨', 'Зөвлөмж', 'Зөвлөмж'],
   ['/todo', '🗓️', 'Хуваарь', 'Төлөвлөгөө'],
-  ['/stats', '📊', 'Тайлан', 'Миний тайлан'],
   ['/experts', '🧑‍⚕️', 'Зөвлөгч', 'Сэтгэл зүйчид'],
   ['/friends', '👥', 'Найзууд', 'Найзууд'],
   ['/profile', '👤', 'Профайл', 'Профайл'],
@@ -75,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <MiniPlayer />
       <FullPlayer />
+      <ChatWidget />
       <DialogHost />
     </>
   );
