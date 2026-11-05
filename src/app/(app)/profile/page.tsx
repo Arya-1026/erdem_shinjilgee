@@ -9,7 +9,6 @@ import { AvatarEditor } from '@/components/avatar';
 import { FriendsTile } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
-import { SpotifyAccount } from '@/components/music';
 import { PalettePicker } from '@/components/palette-picker';
 import { useSeasonPref } from '@/components/seasonal';
 import { isSeasonPref, saveSeasonPref } from '@/lib/season';
@@ -117,7 +116,6 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-white">{tr(h)}</span>)}</div>
           <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>{tr('✏️ Хобби, нас, дуучин засах')}</Link>
         </section>
-        <SpotifyAccount />
       </div>
 
       <section className="card-x">

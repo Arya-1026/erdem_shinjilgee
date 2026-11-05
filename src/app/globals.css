@@ -222,7 +222,17 @@ body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 
 .embed-bar { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); }
 .embed-bar.embed-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
 @media (min-width: 900px) { .embed-bar { left: 256px; right: 16px; bottom: 16px; } }
+/* YouTube-ийн дүрэм: тоглуулагч харагдаж, дор хаяж 200×200px, дээр нь юу ч давхарлахгүй */
+:root { --yt-h: 200px; }
+.yt-dock { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); height: var(--yt-h); }
+.yt-dock.yt-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
+.yt-frame { width: var(--yt-h); height: var(--yt-h); flex: none; background: #000; }
+.yt-frame iframe { display: block; width: 100%; height: 100%; }
+@media (min-width: 900px) { .yt-dock { left: auto; right: 16px; bottom: 16px; width: 440px; } }
 body.has-player .fp { padding-bottom: 110px; }
+body.has-yt .fp { padding-bottom: calc(var(--yt-h) + 40px); }
+body.has-yt .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--yt-h) + 48px); }
+@media (min-width: 900px) { body.has-yt .app-main { padding-bottom: calc(var(--yt-h) + 40px); } }
 .fp { padding: calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
   background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 70%, #1A1816) 0%, #1A1816 78%); animation: up .3s ease-out; }
 .fp-art { box-shadow: 0 26px 50px -14px color-mix(in srgb, var(--pc) 70%, #000); }
@@ -263,10 +273,12 @@ body.has-player .fp { padding-bottom: 110px; }
 .chat-bubble { right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); }
 .chat-panel { --chat-free: calc(100dvh - var(--head-h) - var(--nav-h) - var(--safe-b) - 20px); right: 10px; bottom: calc(var(--nav-h) + var(--safe-b) + 10px); width: min(350px, calc(100vw - 20px)); height: min(540px, var(--chat-free)); }
 body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px)); }
+body.has-yt .chat-panel { height: min(540px, calc(var(--chat-free) - var(--yt-h) - 28px)); }
 @media (min-width: 900px) {
   .chat-bubble { bottom: 10px; }
   .chat-panel { --chat-free: calc(100dvh - var(--head-h) - 20px); bottom: 10px; width: 400px; height: min(640px, var(--chat-free)); }
   body.has-player .chat-panel { height: min(640px, calc(var(--chat-free) - 84px)); }
+  body.has-yt .chat-panel { height: min(640px, calc(var(--chat-free) - var(--yt-h) - 40px)); }
 }
 
 /* ---------- Тайлангийн heatmap ---------- */

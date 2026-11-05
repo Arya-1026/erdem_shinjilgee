@@ -30,7 +30,7 @@ function safeArea(): Box {
   if (nav) { if (nav.width > nav.height) a.bottom = nav.top; else a.left = nav.right; } // Утсан дээр доор, том дэлгэцэд зүүн талд
   const head = rect('.topbar');
   if (head) a.top = head.bottom;
-  for (const s of ['.mini', '.embed-bar:not(.embed-off)']) {
+  for (const s of ['.mini', '.embed-bar:not(.embed-off)', '.yt-dock:not(.yt-off)']) {
     const r = rect(s);
     if (r?.height && r.bottom > a.bottom - 40) a.bottom = Math.min(a.bottom, r.top);
   }

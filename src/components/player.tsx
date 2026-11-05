@@ -124,7 +124,7 @@ export function FullPlayer() {
       </div>
       <p className="mt-3 text-center text-[.72rem] opacity-55">
         {t.source === 'spotify'
-            ? p.usesEmbed ? tr('Апп дотор 30 орчим секундын хэсэг тоглоно. Бүтэн сонсох бол доорх холбоосыг дарна уу.') : tr('Spotify Premium-ээр апп дотроо тоглож байна.')
+            ? p.usesYt ? tr('YouTube-ээр бүтэн тоглож байна.') : p.usesEmbed ? tr('Апп дотор 30 орчим секундын хэсэг тоглоно. Бүтэн сонсох бол доорх холбоосыг дарна уу.') : tr('Spotify Premium-ээр апп дотроо тоглож байна.')
             : tr('Демо: дууны оронд тухайн mood-ийн аялгууг браузер дээр үүсгэж тоглуулж байна.')}
       </p>
       {url && <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 text-center text-sm font-semibold underline">{tr('Spotify-д бүтэн сонсох ↗')}</a>}

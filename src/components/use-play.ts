@@ -12,17 +12,18 @@ import { useT } from '@/components/providers/locale-provider';
 
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
-/** Хэрэглэгчийн сангаас (Spotify-аас татсан эсвэл холбоосоор оруулсан) тухайн mood-д тохирох дуунууд */
+/** Хэрэглэгчийн Spotify сангаас тухайн mood-д тохирох дуунууд (холбоогүй бол хоосон) */
 export function useSpotifyTracks(moodId: MoodId, limit = 30) {
-  const { supabase, libraryVersion } = useApp();
+  const { supabase, profile, libraryVersion } = useApp();
   const [tracks, setTracks] = useState<SpotifyTrackRow[] | null>(null);
   useEffect(() => {
+    if (!profile.spotify_connected) return;
     let alive = true;
     supabase.from('spotify_tracks').select(SPOTIFY_TRACK_COLS).contains('moods', [moodId]).limit(300)
       .then(({ data }) => { if (alive) setTracks(shuffle((data as SpotifyTrackRow[]) ?? []).slice(0, limit)); });
     return () => { alive = false; };
-  }, [supabase, moodId, limit, libraryVersion]);
-  return tracks;
+  }, [supabase, profile.spotify_connected, moodId, limit, libraryVersion]);
+  return profile.spotify_connected ? tracks : [];
 }
 
 type RecsState = { recs: SongRec[] | null; loading: boolean; reason?: string };
@@ -60,7 +61,7 @@ export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
 // Зөвлөмж, хэрэглэгчийн сангаас дараалал үүсгэж тоглуулах үйлдлүүд
 export function usePlay() {
   const tr = useT();
-  const { supabase, music, likedSongs } = useApp();
+  const { supabase, profile, music, likedSongs } = useApp();
   const player = usePlayer();
 
   const toggleOr = (id: string, start: () => void) => (player.nowId === id ? player.toggle() : start());
@@ -74,7 +75,7 @@ export function usePlay() {
     async mood(moodId: MoodId) {
       const m = moodById(moodId);
       const [sp, recs] = await Promise.all([
-        supabase.from('spotify_tracks').select(SPOTIFY_TRACK_COLS).contains('moods', [moodId]).limit(300),
+        profile.spotify_connected ? supabase.from('spotify_tracks').select(SPOTIFY_TRACK_COLS).contains('moods', [moodId]).limit(300) : null,
         music.discovery ? fetch(`/api/music/recs?mood=${moodId}`).then(r => r.json()).catch(() => null) as Promise<{ recs?: SongRec[] } | null> : null,
       ]);
       const own = [

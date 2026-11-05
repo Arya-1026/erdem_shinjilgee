@@ -1,13 +1,13 @@
 /* =========================================================
    Spotify тоглуулалт (зөвхөн браузерт).
    1) Web Playback SDK: Premium хэрэглэгчид апп дотроо бүтэн дуу тоглуулна.
-   2) Embed (iFrame API): Premium-гүй үед 30 орчим сек preview: Spotify-д үнэгүй бүртгэлээр нэвтэрсэн ч ялгаагүй (2026.11-д туршсан). Бүтэн дууг UI-ийн «Spotify-д нээх» холбоосоор сонсоно.
+   2) Embed (iFrame API): YouTube-ээс дуу олдоогүй үеийн нөөц. 30 орчим сек preview: Spotify-д үнэгүй бүртгэлээр нэвтэрсэн ч ялгаагүй (2026.11-д туршсан).
    2026.02-оос /me нь `product` (Premium эсэх) буцаахгүй тул SDK-ийн account_error-оор ялгана.
    ========================================================= */
 export type SpState = { position: number; duration: number; paused: boolean };
 
-/** Spotify холбоогүй хэрэглэгч SDK-гийн токенгүй тул Embed-ээр л тоглоно. Сонголтоо хадгалахгүй: дараа нь холбовол SDK-г оролдоно. */
-export const playsViaEmbed = (mode: 'sdk' | 'embed', connected: boolean) => mode === 'embed' || !connected;
+/** Spotify холбоогүй эсвэл Premium биш хэрэглэгч SDK ашиглаж чадахгүй: YouTube, түүний дараа Embed-ээр тоглоно */
+export const playsWithoutSdk = (mode: 'sdk' | 'embed', connected: boolean) => mode === 'embed' || !connected;
 type OnState = (s: SpState) => void;
 
 /* ---------- Access token (/api/spotify/token) ---------- */

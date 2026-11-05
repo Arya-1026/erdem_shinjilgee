@@ -2,23 +2,6 @@
    2026.02-оос playlist-ийн мөрийн дуу `item` талбарт ирдэг (`track` нь хуучирсан, заримдаа boolean). */
 export type SpotifyTrack = { id: string; name: string; artists: string; image: string | null; uri: string; duration_ms: number };
 
-/**
- * Хэрэглэгчийн буулгасан бичвэрээс дууны id-уудыг гаргана. Spotify-аас хуулахад мөр бүрт нэг холбоос ирдэг.
- * otherLinks: дууны биш (playlist, цомог) холбоос байгаа эсэх: тэдгээрийн дууг API-аар уншиж чадахгүй.
- */
-export function parseTrackIds(text: string) {
-  const ids = [...text.matchAll(/(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?track\/|spotify:track:)([A-Za-z0-9]{22})(?![A-Za-z0-9])/g)].map(m => m[1]);
-  return { ids: [...new Set(ids)], otherLinks: /open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:playlist|album|artist)\/|spotify:(?:playlist|album|artist):/.test(text) };
-}
-
-/** Нийтийн oEmbed хариуг дуу болгоно. Энэ хариу дуучин, үргэлжлэх хугацаа өгдөггүй: тоглуулагч хугацааг өөрөө мэдээлнэ. */
-export function oembedTrack(id: string, raw: unknown): SpotifyTrack | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const { title, thumbnail_url: img } = raw as { title?: unknown; thumbnail_url?: unknown };
-  if (typeof title !== 'string' || !title.trim()) return null;
-  return { id, name: title.trim().slice(0, 300), artists: '', image: typeof img === 'string' && img.startsWith('https://') ? img : null, uri: `spotify:track:${id}`, duration_ms: 0 };
-}
-
 type Img = { url: string; width?: number | null };
 type RawTrack = {
   type?: string; id?: string | null; name?: string; uri?: string; duration_ms?: number; is_local?: boolean;
