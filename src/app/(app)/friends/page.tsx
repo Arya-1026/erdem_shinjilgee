@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActionMenu, type MenuItem } from '@/components/action-menu';
+import { useFriendActions } from '@/components/friend-actions';
 import { PersonAvatar } from '@/components/person-avatar';
 import { useApp } from '@/components/providers/app-provider';
 import { Segmented } from '@/components/segmented';
@@ -59,18 +60,9 @@ export default function FriendsPage() {
   const shown = filterChats(friends ?? [], q, filter), others = filterChats(chats, q, filter);
   const archivedN = (friends ?? []).filter(x => x.archived).length + chats.filter(x => x.archived).length;
   // Яриа бүрийн ⋯ цэс (Messenger-ийн адил)
-  const menu = (p: Person & { archived: boolean; mood_hidden?: boolean }, isFriend: boolean): MenuItem[] => [
-    { label: p.archived ? '📤 Архиваас гаргах' : '🗄️ Архивлах',
-      onSelect: () => void act(supabase.rpc('set_chat_archived', { partner: p.id, archived: !p.archived }), p.archived ? 'Архиваас гаргалаа' : 'Архивлалаа. Шинэ зурвас ирвэл дахин гарч ирнэ.') },
-    isFriend && { label: p.mood_hidden ? '🙂 Сэтгэл санаагаа харуулах' : '🙈 Сэтгэл санаагаа нуух',
-      onSelect: () => void act(supabase.rpc('set_mood_hidden', { target: p.id, hidden: !p.mood_hidden }), p.mood_hidden ? `${p.name} таны сэтгэл санааг харна` : `${p.name}-аас сэтгэл санаагаа нууллаа`) },
-    { label: '🗑️ Ярианы түүх устгах', danger: true,
-      onSelect: () => { if (confirm('Энэ ярианы түүхийг өөрөөсөө устгах уу? Нөгөө хүнд хэвээр үлдэнэ.')) void act(supabase.rpc('delete_chat', { partner: p.id }), 'Ярианы түүх устлаа'); } },
-    isFriend && { label: '👋 Найзаас хасах', danger: true,
-      onSelect: () => { if (confirm(`${p.name}-г найзаас хасах уу?`)) void act(supabase.rpc('remove_friend', { target: p.id }), 'Найзаас хаслаа'); } },
-    { label: '🚫 Блоклох', danger: true,
-      onSelect: () => { if (confirm(`${p.name}-г блоклох уу? Тэр танд бичих, таныг хайж олох боломжгүй болно.`)) void act(supabase.rpc('block_user', { target: p.id }), 'Блоклолоо'); } },
-  ];
+  const friendActions = useFriendActions(() => void load());
+  const menu = (p: Person & { archived: boolean; mood_hidden?: boolean; favorite?: boolean }, isFriend: boolean): MenuItem[] =>
+    friendActions(p, { isFriend, chat: true });
 
   return (
     <div className="mx-auto flex max-w-[760px] flex-col gap-3.5">
@@ -100,7 +92,7 @@ export default function FriendsPage() {
           {others.length > 0 && (
             <>
               <h3 className="mt-4 mb-1 text-sm font-semibold text-muted-foreground">Бусад яриа</h3>
-              {others.map(c => <FriendLine key={c.id} f={{ ...c, mood: null, mood_date: null, mood_hidden: false }} menu={menu(c, false)} />)}
+              {others.map(c => <FriendLine key={c.id} f={{ ...c, mood: null, mood_date: null, mood_hidden: false, favorite: false }} menu={menu(c, false)} />)}
             </>
           )}
         </section>
@@ -150,7 +142,7 @@ function FriendLine({ f, menu }: { f: FriendRow; menu: MenuItem[] }) {
       <Link href={`/friends/${f.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2.5">
         <PersonAvatar name={f.name} avatar={f.avatar} mood={f.mood} className="size-12 text-lg" />
         <div className="min-w-0 flex-1">
-          <b className="block truncate">{f.name} {f.handle && <span className="font-normal text-muted-foreground">@{f.handle}</span>}{f.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}</b>
+          <b className="block truncate">{f.name} {f.handle && <span className="font-normal text-muted-foreground">@{f.handle}</span>}{f.favorite && <span className="ml-1 text-xs" title="Favorite">⭐</span>}{f.mood_hidden && <span className="ml-1 text-xs" title="Та энэ хүнээс сэтгэл санаагаа нуусан">🙈</span>}</b>
           <span className={cn('block truncate text-sm', f.unread ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
             {f.last_body ? `${f.last_mine ? 'Та: ' : ''}${preview(f.last_body)}` : f.mood ? `${moodById(f.mood).emoji} ${moodById(f.mood).label} · ${moodAgo(f.mood_date, now)}` : 'Зурвас бичих'}
           </span>

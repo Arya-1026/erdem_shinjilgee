@@ -6,7 +6,7 @@ import type { Audience, MoodId } from './types';
 export type Relation = 'self' | 'friend' | 'outgoing' | 'incoming' | 'none';
 export type Person = { id: string; name: string; handle: string | null; avatar: string | null };
 /** archived: архивласан, шинэ зурвас ирэхэд false болно. mood_hidden: би энэ хүнээс сэтгэл санаагаа нуусан */
-export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean; mood_hidden: boolean };
+export type FriendRow = Person & { mood: MoodId | null; mood_date: string | null; last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean; mood_hidden: boolean; favorite: boolean };
 export type ChatRow = Person & { last_body: string | null; last_at: string | null; last_mine: boolean | null; unread: number; archived: boolean };
 export type RequestRow = Person & { direction: 'incoming' | 'outgoing'; created_at: string };
 export type SearchRow = Person & { relation: Relation };

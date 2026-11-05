@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
+import { FriendsTile } from '@/components/friends-tile';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
@@ -74,7 +75,8 @@ export default function ProfilePage() {
           <AvatarEditor />
           <div className="min-w-0"><h2 className="text-[1.15rem] font-bold">{u.name}</h2><p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p></div>
         </div>
-        <div className="my-3.5 grid grid-cols-3 gap-3">
+        <div className="my-3.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <FriendsTile />
           {[['Бүртгэл', entries.length], ['Дасгал', u.exercises_done], ['Streak', streak(entries)]].map(([l, v]) => (
             <div key={l} className="rounded-2xl border bg-card p-3.5"><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v}</b></div>
           ))}
