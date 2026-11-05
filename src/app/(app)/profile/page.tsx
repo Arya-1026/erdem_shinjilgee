@@ -18,6 +18,8 @@ import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
 import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
+import { AUDIENCE, cleanHandle, HANDLE_RE, shortId, social, type SocialCounts } from '@/lib/social';
+import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 // Сервер дээр theme тодорхойгүй тул hydration-ий дараа л switch-ийг харуулна
@@ -134,6 +136,7 @@ export default function ProfilePage() {
         </Link>
       )}
 
+      <SocialSection />
       <AccountSection />
 
       <section className="card-x desk:col-span-2">
@@ -222,6 +225,73 @@ function AccountSection() {
         )}
         {mode === 'reset' && <div className="mt-2"><PasswordReset email={u.email} onDone={() => { setHasPassword(true); close(); }} onCancel={close} /></div>}
       </div>
+    </section>
+  );
+}
+
+/* Найзууд: тоо, хүсэлт, @нэр, ID, нууцлалын тохиргоо */
+function SocialSection() {
+  const { profile: u, updateProfile, supabase } = useApp();
+  const [counts, setCounts] = useState<SocialCounts | null>(null);
+  const [handle, setHandle] = useState(u.handle ?? '');
+  useEffect(() => { social.counts(supabase).then(setCounts).catch(() => setCounts(null)); }, [supabase]);
+
+  async function saveHandle(e: React.FormEvent) {
+    e.preventDefault();
+    const h = cleanHandle(handle);
+    if (!HANDLE_RE.test(h)) return void toast('3–20 тэмдэгт: латин жижиг үсэг, тоо, _ эсвэл .');
+    if (h === u.handle) return;
+    const { error } = await supabase.from('profiles').update({ handle: h }).eq('id', u.id);
+    if (error) return void toast.error(error.code === '23505' ? `@${h} нэрийг өөр хүн авсан байна` : 'Хадгалж чадсангүй');
+    await updateProfile({ handle: h });
+    toast(`Таны нэр @${h} боллоо ✓`);
+  }
+
+  const copyId = () => { void navigator.clipboard?.writeText(u.id).then(() => toast('ID хуулагдлаа')); };
+  const pick = (key: 'mood_visibility' | 'message_permission' | 'friends_visibility', label: string, sub: string) => (
+    <Setting title={label} sub={sub}>
+      <select aria-label={label} value={u[key]} onChange={e => void updateProfile({ [key]: e.target.value as Audience })}
+        className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
+        {AUDIENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </Setting>
+  );
+
+  return (
+    <section id="social" className="card-x desk:col-span-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold">👥 Найзууд</h3>
+        <Link href="/friends" className="text-sm font-semibold text-primary">Бүгдийг харах →</Link>
+      </div>
+      <div className="mb-3.5 grid grid-cols-3 gap-3">
+        {([['Найз', counts?.friends, '/friends'], ['Хүсэлт', counts?.incoming, '/friends'], ['Шинэ зурвас', counts?.unread, '/friends']] as const).map(([l, v, href]) => (
+          <Link key={l} href={href} className={cn('rounded-2xl border bg-card p-3.5', l !== 'Найз' && v ? 'border-primary' : '')}>
+            <span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v ?? '–'}</b>
+          </Link>
+        ))}
+      </div>
+
+      <form className="flex max-w-[460px] flex-col gap-1.5 border-b pb-3.5" onSubmit={e => void saveHandle(e)}>
+        <label htmlFor="acc-handle" className="text-sm font-semibold">Хэрэглэгчийн нэр (@)</label>
+        <div className="flex gap-2">
+          <input id="acc-handle" className="min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none"
+            placeholder="жишээ нь: tungalag_01" value={handle} maxLength={21} autoCapitalize="none" autoComplete="off" onChange={e => setHandle(e.target.value)} />
+          <Button type="submit" size="xl" variant="secondary" className="h-11 flex-none" disabled={!handle.trim() || cleanHandle(handle) === u.handle}>Хадгалах</Button>
+        </div>
+        <span className="text-xs text-muted-foreground">Найзууд тань @нэр эсвэл ID-аар чинь хайж олно. ID: <button type="button" className="font-semibold text-primary" onClick={copyId}>{shortId(u.id)} ⧉</button></span>
+      </form>
+
+      <h4 className="mt-3.5 text-sm font-semibold text-muted-foreground">Нууцлал</h4>
+      <Setting title="Профайл" sub="Нууц бол нэрээр хайхад олдохгүй, зөвхөн @нэр, ID-аар олдоно. Зураг тань зөвхөн найздаа харагдана.">
+        <select aria-label="Профайл" value={u.profile_visibility} onChange={e => void updateProfile({ profile_visibility: e.target.value as 'public' | 'friends' })}
+          className="min-h-10 rounded-[10px] border-[1.5px] bg-background px-2.5">
+          <option value="public">🌐 Нээлттэй</option>
+          <option value="friends">🔒 Нууц</option>
+        </select>
+      </Setting>
+      {pick('mood_visibility', 'Сэтгэл санаагаа харуулах', 'Таны сүүлийн бүртгэлийн эможиг хэн харах вэ')}
+      {pick('message_permission', 'Надад зурвас бичих', 'Хэн танд зурвас бичиж болох вэ')}
+      {pick('friends_visibility', 'Найзуудаа харуулах', 'Таны найзуудын жагсаалтыг хэн харах вэ')}
     </section>
   );
 }
