@@ -383,4 +383,6 @@ export const EN_UI_2: Record<string, string> = {
   "Дуугаар бичих": "Voice typing",
   "Сонсож байна… зогсоох": "Listening… stop",
   "Ярина уу…": "Speak now…",
+  "← Буцах": "← Back",
+  "Сэтгэл зүйн асуулга": "Wellbeing questionnaire",
 };
