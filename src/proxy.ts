@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { AUTH_COOKIE_OPTIONS } from '@/lib/supabase/cookie-options';
 
 // Хүсэлт бүрт Supabase session-ийг шинэчилж, нэвтрээгүй хэрэглэгчийг /login руу шилжүүлнэ.
 // Энэ нь зөвхөн UX-ийн шалгалт. Өгөгдлийн жинхэнэ хамгаалалт бол RLS.
@@ -34,11 +35,13 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet, headers) => {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
+          // options (maxAge г.м.)-ийг заавал дамжуулна: үгүй бол шинэчилсэн токен session cookie болж хөтөч хаагдахад устна
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
           Object.entries(headers).forEach(([k, v]) => response.headers.set(k, v));
         },
