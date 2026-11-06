@@ -124,6 +124,117 @@ const SCENES: Record<string, { bg: string; art: React.ReactNode }> = {
       <circle cx="70" cy="75" r="4" fill={INK} /><circle cx="84" cy="75" r="4" fill={INK} /><circle cx="98" cy="75" r="4" fill={INK} />
     </>,
   },
+  // Хайрцаг амьсгал: дөрвөлжин зам, булан бүрт цэг
+  e11: {
+    bg: '#D3ECF2',
+    art: <>
+      <rect x="26" y="26" width="68" height="68" rx="12" fill={WHITE} opacity=".6" />
+      <rect x="26" y="26" width="68" height="68" rx="12" fill="none" stroke="#2F7F9B" strokeWidth="6" strokeDasharray="14 8" strokeLinecap="round" />
+      <circle cx="26" cy="26" r="7" fill="#FFC24B" stroke={INK} strokeWidth="3" />
+      <circle cx="94" cy="26" r="7" fill="#5AB98C" stroke={INK} strokeWidth="3" />
+      <circle cx="94" cy="94" r="7" fill="#5A8FD8" stroke={INK} strokeWidth="3" />
+      <circle cx="26" cy="94" r="7" fill="#E86A7E" stroke={INK} strokeWidth="3" />
+      <text x="60" y="68" textAnchor="middle" fontSize="22" fontWeight="800" fill={INK}>4</text>
+    </>,
+  },
+  // Бие сканнердах: хэвтэж буй хүн, дээгүүр нь гэрлийн зурвас
+  e12: {
+    bg: '#E3E0F7',
+    art: <>
+      <rect x="0" y="40" width="120" height="16" fill="#A98BD6" opacity=".35" />
+      <rect x="0" y="52" width="120" height="4" fill="#A06BD6" opacity=".7" />
+      <rect x="10" y="84" width="100" height="10" rx="5" fill="#A98BD6" />
+      <circle cx="24" cy="70" r="9" fill={SKIN} stroke={INK} strokeWidth="3" />
+      <path d="M36 76h40l12 2 14-2M50 78l10-8 10 8" {...limb} />
+      <path d="M86 26l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" fill="#FFD36B" />
+    </>,
+  },
+  // Хүйтэн ус: дусал, усны цорго
+  e13: {
+    bg: '#CDE7F7',
+    art: <>
+      <path d="M20 30h46a10 10 0 0 1 10 10v8H64v-6H20z" fill="#9DB4D9" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <rect x="30" y="18" width="16" height="12" rx="3" fill="#9DB4D9" stroke={INK} strokeWidth="3" />
+      <path d="M70 58c-8 12-12 18-12 24a12 12 0 0 0 24 0c0-6-4-12-12-24z" fill="#5A8FD8" stroke={INK} strokeWidth="3" />
+      <path d="M48 76c-4 6-6 9-6 12a6 6 0 0 0 12 0c0-3-2-6-6-12zM92 70c-4 6-6 9-6 12a6 6 0 0 0 12 0c0-3-2-6-6-12z" fill="#8FB4E3" stroke={INK} strokeWidth="2.5" />
+      <path d="M8 108q26-10 52-2t52-4" fill="none" stroke="#5A8FD8" strokeWidth="5" strokeLinecap="round" />
+    </>,
+  },
+  // Өөртөө захидал: дугтуй, зүрх
+  e14: {
+    bg: '#F9DCE4',
+    art: <>
+      <rect x="16" y="34" width="88" height="60" rx="8" fill={WHITE} stroke={INK} strokeWidth="3" />
+      <path d="M18 38l42 32 42-32" fill="none" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M60 66c-10-8-15-13-15-19 0-7 10-9 15-3 5-6 15-4 15 3 0 6-5 11-15 19z" fill="#E86A7E" stroke={INK} strokeWidth="2.5" />
+      <path d="M88 18l2.5 5 5 2.5-5 2.5-2.5 5-2.5-5-5-2.5 5-2.5z" fill="#FFC24B" />
+    </>,
+  },
+  // Нойр: сар, од, дэр
+  e15: {
+    bg: '#3A3F6B',
+    art: <>
+      <path d="M78 18a26 26 0 1 0 22 40 22 22 0 1 1-22-40z" fill="#FFE08A" />
+      <circle cx="30" cy="26" r="2.5" fill={WHITE} /><circle cx="46" cy="44" r="2" fill={WHITE} /><circle cx="22" cy="54" r="1.8" fill={WHITE} />
+      <rect x="14" y="80" width="92" height="26" rx="13" fill="#E6DAF6" stroke={INK} strokeWidth="3" />
+      <text x="36" y="72" fontSize="16" fontWeight="800" fill="#E6DAF6">z</text><text x="48" y="62" fontSize="12" fontWeight="800" fill="#E6DAF6">z</text>
+    </>,
+  },
+  // Бүжиг: хөгжмийн нот, бүжиглэж буй хүн
+  e16: {
+    bg: '#FFE3C2',
+    art: <>
+      <path d="M86 20v34a8 8 0 1 1-6-7.7V26l22-6v26a8 8 0 1 1-6-7.7V20z" fill="#FF8A3D" stroke={INK} strokeWidth="2.5" />
+      <circle cx="44" cy="30" r="9" fill={SKIN} stroke={INK} strokeWidth="3" />
+      <path d="M44 42l2 26M45 50l-18-10M45 50l16-14M46 68l-14 22M46 68l16 18" {...limb} />
+      <path d="M14 104h92" stroke="#F2C49B" strokeWidth="6" strokeLinecap="round" />
+    </>,
+  },
+  // Бодлоо шалгах: бодлын бөмбөлөг, томруулдаг шил
+  e17: {
+    bg: '#DDEBD6',
+    art: <>
+      <path d="M22 54a20 20 0 0 1 8-30 22 22 0 0 1 38-6 18 18 0 0 1 24 18 16 16 0 0 1-8 30H34a14 14 0 0 1-12-12z" fill={WHITE} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <circle cx="28" cy="82" r="5" fill={WHITE} stroke={INK} strokeWidth="2.5" /><circle cx="18" cy="96" r="3" fill={WHITE} stroke={INK} strokeWidth="2" />
+      <circle cx="58" cy="44" r="13" fill="#BFE3EE" stroke={INK} strokeWidth="4" />
+      <path d="M67 53l12 12" stroke={INK} strokeWidth="6" strokeLinecap="round" />
+      <path d="M78 96l8 8 16-18" fill="none" stroke="#3FA776" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    </>,
+  },
+  // Ширээний сунгалт: зөөврийн компьютер, гараа дээш сунгасан хүн
+  e18: {
+    bg: '#E2EEF9',
+    art: <>
+      <rect x="12" y="86" width="96" height="8" rx="4" fill="#C9A25C" />
+      <path d="M70 86l6-24h30l-6 24z" fill="#9DB4D9" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <circle cx="40" cy="44" r="9" fill={SKIN} stroke={INK} strokeWidth="3" />
+      <path d="M40 56v28M40 60l-10-30M40 60l10-30M30 30l10-14 10 14" {...limb} />
+    </>,
+  },
+  // Мессеж бичих: утас, зүрхтэй яриа
+  e19: {
+    bg: '#FBE0D6',
+    art: <>
+      <rect x="36" y="14" width="48" height="92" rx="10" fill={WHITE} stroke={INK} strokeWidth="3" />
+      <rect x="52" y="20" width="16" height="4" rx="2" fill={INK} />
+      <path d="M44 36h28a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H56l-8 8v-8h-4a6 6 0 0 1-6-6V42a6 6 0 0 1 6-6z" fill="#8EC6B4" stroke={INK} strokeWidth="2.5" />
+      <path d="M58 54c-6-5-9-8-9-11 0-4 6-5 9-2 3-3 9-2 9 2 0 3-3 6-9 11z" fill="#E86A7E" />
+      <path d="M46 76h28M46 86h18" stroke="#C7C3BB" strokeWidth="5" strokeLinecap="round" />
+    </>,
+  },
+  // Сайхан мөч: гэрэл зураг, нар
+  e20: {
+    bg: '#FFF0C2',
+    art: <>
+      <g transform="rotate(-8 60 64)">
+        <rect x="20" y="28" width="80" height="70" rx="6" fill={WHITE} stroke={INK} strokeWidth="3" />
+        <rect x="28" y="36" width="64" height="44" rx="3" fill="#CDE7F7" />
+        <circle cx="76" cy="50" r="8" fill="#FFD36B" />
+        <path d="M28 80l18-18 12 10 12-14 22 22z" fill="#9CCB86" />
+      </g>
+      <path d="M98 14l3 6 6 3-6 3-3 6-3-6-6-3 6-3zM16 20l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#FF8A3D" />
+    </>,
+  },
 };
 
 /* Хөдөлгөөнт SVG (public/exercises): дасгалын картууд дээр тоглоно. «Хөдөлгөөн багасгах» асаалттай бол зогсоно.

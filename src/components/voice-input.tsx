@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useLocale, useT } from '@/components/providers/locale-provider';
+import { PermissionDialog } from '@/components/permission-help';
+import { permissionState, type PermState } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 
 /* 🎤 Дуугаар бичих: хөтчийн Web Speech API (түлхүүр, төлбөргүй).
@@ -35,15 +37,25 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const rec = useRef<SR | null>(null);
+  // Микрофоны зөвшөөрөл байхгүй бол хөтчийн цонхыг гаргах / хаалттай бол нээх заавартай цонх
+  const [perm, setPerm] = useState<PermState | null>(null);
   const cb = useRef(onText), cbInterim = useRef(onInterim);
   useEffect(() => { cb.current = onText; cbInterim.current = onInterim; });
   useEffect(() => () => rec.current?.abort(), []);
+  const startRef = useRef<() => void>(() => {});
+  // Зөвшөөрөл өгөгдмөгц цонхыг хааж, шууд сонсож эхэлнэ
+  const onGranted = useCallback(() => { setPerm(null); startRef.current(); }, []);
 
-  if (!supported) return null;
-
-  function start() {
+  async function start() {
     const Ctor = getCtor();
     if (!Ctor) return;
+    const p = await permissionState('microphone');
+    // Зөвшөөрөөгүй бол: «Зөвшөөрөл өгөх» товч хөтчийн цонхыг шууд гаргана, хаалттай бол нээх заавар харуулна
+    if (p !== 'granted') return void setPerm(p);
+    listen(Ctor);
+  }
+
+  function listen(Ctor: SRCtor) {
     // Анх удаа: дуу Google-ийн сервер дээр танигдана гэдгийг мэдэгдэнэ
     try {
       if (!localStorage.getItem(INFO_KEY)) {
@@ -66,7 +78,8 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
       cbInterim.current?.(mid);
     };
     r.onerror = e => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast.error(tr('Микрофон ашиглах зөвшөөрөл өгөөгүй байна. Хөтчийн тохиргооноос зөвшөөрнө үү.'));
+      if (e.error === 'not-allowed') setPerm('denied');
+      else if (e.error === 'service-not-allowed') toast.error(tr('Микрофон ашиглах зөвшөөрөл өгөөгүй байна. Хөтчийн тохиргооноос зөвшөөрнө үү.'));
       else if (e.error === 'language-not-supported') toast.error(tr('Энэ хөтөч монгол яриа танихгүй байна. Chrome ашиглаад үзээрэй.'));
       else if (e.error !== 'no-speech' && e.error !== 'aborted') toast.error(tr('Яриа танихад алдаа гарлаа'));
     };
@@ -75,19 +88,26 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
     try { r.start(); setListening(true); } catch { setListening(false); }
   }
   const stop = () => rec.current?.stop();
+  useEffect(() => { startRef.current = () => { const C = getCtor(); if (C) listen(C); }; });
+  if (!supported) return null;
+  const dialog = <PermissionDialog kind="microphone" open={perm !== null} initial={perm ?? undefined} onGranted={onGranted} onClose={() => setPerm(null)} />;
 
   if (compact) return (
-    <button type="button" onClick={listening ? stop : start} aria-pressed={listening}
+    <>
+    {dialog}
+    <button type="button" onClick={listening ? stop : () => void start()} aria-pressed={listening}
       aria-label={listening ? tr('Дуугаар бичихийг зогсоох') : tr('Дуугаар бичих')} title={listening ? tr('Дуугаар бичихийг зогсоох') : tr('Дуугаар бичих')}
       className={cn('grid size-12 flex-none place-items-center rounded-xl border-[1.5px] text-xl transition-colors',
         listening ? 'animate-pulse border-red-500 bg-red-500/10' : 'bg-background hover:border-primary', className)}>
       <span aria-hidden="true">{listening ? '⏺' : '🎤'}</span>
     </button>
+    </>
   );
 
   return (
     <div className={cn('flex min-w-0 items-center gap-2', className)}>
-      <button type="button" onClick={listening ? stop : start} aria-pressed={listening}
+      {dialog}
+      <button type="button" onClick={listening ? stop : () => void start()} aria-pressed={listening}
         aria-label={listening ? tr('Дуугаар бичихийг зогсоох') : tr('Дуугаар бичих')}
         className={cn('flex h-9 flex-none items-center gap-1.5 rounded-full border-[1.5px] px-3 text-sm font-semibold transition-colors',
           listening ? 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-300' : 'bg-background hover:border-primary')}>

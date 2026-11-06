@@ -1,17 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { ExerciseArt } from '@/components/exercise-art';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { DassHelpCard } from '@/components/dass-help';
+import { Button } from '@/components/ui/button';
 import { RECS } from '@/lib/data';
 import {
-  DASS_CHOICES, DASS_COUNT, DASS_ITEMS, DASS_MAX, DASS_RECS, DASS_RETAKE_DAYS, DASS_SCALES, dassLevel, LEVEL_LABEL,
-  needsHelp, SCALE_LABEL, scoreDass, type DassLevel, type DassScale, type DassScores,
+  DASS_CHOICES, DASS_COUNT, DASS_EXPLAIN, DASS_ITEMS, DASS_MAX, DASS_RECS, DASS_RETAKE_DAYS, DASS_SCALES, dassLevel, helpLevel, LEVEL_LABEL,
+  levelBand, SCALE_DESC, SCALE_LABEL, scoreDass, type DassLevel, type DassScale, type DassScores,
 } from '@/lib/dass';
 import { snoozeDass } from '@/lib/dass-client';
 import { cn } from '@/lib/utils';
@@ -186,6 +186,23 @@ function Quiz({ answers, saving, onAnswer, onBack, onExit }: { answers: number[]
   );
 }
 
+/* ---------- Хэмжүүр бүрийн тайлбар: юу гэсэн үг, анхаарахгүй бол ямар үр дагавартай ---------- */
+function Explain({ scale, level }: { scale: DassScale; level: DassLevel }) {
+  const tr = useT();
+  const band = levelBand(level);
+  const e = DASS_EXPLAIN[scale][band];
+  return (
+    <details className="group mt-2 rounded-xl bg-secondary/60 px-3 py-2 text-sm" open={band !== 'low'}>
+      <summary className="cursor-pointer font-semibold text-primary marker:content-none">
+        <span className="inline-block transition-transform group-open:rotate-90" aria-hidden="true">›</span> {tr('Тайлбар, үр дагавар')}
+      </summary>
+      <p className="mt-1.5 text-muted-foreground">{tr(SCALE_DESC[scale])}</p>
+      <p className="mt-1.5"><b>{tr('Юу гэсэн үг вэ:')}</b> {tr(e.meaning)}</p>
+      <p className="mt-1"><b>{band === 'low' ? tr('Зөвлөмж:') : tr('Анхаарахгүй бол:')}</b> {tr(e.risk)}</p>
+    </details>
+  );
+}
+
 /* ---------- Үр дүн ---------- */
 function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: {
   history: Result[]; saved: boolean; saving: boolean; backHome: boolean; onSaveHome: () => void; onRetake: () => void;
@@ -196,7 +213,7 @@ function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: 
   const r = history[0];
   const [now] = useState(() => Date.now());
   const days = Math.floor((now - new Date(r.created_at).getTime()) / 864e5);
-  const help = needsHelp(r, r.answers);
+  const help = helpLevel(r, r.answers);
   // Хамгийн өндөр түвшинтэй хэмжүүрийн дасгалуудыг санал болгоно
   const rank = (k: DassScale) => ['normal', 'mild', 'moderate', 'severe', 'extreme'].indexOf(dassLevel(k, r[k]));
   const focus = [...DASS_SCALES].sort((a, b) => rank(b) - rank(a))[0];
@@ -209,6 +226,8 @@ function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: 
       {/* Нүүр/Профайлаас орж ирсэн газар руугаа буцна (шууд нээсэн бол Нүүр) */}
       <button type="button" className="justify-self-start text-sm font-semibold text-primary"
         onClick={() => (window.history.length > 1 && !backHome ? router.back() : router.push('/home'))}>{tr('← Буцах')}</button>
+      {/* Босго давсан бол хамгийн дээр: яаралтай холбогдох товчнууд */}
+      {help === 'urgent' && <DassHelpCard level="urgent" scores={r} />}
       <section className="card-x">
         <h1 className="text-xl font-bold">{tr('Таны үр дүн')}</h1>
         <p className="text-sm text-muted-foreground">{days === 0 ? tr('Өнөөдөр бөглөсөн · сүүлийн 7 хоногийн байдал') : tr('{0} өдрийн өмнө бөглөсөн · тухайн үеийн 7 хоногийн байдал', days)}</p>
@@ -224,6 +243,7 @@ function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: 
                 <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-secondary">
                   <div className={cn('h-full rounded-full', LEVEL_COLOR[lv])} style={{ width: `${Math.max(4, (r[k] / DASS_MAX) * 100)}%` }} />
                 </div>
+                <Explain scale={k} level={lv} />
               </div>
             );
           })}
@@ -237,18 +257,13 @@ function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: 
         </Button>
       </section>
 
-      {help && (
-        <section className="card-x border-2 border-destructive/40">
+      {help === 'urgent' && (
+        <section className="card-x">
           <h2 className="font-bold">🐫 {tr('Та ганцаараа биш')}</h2>
           <p className="mt-1 text-sm">{tr('Сүүлийн үед танд нэлээд хэцүү байсан бололтой. Үүнийг хуваалцсанд баярлалаа. Мэргэжлийн хүнтэй ярилцах нь үнэхээр тусалдаг. Танд тохирох тусламж бий.')}</p>
-          <div className="mt-3 grid gap-2">
-            <Link href="/experts" className={buttonVariants({ size: 'xl' })}>{tr('🧑‍⚕️ Сэтгэл зүйчтэй цаг товлох')}</Link>
-            <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:108">{tr('📞 108 Тусламжийн утас')}</a>
-            <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:103">{tr('📞 103 Түргэн тусламж')}</a>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">{tr('Өөрийгөө гэмтээх бодол төрж байвал яг одоо 103 руу залгана уу.')}</p>
         </section>
       )}
+      {help === 'suggest' && <DassHelpCard level="suggest" scores={r} />}
 
       <section className="card-x">
         <h2 className="font-bold">{allNormal ? tr('✨ Сайн байдлаа хадгалах дасгалууд') : tr('💡 Танд тохирох дасгалууд')}</h2>
