@@ -93,10 +93,10 @@ export default function ProfilePage() {
               </h2>
               <p className="text-sm [overflow-wrap:anywhere] text-muted-foreground">{u.email}</p>
               {/* Аватар дээрх сэтгэл санааны эможиг хэн харахыг эндээс шууд солино (Нууцлал хэсгийнхтэй ижил тохиргоо) */}
-              <label className="mt-1.5 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-semibold">
+              <label className="mt-1.5 inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-semibold">
                 <span aria-hidden="true">{MOOD_AUDIENCE_ICON[u.mood_visibility]}</span>
                 <span className="sr-only">{tr('Сэтгэл санаагаа хэнд харуулах')}</span>
-                <select value={u.mood_visibility} className="cursor-pointer bg-transparent focus:outline-none"
+                <select value={u.mood_visibility} className="min-w-0 max-w-full cursor-pointer truncate bg-transparent text-base focus:outline-none sm:text-xs"
                   onChange={e => { const v = e.target.value as Audience; void updateProfile({ mood_visibility: v }).then(() => toast(tr(MOOD_AUDIENCE_TOAST[v]))); }}>
                   <option value="everyone">{tr('Сэтгэл санаа: Нийтэд')}</option>
                   <option value="friends">{tr('Сэтгэл санаа: Найзуудад')}</option>
@@ -112,6 +112,11 @@ export default function ProfilePage() {
             ))}
           </div>
           {u.fav_artists.length > 0 && <p className="mb-2 text-sm"><b>{tr('Дуртай дуучид:')}</b> {u.fav_artists.join(', ')}</p>}
+          <Link href="/dass" className="mb-3.5 flex items-center gap-3 rounded-2xl border bg-card p-3.5 hover:bg-secondary">
+            <span className="text-2xl" aria-hidden="true">🧠</span>
+            <span className="min-w-0 flex-1"><b className="block">{tr('Сэтгэл зүйн асуулга (DASS-21)')}</b><span className="block text-xs text-muted-foreground">{tr('Гутрал, түгшүүр, стресс · үр дүн, дахин бөглөх')}</span></span>
+            <span aria-hidden="true">›</span>
+          </Link>
           <h3 className="mb-2 font-semibold">{tr('Миний хобби')}</h3>
           <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-white">{tr(h)}</span>)}</div>
           <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>{tr('✏️ Хобби, нас, дуучин засах')}</Link>

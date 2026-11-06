@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Botgo3D } from '@/components/botgo-3d';
+import { DassReminder } from '@/components/dass-reminder';
 import { FriendsMoods } from '@/components/friends-moods';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
@@ -42,6 +43,7 @@ export default function HomePage() {
       </div>
       <SeasonalGreeting />
       <FriendsMoods />
+      <DassReminder />
       <div className="mt-4 grid gap-4 desk:grid-cols-[3fr_2fr] desk:items-start">
         <CheckinCard moodIdx={moodIdx} setMoodIdx={setMoodIdx} />
         <div className="flex min-w-0 flex-col gap-4">

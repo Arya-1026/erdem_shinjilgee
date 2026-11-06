@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SupportBody } from '@/components/daily-support';
 import { ExerciseCoach } from '@/components/exercise/coach';
+import { PmrCoach } from '@/components/exercise/pmr';
+import { PLAYERS, PlayerFrame } from '@/components/exercise/player-frame';
 import { StepCoach } from '@/components/exercise/steps';
 import { MoodFace } from '@/components/mood-face';
 import { Poster } from '@/components/poster';
@@ -14,6 +16,7 @@ import { Segmented } from '@/components/segmented';
 import { usePlay } from '@/components/use-play';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { BREATH_LEAD, startBreathMusic } from '@/lib/calm-audio';
 import { RECS, WD_SHORT, moodById } from '@/lib/data';
 import { addDays, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
@@ -77,17 +80,21 @@ function Exercise({ recId }: { recId: string }) {
   const { openDialog, bumpExercises } = useApp();
   const r = RECS.find(x => x.id === recId)!;
   const finish = () => { bumpExercises(); openDialog(null); toast(tr('Сайн байна! Дасгал бүртгэгдлээ 🎉')); };
+  // Тоглуулагч өөрөө «дууслаа» гэж харуулдаг тул цонхыг хаахгүй, зөвхөн бүртгэнэ
+  const complete = () => { bumpExercises(); toast(tr('Сайн байна! Дасгал бүртгэгдлээ 🎉')); };
   return (
     <>
       <Title>{tr(r.title)}</Title>
       <DialogDescription>{tr(r.sub)}</DialogDescription>
-      {r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
+      {PLAYERS[r.id] ? <PlayerFrame src={PLAYERS[r.id]} title={tr(r.title)} onComplete={complete} onClose={() => openDialog(null)} />
+        : r.id === 'e6' ? <PmrCoach onFinish={finish} /> : r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
     </>
   );
 }
 
 const PHASES: [string, number, number][] = [['Амьсгал ав', 4, 1], ['Барь', 7, 1], ['Гарга', 8, 0.62]];
 const CYCLES = 4;
+const SOUND_KEY = 'setgel-breath-sound';
 
 /* Хуучин тойрог: дотор нь тэлж агшина, гадна нь цагираг тухайн үе шатын хугацаагаар тойрч дуусна */
 function Breath() {
@@ -97,21 +104,38 @@ function Breath() {
   const [left, setLeft] = useState(0);
   const [done, setDone] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined), tick = useRef<ReturnType<typeof setInterval>>(undefined);
-  useEffect(() => () => { clearTimeout(timer.current); clearInterval(tick.current); }, []);
+  // Тайвшруулах ая (Web Audio): сонголтыг энэ төхөөрөмж дээр санана, анх асаалттай
+  const [sound, setSound] = useState(() => { try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; } });
+  const audio = useRef<ReturnType<typeof startBreathMusic>>(null);
+  const [prep, setPrep] = useState(0);
+  useEffect(() => () => { clearTimeout(timer.current); clearInterval(tick.current); audio.current?.stop(); }, []);
+
+  function toggleSound() {
+    const on = !sound;
+    setSound(on);
+    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* хувийн цонх */ }
+    audio.current?.setMuted(!on);
+  }
 
   function start() {
     let cycle = 0, i = 0, n = 0;
+    // Товч дарсан мөчид эхлүүлнэ: хөтөч дууг зөвхөн хэрэглэгчийн үйлдлээр зөвшөөрдөг.
+    // Ая бүхэлдээ урьдчилан төлөвлөгдөнө (унтраасан ч чимээгүй явна) тул асаахад цагирагтай таарсан хэвээр.
+    audio.current = startBreathMusic(CYCLES, !sound);
     const step = () => {
       clearInterval(tick.current);
       if (i === PHASES.length) { i = 0; cycle++; }
-      if (cycle === CYCLES) { setDone(true); setState(null); bumpExercises(); return; }
+      if (cycle === CYCLES) { setDone(true); setState(null); bumpExercises(); audio.current?.finish(); audio.current = null; return; }
       const [label, sec, scale] = PHASES[i++];
       setState({ label, sec, scale, cycle, step: ++n });
       setLeft(sec);
       tick.current = setInterval(() => setLeft(x => Math.max(1, x - 1)), 1000);
       timer.current = setTimeout(step, sec * 1000);
     };
-    step();
+    // «Бэлдээрэй»: ая аажмаар орж ирэх хооронд
+    setPrep(BREATH_LEAD);
+    tick.current = setInterval(() => setPrep(x => Math.max(1, x - 1)), 1000);
+    timer.current = setTimeout(() => { setPrep(0); step(); }, BREATH_LEAD * 1000);
   }
 
   return (
@@ -129,11 +153,17 @@ function Breath() {
           )}
         </svg>
         <div className="breath" style={state ? { transitionDuration: `${state.sec}s`, transform: `scale(${state.scale})` } : undefined}>
-          <span>{done ? tr('Сайн байна 🌿') : state ? tr(state.label) : tr('Бэлэн үү?')}{state && <b className="block text-2xl tabular-nums">{left}</b>}</span>
+          <span>{done ? tr('Сайн байна 🌿') : state ? tr(state.label) : prep ? tr('Бэлдээрэй') : tr('Бэлэн үү?')}{(state || prep > 0) && <b className="block text-2xl tabular-nums">{state ? left : prep}</b>}</span>
         </div>
       </div>
       <p className="text-center text-muted-foreground" aria-live="polite">{done ? tr('Дасгал дууслаа') : state ? tr('{0} / {1} давталт', state.cycle + 1, CYCLES) : tr('{0} давталт', CYCLES)}</p>
-      {!state && !done && <Button size="xl" className="mt-2 w-full" onClick={start}>{tr('Эхлэх')}</Button>}
+      {!done && (
+        <button type="button" onClick={toggleSound} aria-pressed={sound}
+          className="mx-auto mb-1 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-secondary">
+          <span aria-hidden="true">{sound ? '🔔' : '🔕'}</span>{sound ? tr('Тайвшруулах ая асаалттай') : tr('Тайвшруулах ая унтраалттай')}
+        </button>
+      )}
+      {!state && !prep && !done && <Button size="xl" className="mt-2 w-full" onClick={start}>{tr('Эхлэх')}</Button>}
     </>
   );
 }

@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Талархлын тэмдэглэл</title>
+<style>
+  :root{ --bg:#1f1615; --modal:#372625; --panel:#5e2f31; --text:#f6ece9; --muted:#c9b3ae; --field:#4a2f2e; }
+  *{box-sizing:border-box} [hidden]{display:none!important}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;padding:16px}
+  .modal{width:min(620px,100%);background:var(--modal);border-radius:18px;padding:18px 18px 20px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  h2{margin:0 0 6px;font-size:22px} .sub{margin:0 0 16px;color:var(--muted)}
+  .top{position:absolute;top:12px;right:12px;display:flex;gap:4px;align-items:center}
+  .ib{height:36px;min-width:36px;border:0;background:none;color:var(--text);cursor:pointer;border-radius:8px;font-size:15px;padding:0 8px}
+  .ib:hover{background:rgba(255,255,255,.08)}
+  .timer{color:var(--muted);font-size:14px;margin-right:4px;font-variant-numeric:tabular-nums}
+  .hero{background:var(--panel);border-radius:18px;padding:24px 16px 22px;text-align:center}
+  .artwrap{position:relative;width:180px;height:180px;margin:0 auto}
+  .art{width:180px;height:180px;border-radius:24px;overflow:hidden}
+  .art svg{width:100%;height:100%;display:block}
+  .pen{position:absolute;right:-26px;bottom:-14px;width:58px;height:58px;border-radius:50%;background:#2c1d1c;display:grid;place-items:center;font-size:26px;
+       box-shadow:0 0 0 0 rgba(255,138,138,.5);animation:ring 2.4s ease-out infinite}
+  @keyframes ring{0%{box-shadow:0 0 0 0 rgba(255,138,138,.45)}100%{box-shadow:0 0 0 22px rgba(255,138,138,0)}}
+  .stepn{color:var(--muted);margin:22px 0 10px}
+  .prompt{font-weight:800;font-size:19px;margin:0}
+  .fields{display:grid;gap:10px;margin-top:18px;text-align:left}
+  .row{display:flex;gap:10px;align-items:center}
+  .row b{flex:0 0 28px;height:28px;border-radius:50%;background:var(--field);display:grid;place-items:center;font-size:14px;transition:background .4s}
+  .row.ok b{background:#ff8fa3;color:#3a1520}
+  input,textarea{width:100%;background:var(--field);border:1.5px solid transparent;border-radius:12px;color:var(--text);font:inherit;padding:12px 14px;outline:none}
+  input:focus,textarea:focus{border-color:#ff9a7a}
+  textarea{min-height:110px;resize:vertical}
+  input::placeholder,textarea::placeholder{color:#9b827d}
+  .dots{display:flex;gap:6px;justify-content:center;margin:16px 0}
+  .dots i{height:8px;width:8px;border-radius:8px;background:#5a3a37;transition:all .3s}
+  .dots i.on{width:30px;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+  .ctrl{display:flex;gap:12px}
+  .back{flex:0 0 68px;height:58px;border:0;border-radius:14px;background:#4f3331;color:#ff8f8f;font-size:22px;cursor:pointer}
+  .back:disabled{opacity:.45;cursor:default}
+  .next{flex:1;height:58px;border:0;border-radius:14px;cursor:pointer;font-size:18px;color:#2a1714;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+  .done{display:none;margin-top:16px;color:#ffd2bf;font-weight:700}
+  .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .hearts span{position:absolute;bottom:-30px;font-size:22px;animation:up 2.8s ease-out forwards}
+  @keyframes up{to{transform:translateY(-110vh) rotate(25deg);opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .pen,.hearts span{animation:none} }
+</style>
+</head>
+<body>
+<div class="modal" id="modal">
+  <h2>Талархлын тэмдэглэл</h2>
+  <p class="sub">3 мин · Өнөөдөр талархсан 3 зүйл</p>
+  <div class="top">
+    <span class="timer" id="timer">3:00</span>
+    <button class="ib" id="snd" title="Ая">🎵</button>
+    <button class="ib" title="Хаах" onclick="closeAll()">✕</button>
+  </div>
+
+  <div class="hero">
+    <div class="artwrap"><div class="art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Талархлын тэмдэглэл">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffecd2"/><stop offset="1" stop-color="#ffd2b3"/>
+    </linearGradient>
+    <radialGradient id="warm" cx=".5" cy=".45" r=".55">
+      <stop offset="0" stop-color="#fff6e6" stop-opacity=".9"/><stop offset="1" stop-color="#fff6e6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pageL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fffdf7"/><stop offset=".8" stop-color="#fdf3e1"/><stop offset="1" stop-color="#efdcbc"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#fffdf7"/><stop offset=".8" stop-color="#fdf3e1"/><stop offset="1" stop-color="#efdcbc"/>
+    </linearGradient>
+    <linearGradient id="heartG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8fa3"/><stop offset="1" stop-color="#e8576f"/>
+    </linearGradient>
+    <path id="heart" d="M0 6 C-10 -1 -12 -8 -7 -11 C-4 -13 -1 -11 0 -8 C1 -11 4 -13 7 -11 C12 -8 10 -1 0 6Z"/>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+
+  <style>
+    .a { transform-box: view-box; }
+    .book   { animation: float 4s ease-in-out infinite; }
+    .shadow { transform-origin: 100px 168px; animation: shade 4s ease-in-out infinite; }
+    .beat   { transform-origin: 72px 100px; animation: beat 1.6s ease-in-out infinite; }
+    .glow   { transform-origin: 72px 100px; animation: glow 1.6s ease-in-out infinite; }
+    .ln     { stroke-dasharray: 40; stroke-dashoffset: 40; animation: 7s ease-in-out infinite; }
+    .l1 { animation-name: w1; } .l2 { animation-name: w2; } .l3 { animation-name: w3; }
+    .pencil { animation: pen 7s ease-in-out infinite; }
+    .wiggle { animation: wig .16s ease-in-out infinite alternate; }
+    .mini   { opacity: 0; animation: rise 4.5s ease-out infinite; }
+    .m2 { animation-delay: -1.5s; } .m3 { animation-delay: -3s; }
+    .spark  { transform-box: fill-box; transform-origin: center; animation: twinkle 2.4s ease-in-out infinite; }
+    .s2 { animation-delay: -.8s; } .s3 { animation-delay: -1.6s; } .s4 { animation-delay: -2s; }
+    .dot    { animation: drift 9s ease-in-out infinite alternate; }
+    .d2     { animation-duration: 12s; animation-delay: -4s; }
+
+    @keyframes float { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-.6deg); } }
+    @keyframes shade { 0%,100% { transform: scaleX(1); opacity: .22; } 50% { transform: scaleX(.88); opacity: .14; } }
+    @keyframes beat  { 0%,40%,100% { transform: scale(1); } 10% { transform: scale(1.16); } 20% { transform: scale(1.02); } 28% { transform: scale(1.1); } }
+    @keyframes glow  { 0%,40%,100% { transform: scale(1); opacity: .25; } 12% { transform: scale(1.45); opacity: .45; } }
+    @keyframes w1 { 0% { stroke-dashoffset: 40; opacity: 1; } 14% { stroke-dashoffset: 0; } 84% { stroke-dashoffset: 0; opacity: 1; } 94%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes w2 { 0%,17% { stroke-dashoffset: 40; opacity: 1; } 31% { stroke-dashoffset: 0; } 84% { stroke-dashoffset: 0; opacity: 1; } 94%,100% { stroke-dashoffset: 0; opacity: 0; } }
+    @keyframes w3 { 0%,34% { stroke-dashoffset: 40; opacity: 1; } 46% { stroke-dashoffset: 12; } 84% { stroke-dashoffset: 12; opacity: 1; } 94%,100% { stroke-dashoffset: 12; opacity: 0; } }
+    @keyframes pen {
+      0%   { transform: translate(113px, 88px); }
+      14%  { transform: translate(149px, 88px); }
+      17%  { transform: translate(113px, 102px); }
+      31%  { transform: translate(149px, 102px); }
+      34%  { transform: translate(113px, 116px); }
+      46%  { transform: translate(141px, 116px); }
+      56%,88% { transform: translate(160px, 136px); }
+      100% { transform: translate(113px, 88px); }
+    }
+    @keyframes wig   { from { transform: translateY(0); } to { transform: translateY(-1.3px); } }
+    @keyframes rise  { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 15% { opacity: .9; }
+                       100% { opacity: 0; transform: translate(var(--dx), -62px) scale(1); } }
+    @keyframes twinkle { 0%,100% { transform: scale(.3); opacity: .2; } 50% { transform: scale(1); opacity: 1; } }
+    @keyframes drift { from { transform: translate(0,0); } to { transform: translate(8px,-10px); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .ln { stroke-dashoffset: 0; } .l3 { stroke-dashoffset: 12; } .pencil { transform: translate(160px,136px); }
+    }
+  </style>
+
+  <g clip-path="url(#card)">
+    <!-- background -->
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <circle cx="100" cy="98" r="90" fill="url(#warm)"/>
+    <circle class="dot a"  cx="28"  cy="40"  r="14" fill="#ffffff" opacity=".35"/>
+    <circle class="dot d2 a" cx="176" cy="160" r="18" fill="#ffffff" opacity=".3"/>
+    <circle class="dot d2 a" cx="170" cy="30"  r="7"  fill="#ffb08a" opacity=".35"/>
+
+    <!-- sparkles -->
+    <g fill="#ffc94a">
+      <path class="spark"    d="M36 128 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2z"/>
+      <path class="spark s2" d="M160 50 l1.5 -4.5 l1.5 4.5 l4.5 1.5 l-4.5 1.5 l-1.5 4.5 l-1.5 -4.5 l-4.5 -1.5z"/>
+      <path class="spark s3" d="M50 46 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z"/>
+      <path class="spark s4" d="M170 112 l1.2 -3.6 l1.2 3.6 l3.6 1.2 l-3.6 1.2 l-1.2 3.6 l-1.2 -3.6 l-3.6 -1.2z" fill="#ff8fa3"/>
+    </g>
+
+    <!-- shadow -->
+    <ellipse class="shadow a" cx="100" cy="168" rx="62" ry="5" fill="#8a4b2a"/>
+
+    <g class="book a">
+      <!-- cover -->
+      <path d="M100 66 Q70 54 34 60 V158 Q70 152 100 162 Q130 152 166 158 V60 Q130 54 100 66Z" fill="#2f2b4d"/>
+      <path d="M38 156 Q70 150 100 159 Q130 150 162 156" stroke="#47416e" stroke-width="2" fill="none"/>
+      <!-- page stack edges -->
+      <path d="M100 64 Q72 53 40 58 V152 Q72 146 100 156Z" fill="#e8d3b0"/>
+      <path d="M100 64 Q128 53 160 58 V152 Q128 146 100 156Z" fill="#e8d3b0"/>
+      <!-- pages -->
+      <path d="M100 62 Q72 50 43 55 V148 Q72 142 100 152Z" fill="url(#pageL)" stroke="#2f2b4d" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M100 62 Q128 50 157 55 V148 Q128 142 100 152Z" fill="url(#pageR)" stroke="#2f2b4d" stroke-width="2.4" stroke-linejoin="round"/>
+      <line x1="100" y1="62" x2="100" y2="152" stroke="#2f2b4d" stroke-width="2.4"/>
+      <!-- bookmark ribbon -->
+      <path d="M128 52 V70 l4 -4 l4 4 V51" fill="#ff8fa3"/>
+
+      <!-- heart on left page -->
+      <g class="glow a"><use href="#heart" transform="translate(72 100) scale(2.1)" fill="#ff8fa3"/></g>
+      <g class="beat a">
+        <use href="#heart" transform="translate(72 100) scale(1.75)" fill="url(#heartG)"/>
+        <ellipse cx="63" cy="88" rx="3.5" ry="2.2" fill="#fff" opacity=".55" transform="rotate(-30 63 88)"/>
+      </g>
+
+      <!-- floating mini hearts -->
+      <g class="mini a" style="--dx:-14px;transform-origin:66px 84px"><use href="#heart" transform="translate(66 84) scale(.45)" fill="#ff8fa3"/></g>
+      <g class="mini m2 a" style="--dx:10px;transform-origin:76px 82px"><use href="#heart" transform="translate(76 82) scale(.35)" fill="#ffa8b8"/></g>
+      <g class="mini m3 a" style="--dx:-4px;transform-origin:71px 84px"><use href="#heart" transform="translate(71 84) scale(.4)" fill="#e8576f"/></g>
+
+      <!-- written lines on right page -->
+      <g stroke="#e6a43a" stroke-width="4" stroke-linecap="round" fill="none">
+        <line class="ln l1" x1="113" y1="88"  x2="149" y2="88"/>
+        <line class="ln l2" x1="113" y1="102" x2="149" y2="102"/>
+        <line class="ln l3" x1="113" y1="116" x2="149" y2="116"/>
+      </g>
+    </g>
+
+    <!-- pencil (tip at its origin) -->
+    <g class="pencil a">
+      <g class="wiggle a">
+        <g transform="rotate(32)">
+          <path d="M0 0 L-2.6 -7 H2.6Z" fill="#f2c79a"/>
+          <path d="M0 0 L-.9 -2.4 H.9Z" fill="#2f2b4d"/>
+          <rect x="-2.8" y="-31" width="5.6" height="24" fill="#ffc83d"/>
+          <rect x="-.9" y="-31" width="1.8" height="24" fill="#ffd86e"/>
+          <rect x="-2.9" y="-35" width="5.8" height="4" fill="#b9bfcc"/>
+          <rect x="-2.9" y="-40" width="5.8" height="5.4" rx="1.6" fill="#ff8fa3"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
+</div><div class="pen">✍️</div></div>
+    <p class="stepn" id="stepn">Алхам 1 / 2</p>
+    <p class="prompt" id="prompt">Өнөөдөр болсон сайн 3 зүйлийг бич</p>
+    <div class="fields" id="f1">
+      <label class="row"><b>1</b><input placeholder="Жишээ нь: Найзтайгаа хамт инээлдсэн" maxlength="140"></label>
+      <label class="row"><b>2</b><input placeholder="Жишээ нь: Өглөөний цай амттай байсан" maxlength="140"></label>
+      <label class="row"><b>3</b><input placeholder="Жишээ нь: Шалгалтандаа сайн бэлдсэн" maxlength="140"></label>
+    </div>
+    <div class="fields" id="f2" hidden>
+      <textarea id="why" placeholder="Аль нэгийг нь сонгоод яагаад танд чухал байсныг, хэнд талархаж байгаагаа бичээрэй…"></textarea>
+    </div>
+    <p class="done" id="done">Сайн байна! Өдөр бүр бичих тусам сэтгэл улам хөнгөрнө 💛</p>
+  </div>
+
+  <div class="dots"><i class="on"></i><i></i></div>
+  <div class="ctrl">
+    <button class="back" id="back" disabled aria-label="Буцах">←</button>
+    <button class="next" id="next">Дараагийн алхам →</button>
+  </div>
+</div>
+<div class="hearts" id="hearts"></div>
+
+<script>/* Тайвшруулах байгалийн ая — Web Audio, ямар ч сангүй.
+ *
+ *   const music = createNatureMusic();   // товч дарсны дараа үүсгэнэ (хөтчийн дүрэм)
+ *   music.start();        // эхлүүлэх
+ *   music.pause();        // түр зогсоох  (бүх дуу, цаг хамт зогсоно)
+ *   music.resume();       // үргэлжлүүлэх
+ *   music.rep();          // давталт бүрийн эхэнд: зөөлөн хонх + аккорд «амьсгал авна»
+ *   music.step();         // дараагийн дасгал руу шилжихэд: хоёр нотын хонх
+ *   music.tense(at, sec); // булчин чангалах үе: хөгжим аажим өргөгдөнө
+ *   music.release(at);    // суллах үе: доошоо урсах хонх + далайн давалгаа
+ *
+ *   createNatureMusic({ preset: 'waves' }) — горхины оронд далайн давалгаа (хэвтээ дасгалд)
+ *   createNatureMusic({ preset: 'morning' }) — өглөөний шувуу + зөөлөн горхи + хөгжмийн хайрцаг (бичих дасгалд)
+ *   createNatureMusic({ preset: 'walk' }) — алхааны хэмнэлтэй (120 bpm, 0.5 сек алхам) зөөлөн ая
+ *   music.setWalking(false) // walk: алхаагүй үед хөлийн чимээг унтраана
+ *   music.beatOrigin      // walk: алхмын хэмнэл эхэлсэн цаг (анимацийг тааруулахад)
+ *   music.sparkle();      // нэг зүйл бичиж дуусахад: дээшээ гялалзах ноот
+ *   music.celebrate();    // дасгал дуусахад: дулаан арпеджио
+ *   music.setVolume(0.8); // 0…1
+ *   music.stop();         // унтрааж хаах
+ *   music.ctx.currentTime // анимацийг дуутай синк хийх цаг (pause үед зогсоно)
+ *
+ * Дуунд: горхины урсгал + дусал, салхи, 3 төрлийн шувуу, зөөлөн аккорд, калимба аялгуу.
+ */
+(function (global) {
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function createNatureMusic(opts = {}) {
+    const ctx = opts.ctx || new (global.AudioContext || global.webkitAudioContext)();
+    const rnd = mulberry32(opts.seed || 20261106);
+    const WAVES = opts.preset === 'waves', MORNING = opts.preset === 'morning', WALK = opts.preset === 'walk';
+    const BEAT = 0.5;
+    const R = (a, b) => a + (b - a) * rnd();
+    const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+    // ---- busses ----
+    const master = ctx.createGain(); master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 2;
+    master.connect(comp).connect(ctx.destination);
+    let volume = opts.volume ?? 0.9;
+
+    const rev = ctx.createConvolver();
+    {
+      const len = Math.floor(ctx.sampleRate * 3.2), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const d = ir.getChannelData(c);
+        for (let i = 0; i < len; i++) d[i] = (rnd() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+      }
+      rev.buffer = ir;
+    }
+    const revOut = ctx.createGain(); revOut.gain.value = 0.5;
+    rev.connect(revOut).connect(master);
+
+    const musicG = ctx.createGain(); musicG.gain.value = 0.7;
+    musicG.connect(master); musicG.connect(rev);
+
+    function noiseBuffer(sec, color) {
+      const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * sec), ctx.sampleRate), d = b.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, last = 0;
+      for (let i = 0; i < d.length; i++) {
+        const w = rnd() * 2 - 1;
+        if (color === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+        else { b0 = 0.997 * b0 + 0.029591 * w; b1 = 0.985 * b1 + 0.032534 * w; b2 = 0.95 * b2 + 0.048056 * w; d[i] = (b0 + b1 + b2 + 0.1848 * w) * 0.5; }
+      }
+      return b;
+    }
+    const pan = (node, p) => {
+      if (!ctx.createStereoPanner) return node;
+      const s = ctx.createStereoPanner(); s.pan.value = p; node.connect(s); return s;
+    };
+
+    // ---- continuous beds (stream + wind) ----
+    let wind = null, windF = null;
+    let sea = null, seaF = null;
+    function startBeds(t) {
+      if (WAVES) {
+        const s = ctx.createBufferSource(); s.buffer = noiseBuffer(11, 'brown'); s.loop = true;
+        seaF = ctx.createBiquadFilter(); seaF.type = 'lowpass'; seaF.frequency.value = 320;
+        sea = ctx.createGain(); sea.gain.value = 0.05;
+        s.connect(seaF).connect(sea).connect(master);
+        const foam = ctx.createBufferSource(); foam.buffer = noiseBuffer(6, 'pink'); foam.loop = true;
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+        const fg = ctx.createGain(); fg.gain.value = 0.012;
+        foam.connect(hp).connect(fg).connect(master);
+        s.start(t); foam.start(t);
+      } else {
+      const water = ctx.createBufferSource(); water.buffer = noiseBuffer(7, 'pink'); water.loop = true;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 0.55;
+      const wg = ctx.createGain(); wg.gain.value = MORNING ? 0.045 : WALK ? 0.04 : 0.09;
+      water.connect(bp).connect(wg).connect(master);
+      const sparkle = ctx.createBiquadFilter(); sparkle.type = 'highpass'; sparkle.frequency.value = 3200;
+      const sg = ctx.createGain(); sg.gain.value = 0.03;
+      water.connect(sparkle).connect(sg).connect(master);
+      water.start(t);
+      }
+
+      const air = ctx.createBufferSource(); air.buffer = noiseBuffer(9, 'brown'); air.loop = true;
+      windF = ctx.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 380;
+      wind = ctx.createGain(); wind.gain.value = 0.05;
+      air.connect(windF).connect(wind).connect(master);
+      air.start(t);
+    }
+
+    // ---- one-shot sounds ----
+    function drop(t) {                    // a droplet in the stream
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = R(480, 1250);
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * R(1.4, 1.9), t + 0.045);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(R(0.012, 0.035), t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      pan(o.connect(g), R(-0.6, 0.6)).connect(master);
+      o.start(t); o.stop(t + 0.07);
+    }
+
+    function birdNote(t, f0, f1, dur, amp, p, wet) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + dur * 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const n = pan(o.connect(g), p); n.connect(master);
+      const send = ctx.createGain(); send.gain.value = wet; n.connect(send).connect(rev);
+      o.start(t); o.stop(t + dur + 0.02);
+    }
+    function bird(t) {
+      const p = R(-0.85, 0.85), amp = R(0.018, 0.05), wet = R(0.3, 0.9), kind = rnd();
+      if (kind < 0.4) {                      // chirp series
+        const n = 2 + Math.floor(R(0, 5)), base = R(2800, 3800);
+        for (let i = 0; i < n; i++) birdNote(t + i * R(0.1, 0.15), base * 1.25, base * 0.85, 0.08, amp, p, wet);
+      } else if (kind < 0.75) {              // two-note whistle "fee-bee"
+        const f = R(3300, 4100);
+        birdNote(t, f, f * 0.98, 0.28, amp, p, wet);
+        birdNote(t + 0.34, f * 0.84, f * 0.82, 0.36, amp * 0.9, p, wet);
+      } else {                               // soft trill
+        const o = ctx.createOscillator(), m = ctx.createOscillator(), md = ctx.createGain(), g = ctx.createGain();
+        const f = R(3600, 4600), d = R(0.5, 0.9);
+        o.frequency.value = f; m.frequency.value = R(22, 32); md.gain.value = f * 0.12;
+        m.connect(md).connect(o.frequency);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp * 0.7, t + 0.08);
+        g.gain.setValueAtTime(amp * 0.7, t + d - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        const n = pan(o.connect(g), p); n.connect(master);
+        const s = ctx.createGain(); s.gain.value = wet; n.connect(s).connect(rev);
+        o.start(t); m.start(t); o.stop(t + d + 0.02); m.stop(t + d + 0.02);
+      }
+    }
+
+    function footstep(t, left) {           // soft step on a dirt path
+      const src = ctx.createBufferSource(); src.buffer = stepBuf;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = R(700, 1000);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(R(0.05, 0.07), t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      pan(src.connect(lp).connect(g), left ? -0.15 : 0.15).connect(master);
+      src.start(t, R(0, 1.5), 0.2);
+    }
+    let stepBuf = null, walking = true;
+
+    function wave(t, size = 1) {           // one ocean wave washing in and out
+      const up = R(3, 4.5) * size, down = R(4, 6) * size, peak = R(0.18, 0.26) * size;
+      sea.gain.cancelScheduledValues(t);
+      sea.gain.setTargetAtTime(peak, t, up / 3);
+      sea.gain.setTargetAtTime(0.04, t + up, down / 3);
+      seaF.frequency.cancelScheduledValues(t);
+      seaF.frequency.setTargetAtTime(R(800, 1100), t, up / 3);
+      seaF.frequency.setTargetAtTime(300, t + up, down / 3);
+      return up + down;
+    }
+
+    function pluck(t, f, amp) {            // kalimba-like note
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+      [[1, 1], [2.0, 0.18], [5.4, 0.04]].forEach(([m, a]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.frequency.value = f * m; og.gain.value = a; o.connect(og).connect(g);
+        o.start(t); o.stop(t + 2.3);
+      });
+      g.connect(musicG);
+    }
+    function bell(t, f, amp) {
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
+      [[1, 1], [2.01, 0.25], [3.0, 0.08]].forEach(([m, a]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.frequency.value = f * m; og.gain.value = a; o.connect(og).connect(g);
+        o.start(t); o.stop(t + 3.9);
+      });
+      g.connect(master); g.connect(rev);
+    }
+
+    const CHORDS = [
+      [146.83, 220.00, 277.18, 329.63, 440.00],   // Dmaj9
+      [123.47, 185.00, 246.94, 293.66, 369.99],   // Bm7
+      [ 98.00, 196.00, 246.94, 293.66, 369.99],   // Gmaj7
+      [110.00, 164.81, 220.00, 277.18, 329.63],   // A6/9
+    ];
+    const PENTA = [587.33, 659.25, 739.99, 880.00, 987.77, 1174.66];
+    const CHORD_LEN = 16;
+    let chordIdx = 0;
+    function chord(t) {
+      const notes = CHORDS[chordIdx++ % CHORDS.length];
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(1, t + 3);
+      g.gain.setValueAtTime(1, t + CHORD_LEN - 1); g.gain.linearRampToValueAtTime(0.0001, t + CHORD_LEN + 2);
+      notes.forEach((f, i) => {
+        for (const [type, det, a] of [['sine', -5, 0.045], ['triangle', 6, 0.022]]) {
+          const o = ctx.createOscillator(), og = ctx.createGain();
+          o.type = type; o.frequency.value = f; o.detune.value = det + i; og.gain.value = a;
+          o.connect(og).connect(lp); o.start(t); o.stop(t + CHORD_LEN + 2.1);
+        }
+      });
+      lp.connect(g).connect(musicG);
+    }
+
+    // ---- scheduler: fills events between `horizon` and `until` ----
+    let nextWave = 0, nextBeat = 0, beatN = 0;
+    let horizon = 0, nextDrop = 0, nextBird = 0, nextNote = 0, nextChord = 0, nextWind = 0;
+    function scheduleTo(until) {
+      if (WAVES) { while (nextWave < until) nextWave += wave(nextWave) * R(0.9, 1.15); }
+      else { while (nextDrop < until) { drop(nextDrop); nextDrop += R(0.07, 0.45); } }
+      while (nextBird < until) { if (!WAVES || rnd() < 0.5) bird(nextBird); nextBird += WAVES ? R(6, 14) : MORNING ? R(1.8, 5) : R(2.5, 8); }
+      while (nextChord < until) { chord(nextChord); nextChord += CHORD_LEN; }
+      if (WALK) {
+        while (nextBeat < until) {
+          if (walking) footstep(nextBeat, beatN % 2 === 0);
+          const bar = beatN % 8, root = CHORDS[(chordIdx + 3) % CHORDS.length][0];
+          if (bar === 0) pluck(nextBeat, root, 0.06);
+          if (bar === 4) pluck(nextBeat, root * 1.5, 0.045);
+          if (rnd() < 0.32) pluck(nextBeat + (rnd() < 0.3 ? BEAT / 2 : 0), pick(PENTA), R(0.03, 0.05));
+          nextBeat += BEAT; beatN++;
+        }
+        nextNote = until;
+      }
+      while (nextNote < until) {
+        if (MORNING) {                       // music-box: short rising/falling figures
+          if (rnd() < 0.6) {
+            const i0 = Math.floor(R(0, PENTA.length - 2)), dir = rnd() < 0.5 ? 1 : -1, n = 2 + Math.floor(R(0, 3));
+            for (let k = 0; k < n; k++) {
+              const idx = Math.max(0, Math.min(PENTA.length - 1, i0 + dir * k));
+              pluck(nextNote + k * 0.38, PENTA[idx] * 2, R(0.025, 0.04));
+            }
+          }
+          nextNote += pick([2.4, 3, 3.6, 4.8]);
+        } else {
+          if (rnd() < 0.7) pluck(nextNote, pick(PENTA), R(0.045, 0.075));
+          nextNote += pick([1.5, 2, 2, 3, 4]);
+        }
+      }
+      while (nextWind < until) {
+        wind.gain.linearRampToValueAtTime(R(0.025, 0.1), nextWind + 3);
+        windF.frequency.linearRampToValueAtTime(R(260, 520), nextWind + 3);
+        nextWind += 3;
+      }
+      horizon = until;
+    }
+
+    let timer = null, started = false;
+    const api = {
+      ctx, beatOrigin: 0,
+      start(at) {
+        if (started) return; started = true;
+        const t = at ?? ctx.currentTime + 0.05;
+        if (!opts.ctx && ctx.resume) ctx.resume();
+        startBeds(t);
+        if (WALK) { stepBuf = noiseBuffer(2, 'pink'); nextBeat = t + 1; api.beatOrigin = t + 1; }
+        nextWave = t + 0.5; nextDrop = t + 0.3; nextBird = t + 1.2; nextNote = t + 2; nextChord = t; nextWind = t;
+        master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(volume, t + 2.5);
+        if (!opts.ctx) {
+          scheduleTo(t + 1.5);
+          timer = setInterval(() => scheduleTo(ctx.currentTime + 1.5), 300);
+        }
+      },
+      renderTo(until) { scheduleTo(until); },          // for OfflineAudioContext
+      pause() { return ctx.suspend && ctx.suspend(); },
+      resume() { return ctx.resume && ctx.resume(); },
+      rep(at) {                                         // breathe-in swell + soft chime
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.6, t);
+        musicG.gain.linearRampToValueAtTime(1.0, t + 3.2);
+        musicG.gain.setValueAtTime(1.0, t + 5);
+        musicG.gain.linearRampToValueAtTime(0.6, t + 8);
+        bell(t, 1174.66, 0.04);
+      },
+      step(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        bell(t, 587.33, 0.07); bell(t + 0.3, 880.0, 0.06);
+      },
+      tense(at, sec = 7) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.5, t);
+        musicG.gain.linearRampToValueAtTime(0.95, t + sec);
+        bell(t, 659.25, 0.045); bell(t + 0.18, 880.0, 0.03);
+      },
+      release(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.95, t);
+        musicG.gain.linearRampToValueAtTime(0.55, t + 9);
+        [1174.66, 987.77, 880.0, 739.99, 587.33].forEach((f, i) => bell(t + i * 0.16, f, 0.05 - i * 0.006));
+        if (WAVES) { wave(t + 0.2, 1.25); nextWave = Math.max(nextWave, t + 10); }
+      },
+      sparkle(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        [587.33, 739.99, 880.0, 1174.66].forEach((f, i) => pluck(t + i * 0.09, f * 2, 0.05));
+      },
+      celebrate(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        [293.66, 369.99, 440.0, 587.33, 739.99, 880.0, 1174.66].forEach((f, i) => pluck(t + i * 0.14, f, 0.07));
+        bell(t + 1.1, 1174.66, 0.05);
+      },
+      setWalking(v) { walking = !!v; },        // walk: footsteps on/off
+      setVolume(v) { volume = v; master.gain.setTargetAtTime(v, ctx.currentTime, 0.2); },
+      stop() {
+        clearInterval(timer);
+        master.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        if (!opts.ctx) setTimeout(() => ctx.close(), 2000);
+      },
+    };
+    return api;
+  }
+
+  global.createNatureMusic = createNatureMusic;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const DURATION = 180;
+let music = null, muted = false, step = 1, startedAt = 0, tick = 0;
+
+function ensureMusic() {                      // browsers only allow sound after a click/keypress
+  if (music || muted) return;
+  music = createNatureMusic({ preset: 'morning', volume: 0.85, seed: 11 });
+  music.start();
+  startedAt = music.ctx.currentTime;
+  tick = setInterval(updateTimer, 500);
+}
+function updateTimer() {
+  if (!music) return;
+  const left = Math.max(0, Math.ceil(DURATION - (music.ctx.currentTime - startedAt)));
+  $('timer').textContent = left ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : 'Цаг дууслаа';
+}
+function hearts(n = 6) {
+  for (let i = 0; i < n; i++) {
+    const h = document.createElement('span');
+    h.textContent = ['💗', '💛', '🧡', '💖'][i % 4];
+    h.style.left = (10 + Math.random() * 80) + '%';
+    h.style.animationDelay = (i * 0.12) + 's';
+    $('hearts').appendChild(h); setTimeout(() => h.remove(), 3500);
+  }
+}
+
+$('modal').addEventListener('pointerdown', ensureMusic, { once: false });
+$('modal').addEventListener('keydown', ensureMusic);
+
+// each finished line gets its own little sparkle
+document.querySelectorAll('#f1 .row').forEach(row => {
+  const inp = row.querySelector('input');
+  inp.addEventListener('change', () => {
+    const ok = inp.value.trim().length > 0;
+    if (ok && !row.classList.contains('ok')) { music && music.sparkle(); }
+    row.classList.toggle('ok', ok);
+  });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { inp.blur(); const n = row.nextElementSibling; n ? n.querySelector('input').focus() : $('next').focus(); } });
+});
+
+function show(s) {
+  step = s;
+  $('stepn').textContent = `Алхам ${Math.min(s, 2)} / 2`;
+  $('f1').hidden = s !== 1; $('f2').hidden = s !== 2; $('done').style.display = s === 3 ? 'block' : 'none';
+  $('prompt').textContent = s === 1 ? 'Өнөөдөр болсон сайн 3 зүйлийг бич'
+                          : s === 2 ? 'Яагаад эдгээр нь танд чухал байсан бэ?' : 'Тэмдэглэл бэлэн боллоо';
+  document.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('on', i === Math.min(s, 2) - 1));
+  $('back').disabled = s === 1;
+  $('next').textContent = s === 1 ? 'Дараагийн алхам →' : s === 2 ? 'Дуусгах ✓' : 'Хаах';
+}
+
+$('next').onclick = () => {
+  ensureMusic();
+  if (step === 1) { music && music.step(); show(2); $('why').focus(); }
+  else if (step === 2) { music && music.celebrate(); hearts(); show(3); }
+  else closeAll();
+};
+$('back').onclick = () => show(Math.max(1, step - 1));
+$('snd').onclick = () => {
+  muted = !muted; $('snd').textContent = muted ? '🔇' : '🎵';
+  if (muted && music) { music.stop(); music = null; clearInterval(tick); }
+  if (!muted) ensureMusic();
+};
+function closeAll() { if (music) { music.stop(); music = null; } clearInterval(tick); show(1); $('timer').textContent = '3:00'; }
+</script>
+</body>
+</html>

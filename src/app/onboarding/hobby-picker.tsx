@@ -74,7 +74,8 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
     setBusy(false);
     if (error) return toast.error(tr('Хадгалж чадсангүй: ') + error.message);
     if (editing) toast(tr('Шинэчлэгдлээ'));
-    router.replace(editing ? '/profile' : '/home');
+    // Анх бүртгүүлсний дараа DASS-21 асуулга бөглөх эсэхийг асууна (заавал биш)
+    router.replace(editing ? '/profile' : '/dass?first=1');
     router.refresh();
   }
 

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Энергитэй дасгал</title>
+<style>
+  :root{ --bg:#1f1615; --modal:#372625; --panel:#5e2f31; --text:#f6ece9; --muted:#c9b3ae; --track:#5e2f31; }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;padding:16px}
+  .modal{width:min(620px,100%);background:var(--modal);border-radius:18px;padding:18px 18px 20px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  h2{margin:0 0 6px;font-size:22px} .sub{margin:0 0 16px;color:var(--muted)}
+  .x{position:absolute;top:12px;right:12px;width:36px;height:36px;border:0;background:none;color:var(--text);cursor:pointer;border-radius:8px;font-size:18px}
+  .hero{position:relative;background:var(--panel);border-radius:18px;padding:0;display:grid;place-items:center}
+  .art{width:min(400px,72vw);aspect-ratio:1;border-radius:26px;overflow:hidden}
+  .art svg{width:100%;height:100%;display:block}
+  .art.paused *{animation-play-state:paused!important}
+  .badge{position:absolute;top:14px;left:14px;background:rgba(30,18,17,.8);border-radius:999px;padding:6px 12px;font-weight:800}
+  .pill{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);padding:10px 20px;border-radius:999px;font-weight:800;font-size:19px;
+        white-space:nowrap;color:#2a1714;background:linear-gradient(90deg,#ff6b6b,#ffbd72);opacity:0;transition:opacity .3s}
+  .pill.on{opacity:1} .pill.rest{background:#fff3e0}
+  .pill.pop{animation:pop .3s ease}
+  @keyframes pop{50%{transform:translateX(-50%) scale(1.12)}}
+  h3{margin:20px 0 22px;font-size:19px}
+  .bar{height:6px;background:var(--track);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+  .next{color:var(--muted);font-size:15px;margin:10px 0 18px;display:flex;justify-content:space-between}
+  .ctrl{display:flex;gap:12px}
+  .sq{flex:0 0 64px;height:58px;border:0;border-radius:14px;background:#5a3436;color:#ff8f8f;cursor:pointer;display:grid;place-items:center}
+  .sq:disabled{opacity:.5} .sq svg{width:20px;height:20px}
+  .main{flex:1;height:58px;border:0;border-radius:14px;cursor:pointer;font-size:18px;color:#2a1714;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+  .vol{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;color:var(--muted);font-size:14px}
+  .vol input{width:120px;accent-color:#ff9a7a}
+</style>
+</head>
+<body>
+<div class="modal">
+  <h2>Энергитэй дасгал</h2>
+  <p class="sub">9 мин · Эрч хүчээ хадгал</p>
+  <button class="x" aria-label="Хаах" onclick="stopAll()">✕</button>
+  <div class="hero">
+    <div class="art paused" id="art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Энергитэй дасгал">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#ffb648"/>
+    </linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#fff7c2" stop-opacity=".95"/><stop offset=".5" stop-color="#ffd25e" stop-opacity=".5"/><stop offset="1" stop-color="#ffd25e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa24f"/><stop offset="1" stop-color="#ff6a2b"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3b3663"/><stop offset=".5" stop-color="#2f2b4d"/><stop offset="1" stop-color="#211e38"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3e6ef"/><stop offset=".5" stop-color="#a9afc2"/><stop offset="1" stop-color="#7d8399"/>
+    </linearGradient>
+    <path id="boltP" d="M114 34 L70 100 H97 L84 150 L134 80 H106 Z"/>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+
+  <style>
+    .a { transform-box: view-box; }
+    .rays   { transform-origin: 100px 95px; animation: spin 30s linear infinite; }
+    .glow   { transform-origin: 100px 92px; animation: glow 1.4s ease-in-out infinite; }
+    .boltG  { transform-origin: 102px 92px; animation: pop 1.4s ease-in-out infinite; }
+    .flash  { opacity: 0; animation: flash 1.4s ease-in-out infinite; }
+    .sparks { opacity: 0; animation: zap 1.4s steps(1) infinite; }
+    .sp2    { animation-name: zap2; }
+    .lift   { transform-origin: 100px 146px; animation: lift 1.4s cubic-bezier(.45,0,.35,1) infinite; }
+    .shadow { transform-origin: 100px 176px; animation: shade 1.4s cubic-bezier(.45,0,.35,1) infinite; }
+    .speed  { opacity: 0; animation: speed 1.4s ease-out infinite; }
+    .p      { transform-box: fill-box; transform-origin: center; opacity: 0; animation: rise 2.8s ease-out infinite; }
+    .p2 { animation-delay: -.9s; } .p3 { animation-delay: -1.8s; } .p4 { animation-delay: -2.3s; }
+    .ring   { transform-origin: 100px 92px; opacity: 0; animation: ring 1.4s ease-out infinite; }
+
+    @keyframes spin  { to { transform: rotate(360deg); } }
+    @keyframes lift  { 0%,100% { transform: translateY(0) rotate(12deg); } 45%,58% { transform: translateY(-18px) rotate(-4deg); } }
+    @keyframes shade { 0%,100% { transform: scaleX(1); opacity: .25; } 45%,58% { transform: scaleX(.65); opacity: .12; } }
+    @keyframes pop   { 0%,38%,100% { transform: scale(1) rotate(0); } 48% { transform: scale(1.14) rotate(-3deg); } 58% { transform: scale(.98) rotate(1deg); } 68% { transform: scale(1); } }
+    @keyframes glow  { 0%,35%,100% { transform: scale(.85); opacity: .55; } 50% { transform: scale(1.2); opacity: 1; } }
+    @keyframes flash { 0%,42%,62%,100% { opacity: 0; } 48% { opacity: .75; } }
+    @keyframes zap   { 0%,44% { opacity: 0; } 46% { opacity: 1; } 52% { opacity: 0; } 54% { opacity: 1; } 60%,100% { opacity: 0; } }
+    @keyframes zap2  { 0%,48% { opacity: 0; } 50% { opacity: 1; } 56% { opacity: 0; } 58% { opacity: 1; } 62%,100% { opacity: 0; } }
+    @keyframes ring  { 0%,44% { opacity: 0; transform: scale(.6); } 48% { opacity: .8; } 80%,100% { opacity: 0; transform: scale(1.5); } }
+    @keyframes speed { 0%,10% { opacity: 0; transform: translateY(0); } 25% { opacity: .9; } 45%,100% { opacity: 0; transform: translateY(10px); } }
+    @keyframes rise  { 0% { opacity: 0; transform: translateY(0) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+
+  <g clip-path="url(#card)">
+    <!-- background + sun-burst -->
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <g class="rays a" fill="#fff3b0" opacity=".35">
+      <path d="M100 95 L88 -60 H112Z"/><path d="M100 95 L88 -60 H112Z" transform="rotate(30 100 95)"/>
+      <path d="M100 95 L88 -60 H112Z" transform="rotate(60 100 95)"/><path d="M100 95 L88 -60 H112Z" transform="rotate(90 100 95)"/>
+      <path d="M100 95 L88 -60 H112Z" transform="rotate(120 100 95)"/><path d="M100 95 L88 -60 H112Z" transform="rotate(150 100 95)"/>
+      <path d="M100 95 L88 -60 H112Z" transform="rotate(180 100 95)"/><path d="M100 95 L88 -60 H112Z" transform="rotate(210 100 95)"/>
+      <path d="M100 95 L88 -60 H112Z" transform="rotate(240 100 95)"/><path d="M100 95 L88 -60 H112Z" transform="rotate(270 100 95)"/>
+      <path d="M100 95 L88 -60 H112Z" transform="rotate(300 100 95)"/><path d="M100 95 L88 -60 H112Z" transform="rotate(330 100 95)"/>
+    </g>
+
+    <!-- energy particles -->
+    <g fill="#fff">
+      <circle class="p a"    cx="40"  cy="150" r="2.5"/>
+      <path   class="p p2 a" d="M162 150 h6 M165 147 v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      <circle class="p p3 a" cx="150" cy="160" r="2"/>
+      <path   class="p p4 a" d="M52 160 h6 M55 157 v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- glow, ring, bolt -->
+    <circle class="glow a" cx="100" cy="92" r="58" fill="url(#glow)"/>
+    <circle class="ring a" cx="100" cy="92" r="46" fill="none" stroke="#fff" stroke-width="3"/>
+    <g class="boltG a">
+      <use href="#boltP" transform="translate(4 5)" fill="#c94a1c" opacity=".35"/>
+      <use href="#boltP" fill="url(#bolt)" stroke="#2f2b4d" stroke-width="4.5" stroke-linejoin="round"/>
+      <path d="M110 42 L80 94 H90 Z" fill="#ffd08a" opacity=".8"/>
+      <use href="#boltP" class="flash a" fill="#fffbe6"/>
+    </g>
+
+    <!-- electric sparks -->
+    <g class="sparks a" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M58 60 l8 6 l-6 3 l9 7"/><path d="M146 66 l-8 5 l6 3 l-9 6"/><path d="M60 118 l9 -3 l-3 6 l9 -2"/>
+    </g>
+    <g class="sparks sp2 a" stroke="#fff7c2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M124 30 l4 8 l-5 1 l5 8"/><path d="M150 108 l-9 -2 l4 5 l-9 -1"/><path d="M76 36 l-3 8 l5 -1 l-3 8"/>
+    </g>
+
+    <!-- floor shadow -->
+    <ellipse class="shadow a" cx="100" cy="176" rx="64" ry="5" fill="#8a4a12"/>
+
+    <!-- dumbbell (lifted) -->
+    <g class="lift a">
+      <!-- speed lines below -->
+      <g class="speed a" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9">
+        <line x1="34" y1="172" x2="34" y2="182"/><line x1="42" y1="174" x2="42" y2="180"/>
+        <line x1="158" y1="172" x2="158" y2="182"/><line x1="166" y1="174" x2="166" y2="180"/>
+      </g>
+      <rect x="40" y="141" width="120" height="10" rx="5" fill="url(#bar)" stroke="#2f2b4d" stroke-width="3"/>
+      <g stroke="#7d8399" stroke-width="1.2"><path d="M84 143 v6 M89 143 v6 M94 143 v6 M106 143 v6 M111 143 v6 M116 143 v6"/></g>
+      <!-- left plates -->
+      <rect x="22" y="122" width="14" height="48" rx="5" fill="url(#plate)" stroke="#1b1930" stroke-width="2"/>
+      <rect x="36" y="130" width="10" height="32" rx="4" fill="url(#plate)" stroke="#1b1930" stroke-width="2"/>
+      <rect x="25" y="126" width="3" height="40" rx="1.5" fill="#fff" opacity=".18"/>
+      <!-- right plates -->
+      <rect x="154" y="130" width="10" height="32" rx="4" fill="url(#plate)" stroke="#1b1930" stroke-width="2"/>
+      <rect x="164" y="122" width="14" height="48" rx="5" fill="url(#plate)" stroke="#1b1930" stroke-width="2"/>
+      <rect x="167" y="126" width="3" height="40" rx="1.5" fill="#fff" opacity=".18"/>
+      <rect x="18" y="142" width="5" height="8" rx="2" fill="#a9afc2" stroke="#2f2b4d" stroke-width="1.5"/>
+      <rect x="177" y="142" width="5" height="8" rx="2" fill="#a9afc2" stroke="#2f2b4d" stroke-width="1.5"/>
+    </g>
+  </g>
+</svg>
+</div>
+    <div class="badge" id="badge">1 / 15</div>
+    <div class="pill" id="pill"></div>
+  </div>
+  <h3 id="title"></h3>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="next"><span id="next"></span><span id="left">9:00</span></div>
+  <div class="ctrl">
+    <button class="sq" id="prev" aria-label="Өмнөх"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+    <button class="main" id="play">▶ Эхлэх</button>
+    <button class="sq" id="nextB" aria-label="Дараагийн"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+  </div>
+  <label class="vol">🎧 Хөгжим <input type="range" id="vol" min="0" max="1" step="0.05" value="0.85"></label>
+</div>
+
+<script>/* Эрч хүчтэй дасгалын хөгжим — Web Audio, ямар ч сангүй, 120 BPM.
+ *
+ *   const music = createEnergyMusic();  // товч дарсны дараа
+ *   music.start();
+ *   music.setMode('rest');   // бэлдэх / амрах: зөвхөн зөөлөн хэмнэл
+ *   music.setMode('work');   // дасгал: бүрэн бөмбөр, басс, арпеджио
+ *   music.beep(final);       // тоолол: «бийп» (final=true бол өндөр, урт)
+ *   music.pause(); music.resume(); music.setVolume(0.8); music.stop();
+ *   music.ctx.currentTime, music.beatOrigin, music.BEAT  // анимацийг хэмнэлд тааруулах
+ */
+(function (global) {
+  function createEnergyMusic(opts = {}) {
+    const ctx = opts.ctx || new (global.AudioContext || global.webkitAudioContext)();
+    const BPM = 120, BEAT = 60 / BPM, S16 = BEAT / 4, BAR = BEAT * 4;
+    let seed = opts.seed || 99;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+    const master = ctx.createGain(); master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -12; comp.ratio.value = 3; comp.attack.value = 0.005; comp.release.value = 0.15;
+    master.connect(comp).connect(ctx.destination);
+    let volume = opts.volume ?? 0.85;
+
+    // groups so "rest" can fade parts out smoothly
+    const bus = name => { const g = ctx.createGain(); g.gain.value = name === 'pad' ? 1 : 0; g.connect(master); return g; };
+    const drums = bus('drums'), bassB = bus('bass'), arpB = bus('arp'), padB = bus('pad'), hatB = bus('hat');
+    hatB.gain.value = 0.6;
+    const arpF = ctx.createBiquadFilter(); arpF.type = 'lowpass'; arpF.frequency.value = 2400; arpF.Q.value = 4;
+    arpF.connect(arpB);
+
+    // short room reverb for claps & arp
+    const rev = ctx.createConvolver();
+    { const len = ctx.sampleRate * 1.4 | 0, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (rnd() * 2 - 1) * Math.pow(1 - i / len, 4); }
+      rev.buffer = ir; }
+    const revG = ctx.createGain(); revG.gain.value = 0.25; rev.connect(revG).connect(master);
+    arpB.connect(rev);
+
+    const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rnd() * 2 - 1; }
+
+    function kick(t) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+      g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      o.connect(g).connect(drums); o.start(t); o.stop(t + 0.34);
+    }
+    function hit(t, type, freq, q, dur, amp, out) {
+      const s = ctx.createBufferSource(); s.buffer = noise;
+      const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ctx.createGain(); g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      s.connect(f).connect(g).connect(out); s.start(t, rnd() * 0.5, dur + 0.02);
+      return g;
+    }
+    const clap = t => { const g = hit(t, 'bandpass', 1600, 0.9, 0.18, 0.55, drums); g.connect(rev); hit(t + 0.012, 'bandpass', 2200, 1, 0.1, 0.3, drums); };
+    const hat = (t, open) => hit(t, 'highpass', 7500, 0.7, open ? 0.16 : 0.045, open ? 0.16 : 0.12, hatB);
+
+    function bass(t, f, dur) {
+      const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = f;
+      lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(220, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.32, t + 0.008); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(lp).connect(g).connect(bassB); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function arp(t, f) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.06, t + 0.005); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      o.connect(g).connect(arpF); o.start(t); o.stop(t + 0.16);
+    }
+    function pad(t, notes, dur) {
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.3);
+      g.gain.setValueAtTime(0.05, t + dur - 0.2); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.1);
+      lp.connect(g).connect(padB);
+      notes.forEach((f, i) => { for (const d of [-7, 7]) {
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d + i;
+        o.connect(lp); o.start(t); o.stop(t + dur + 0.15); } });
+    }
+
+    // Am – F – C – G  (one chord per bar)
+    const PROG = [
+      { root: 110.00, pad: [220.00, 261.63, 329.63], arp: [440.00, 523.25, 659.25, 880.00] },
+      { root:  87.31, pad: [174.61, 220.00, 261.63], arp: [349.23, 440.00, 523.25, 698.46] },
+      { root: 130.81, pad: [196.00, 261.63, 329.63], arp: [392.00, 523.25, 659.25, 783.99] },
+      { root:  98.00, pad: [196.00, 246.94, 293.66], arp: [392.00, 493.88, 587.33, 783.99] },
+    ];
+    const ARP_ORDER = [0, 1, 2, 3, 2, 1, 2, 3];
+
+    let next = 0, n = 0, timer = null;
+    function scheduleTo(until) {
+      while (next < until) {
+        const t = next, s = n % 16, bar = Math.floor(n / 16), ch = PROG[bar % 4];
+        if (s === 0) pad(t, ch.pad, BAR);
+        if (s % 4 === 0) kick(t);
+        if (s === 4 || s === 12) clap(t);
+        if (s % 2 === 0) hat(t, s % 4 === 2 && s === 14);
+        else if (rnd() < 0.35) hat(t, false);
+        if (s % 4 === 2) bass(t, ch.root, S16 * 1.8);
+        if (s === 7 || s === 15) bass(t, ch.root * 2, S16 * 0.9);
+        arp(t, ch.arp[ARP_ORDER[s % 8]]);
+        next += S16; n++;
+      }
+    }
+
+    function fade(g, v, t) { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(v, t, 0.25); }
+    let mode = 'rest';
+
+    const api = {
+      ctx, BEAT, beatOrigin: 0,
+      start(at) {
+        const t = at ?? ctx.currentTime + 0.1;
+        if (!opts.ctx && ctx.resume) ctx.resume();
+        next = t; api.beatOrigin = t;
+        master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(volume, t + 1);
+        api.setMode(mode, t);
+        if (!opts.ctx) { scheduleTo(t + 0.6); timer = setInterval(() => scheduleTo(ctx.currentTime + 0.6), 100); }
+      },
+      renderTo(until) { scheduleTo(until); },
+      setMode(m, at) {
+        mode = m; const t = Math.max(at ?? 0, ctx.currentTime);
+        const work = m === 'work';
+        fade(drums, work ? 1 : 0, t);
+        fade(bassB, work ? 1 : 0.0, t);
+        fade(arpB, work ? 1 : 0.35, t);
+        fade(hatB, work ? 1 : 0.5, t);
+        fade(padB, work ? 0.8 : 1, t);
+        arpF.frequency.cancelScheduledValues(t);
+        arpF.frequency.setTargetAtTime(work ? 3200 : 900, t, 0.3);
+      },
+      beep(final, at) {
+        const t = Math.max(at ?? 0, ctx.currentTime), o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = final ? 1318.5 : 880;
+        const d = final ? 0.45 : 0.12;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.28, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+        o.connect(g).connect(master); o.start(t); o.stop(t + d + 0.02);
+      },
+      pause() { return ctx.suspend && ctx.suspend(); },
+      resume() { return ctx.resume && ctx.resume(); },
+      setVolume(v) { volume = v; master.gain.setTargetAtTime(v, ctx.currentTime, 0.1); },
+      stop() { clearInterval(timer); master.gain.setTargetAtTime(0, ctx.currentTime, 0.3); if (!opts.ctx) setTimeout(() => ctx.close(), 1500); },
+    };
+    return api;
+  }
+  global.createEnergyMusic = createEnergyMusic;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+const EX = [
+  'Гар, хөлөө алцайлган үсэр', 'Суулт', 'Газар түшиж суниах', 'Өвдгөө өндөр өргөн байрандаа гүй', 'Хэвлийн татлага',
+  'Уулчны хөдөлгөөн', 'Урагш алхаж суух', 'Банз', 'Хажуу тийш үсрэлт', 'Сандал түшиж суниах',
+  'Бүтэн биеэр үсрэлт', 'Хажуугийн банз', 'Байрандаа гүйх', 'Гүүр', 'Сунгаж амрах',
+];
+const PREP = 6, WORK = 30, EX_SEC = PREP + WORK;      // 15 × 36 s = 9 min
+const TOTAL = EX.length * EX_SEC;
+
+const $ = id => document.getElementById(id);
+const art = $('art'), svg = art.querySelector('svg'), pill = $('pill');
+let music = null, origin = 0, playing = false, raf = 0, lastPhase = '', lastSec = -1;
+
+// make the dumbbell lift land on the beat: 1.4 s loops → 2 beats (1 s)
+function syncArt() {
+  if (!music) return;
+  const beatT = (music.ctx.currentTime - music.beatOrigin) * 1000;
+  svg.getAnimations({ subtree: true }).forEach(a => {
+    if (a.effect.getTiming().duration === 1400) { a.playbackRate = 1.4; a.currentTime = (beatT * 1.4) % 1400; }
+  });
+}
+
+function loop() {
+  const e = music.ctx.currentTime - origin;
+  if (e >= TOTAL) return finish();
+  const i = Math.min(EX.length - 1, Math.floor(Math.max(0, e) / EX_SEC));
+  const inEx = Math.max(0, e) - i * EX_SEC;
+  const prep = e < 0 || inEx < PREP;
+  const left = e < 0 ? Math.ceil(-e) + PREP : Math.ceil(prep ? PREP - inEx : EX_SEC - inEx);
+  const key = i + (prep ? 'p' : 'w');
+  if (key !== lastPhase) {
+    music.setMode(prep ? 'rest' : 'work');
+    art.classList.toggle('paused', prep);
+    if (!prep) syncArt();
+    lastPhase = key; lastSec = -1;
+  }
+  if (left !== lastSec) {
+    if (left <= 3 && left >= 1) music.beep(false);
+    pill.classList.remove('pop'); void pill.offsetWidth; if (left <= 3) pill.classList.add('pop');
+    lastSec = left;
+  }
+  pill.className = 'pill on' + (prep ? ' rest' : '') + (pill.classList.contains('pop') ? ' pop' : '');
+  pill.textContent = prep ? `Бэлдээрэй · ${left}` : `Хий! · ${left}`;
+  $('badge').textContent = `${i + 1} / ${EX.length}`;
+  $('title').textContent = EX[i];
+  $('next').textContent = i < EX.length - 1 ? `Дараагийнх: ${EX[i + 1]}` : 'Сүүлийн дасгал';
+  $('bar').style.width = (prep ? 0 : 100 * (inEx - PREP) / WORK).toFixed(2) + '%';
+  const rem = Math.max(0, Math.ceil(TOTAL - e));
+  $('left').textContent = `${Math.floor(rem / 60)}:${String(rem % 60).padStart(2, '0')}`;
+  $('prev').disabled = i === 0;
+  raf = requestAnimationFrame(loop);
+}
+
+// a high beep exactly when each phase starts
+let cueTimer = 0;
+function scheduleCues() {
+  clearInterval(cueTimer);
+  cueTimer = setInterval(() => {
+    if (!music || !playing) return;
+    const e = music.ctx.currentTime - origin;
+    for (let k = Math.max(0, Math.floor(e / EX_SEC)); k <= Math.floor(e / EX_SEC) + 1; k++) {
+      [k * EX_SEC + PREP, (k + 1) * EX_SEC].forEach(tp => { if (tp - e > 0 && tp - e < 0.25 && !scheduleCues.done.has(tp)) { scheduleCues.done.add(tp); music.beep(true, origin + tp); } });
+    }
+  }, 100);
+}
+scheduleCues.done = new Set();
+
+function play() {
+  if (!music) {
+    music = createEnergyMusic({ volume: +$('vol').value });
+    music.start();
+    origin = music.ctx.currentTime + 3;           // 3 s get-ready on top of the first prep
+    scheduleCues.done.clear(); lastPhase = '';
+  } else music.resume();
+  playing = true; $('play').textContent = '⏸ Түр зогсоох';
+  syncArt(); scheduleCues(); loop();
+}
+function pause() {
+  playing = false; cancelAnimationFrame(raf); music.pause(); art.classList.add('paused');
+  $('play').textContent = '▶ Үргэлжлүүлэх';
+}
+function jump(d) {
+  if (!music) play();
+  const e = music.ctx.currentTime - origin;
+  const i = Math.max(0, Math.min(EX.length - 1, Math.floor(Math.max(0, e) / EX_SEC) + d));
+  origin = music.ctx.currentTime - i * EX_SEC; lastPhase = '';
+  if (!playing) play();
+}
+function finish() {
+  cancelAnimationFrame(raf); playing = false; clearInterval(cueTimer);
+  music.beep(true); music.setMode('rest');
+  const m = music; music = null; setTimeout(() => m.stop(), 4000);
+  art.classList.add('paused');
+  pill.className = 'pill on rest'; pill.textContent = 'Гайхалтай! Дууслаа 💪';
+  $('bar').style.width = '100%'; $('next').textContent = ''; $('left').textContent = '0:00';
+  $('play').textContent = '▶ Дахин эхлэх';
+}
+function stopAll() {
+  cancelAnimationFrame(raf); playing = false; clearInterval(cueTimer);
+  if (music) { music.stop(); music = null; }
+  art.classList.add('paused'); pill.className = 'pill';
+  show0(); $('play').textContent = '▶ Эхлэх';
+}
+function show0() {
+  $('badge').textContent = `1 / ${EX.length}`; $('title').textContent = EX[0];
+  $('next').textContent = `Дараагийнх: ${EX[1]}`; $('bar').style.width = '0'; $('left').textContent = '9:00';
+}
+$('play').onclick = () => (playing ? pause() : play());
+$('prev').onclick = () => jump(-1);
+$('nextB').onclick = () => jump(1);
+$('vol').oninput = e => music && music.setVolume(+e.target.value);
+show0();
+</script>
+</body>
+</html>

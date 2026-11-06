@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10 минутын алхалт</title>
+<style>
+  :root{ --bg:#1f1615; --modal:#372625; --panel:#5e2f31; --text:#f6ece9; --muted:#c9b3ae; }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;padding:16px}
+  .modal{width:min(620px,100%);background:var(--modal);border-radius:18px;padding:18px 18px 20px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  h2{margin:0 0 6px;font-size:22px} .sub{margin:0 0 16px;color:var(--muted)}
+  .x{position:absolute;top:12px;right:12px;width:36px;height:36px;border:0;background:none;color:var(--text);cursor:pointer;border-radius:8px;font-size:18px}
+  .hero{position:relative;background:var(--panel);border-radius:16px;display:grid;place-items:center}
+  .art{width:min(400px,72vw);aspect-ratio:1;overflow:hidden;border-radius:22px}
+  .art svg{width:100%;height:100%;display:block}
+  .art.paused *{animation-play-state:paused!important}
+  .pill{position:absolute;left:50%;top:18px;transform:translateX(-50%);padding:8px 16px;border-radius:999px;font-weight:800;
+        background:rgba(30,18,17,.78);opacity:0;transition:opacity .4s;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pill.on{opacity:1}
+  .hint{color:var(--muted);margin:16px 0 10px}
+  ol{margin:0 0 14px;padding:0;list-style:none;counter-reset:s}
+  li{counter-increment:s;padding:7px 10px;border-radius:10px;font-weight:600;display:flex;gap:8px;transition:background .4s,color .4s}
+  li::before{content:counter(s) ".";min-width:18px}
+  li.now{background:rgba(255,138,92,.14);color:#ffd2bf} li.done{color:var(--muted)} li.done::before{content:"✓";color:#8fd6c8}
+  li small{margin-left:auto;color:var(--muted);font-weight:500}
+  .bar{height:6px;background:var(--panel);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+  .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;margin:8px 0 14px}
+  .meta input{width:110px;accent-color:#ff9a7a;vertical-align:middle}
+  .ctrl{display:flex;gap:12px}
+  .skip{flex:0 0 64px;height:56px;border:0;border-radius:14px;background:#5a3436;color:#ff8f8f;cursor:pointer;font-size:18px}
+  .btn{flex:1;height:56px;border:0;border-radius:14px;cursor:pointer;font-size:18px;color:#2a1714;background:linear-gradient(90deg,#ff6b6b,#ffbd72)}
+</style>
+</head>
+<body>
+<div class="modal">
+  <h2>10 минутын алхалт</h2>
+  <p class="sub">Гадаа, цэвэр агаарт</p>
+  <button class="x" aria-label="Хаах" onclick="stopAll()">✕</button>
+  <div class="hero">
+    <div class="art paused" id="art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="10 минутын алхалт">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cc4ef"/><stop offset=".65" stop-color="#cfeaf7"/><stop offset="1" stop-color="#fff1d6"/>
+    </linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#fff6c8"/><stop offset=".45" stop-color="#ffe08a" stop-opacity=".7"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="far" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb9d8"/><stop offset="1" stop-color="#c3d6e8"/></linearGradient>
+    <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6e08f"/><stop offset="1" stop-color="#8cc56a"/></linearGradient>
+    <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fbd5c"/><stop offset="1" stop-color="#4f9a45"/></linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3e2bb"/><stop offset="1" stop-color="#e2c690"/></linearGradient>
+    <clipPath id="card"><rect width="200" height="200" rx="22"/></clipPath>
+  </defs>
+
+  <style>
+    .a { transform-box: view-box; }
+    .body   { animation: bob .5s ease-in-out infinite; }
+    .shadow { transform-origin: 100px 166px; animation: shade .5s ease-in-out infinite; }
+    .thigh  { transform-origin: 100px 120px; animation: thigh 1s linear infinite; }
+    .shin   { transform-origin: 100px 141px; animation: shin 1s linear infinite; }
+    .arm    { transform-origin: 100px 91px;  animation: arm 1s ease-in-out infinite; }
+    .legB, .legB .shin, .armB { animation-delay: -.5s; }
+    .head   { transform-origin: 100px 80px;  animation: nod .5s ease-in-out infinite; }
+    .rays   { transform-origin: 160px 40px;  animation: spin 24s linear infinite; }
+    .sun    { transform-origin: 160px 40px;  animation: pulse 4s ease-in-out infinite; }
+    .cloud  { animation: drift 30s linear infinite; }
+    .c2     { animation-duration: 45s; animation-delay: -20s; }
+    .trees  { animation: slide 16s linear infinite; }
+    .near   { animation: slide 4s linear infinite; }
+    .bird   { animation: fly 18s linear infinite; }
+    .b2     { animation-delay: -7s; }
+    .wing   { transform-origin: 0 0; transform-box: fill-box; animation: flap .35s ease-in-out infinite alternate; }
+    .fly    { animation: flutter 3s ease-in-out infinite; }
+    .fw     { transform-origin: 150px 150px; animation: flapX .18s ease-in-out infinite alternate; }
+
+    @keyframes bob   { 0%,100% { transform: translateY(1.5px); } 50% { transform: translateY(-2px); } }
+    @keyframes shade { 0%,100% { transform: scaleX(1); opacity: .28; } 50% { transform: scaleX(.85); opacity: .2; } }
+    @keyframes thigh { 0%,100% { transform: rotate(-26deg); } 25% { transform: rotate(0); } 50% { transform: rotate(24deg); } 75% { transform: rotate(-2deg); } }
+    @keyframes shin  { 0%,100% { transform: rotate(0); } 25% { transform: rotate(4deg); } 50% { transform: rotate(16deg); } 68% { transform: rotate(55deg); } 85% { transform: rotate(18deg); } }
+    @keyframes arm   { 0%,100% { transform: rotate(26deg); } 50% { transform: rotate(-30deg); } }
+    @keyframes nod   { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+    @keyframes spin  { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+    @keyframes drift { from { transform: translateX(230px); } to { transform: translateX(-90px); } }
+    @keyframes slide { from { transform: translateX(0); } to { transform: translateX(-200px); } }
+    @keyframes fly   { from { transform: translate(-30px, 0); } 50% { transform: translate(100px, -8px); } to { transform: translate(240px, 4px); } }
+    @keyframes flap  { from { transform: scaleY(1); } to { transform: scaleY(-.6); } }
+    @keyframes flutter { 0%,100% { transform: translate(0,0); } 25% { transform: translate(6px,-6px); } 50% { transform: translate(12px,-2px); } 75% { transform: translate(5px,4px); } }
+    @keyframes flapX { from { transform: scaleX(1); } to { transform: scaleX(.25); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+
+  <g clip-path="url(#card)">
+    <!-- sky & sun -->
+    <rect width="200" height="200" fill="url(#sky)"/>
+    <circle cx="160" cy="40" r="44" fill="url(#glow)"/>
+    <g class="rays a" stroke="#ffd766" stroke-width="3" stroke-linecap="round" opacity=".7">
+      <path d="M160 6v8M160 66v8M126 40h8M186 40h8M136 16l6 6M178 58l6 6M184 16l-6 6M142 58l-6 6"/>
+    </g>
+    <g class="sun a"><circle cx="160" cy="40" r="17" fill="#ffcf3f"/><circle cx="155" cy="35" r="6" fill="#ffe486"/></g>
+
+    <!-- clouds -->
+    <g class="cloud a" fill="#fff" opacity=".95">
+      <ellipse cx="0" cy="32" rx="18" ry="7"/><ellipse cx="-6" cy="28" rx="9" ry="7"/><ellipse cx="7" cy="26" rx="10" ry="8"/>
+    </g>
+    <g class="cloud c2 a" fill="#fff" opacity=".75">
+      <ellipse cx="0" cy="62" rx="13" ry="5"/><ellipse cx="5" cy="58" rx="7" ry="5"/>
+    </g>
+
+    <!-- birds -->
+    <g class="bird a"><g transform="translate(0 52)" fill="none" stroke="#3d4566" stroke-width="1.6" stroke-linecap="round">
+      <path class="wing" d="M-5 0 q2.5 -3 5 0 q2.5 -3 5 0"/></g></g>
+    <g class="bird b2 a"><g transform="translate(-14 44) scale(.8)" fill="none" stroke="#3d4566" stroke-width="1.6" stroke-linecap="round">
+      <path class="wing" d="M-5 0 q2.5 -3 5 0 q2.5 -3 5 0"/></g></g>
+
+    <!-- far mountains -->
+    <path d="M0 118 L28 92 L44 104 L70 78 L96 106 L118 90 L146 110 L172 88 L200 108 V140 H0Z" fill="url(#far)"/>
+    <path d="M70 78 L62 86 L68 85 L72 89 L77 84 Z M172 88 L166 94 L171 93 L175 96 L179 93 Z" fill="#fff" opacity=".85"/>
+
+    <!-- hills with slowly passing trees (tiled ×2) -->
+    <path d="M0 130 Q50 108 100 124 T200 120 V200 H0Z" fill="url(#hill1)"/>
+    <g class="trees a">
+      <g id="treeset">
+        <g transform="translate(22 118)"><rect x="-1.5" y="0" width="3" height="8" fill="#6b4a32"/><path d="M0 -16 L8 2 H-8Z" fill="#3f8a4a"/><path d="M0 -22 L6 -6 H-6Z" fill="#4f9d55"/></g>
+        <g transform="translate(64 113)"><rect x="-1.5" y="0" width="3" height="9" fill="#6b4a32"/><circle cy="-6" r="9" fill="#5aa957"/><circle cx="-3" cy="-9" r="4" fill="#79c06a"/></g>
+        <g transform="translate(76 116) scale(.7)"><rect x="-1.5" y="0" width="3" height="8" fill="#6b4a32"/><path d="M0 -16 L8 2 H-8Z" fill="#3f8a4a"/><path d="M0 -22 L6 -6 H-6Z" fill="#4f9d55"/></g>
+        <g transform="translate(132 121)"><rect x="-1.5" y="0" width="3" height="9" fill="#6b4a32"/><circle cy="-6" r="10" fill="#4f9d50"/><circle cx="-3" cy="-10" r="4" fill="#73b964"/></g>
+        <g transform="translate(176 117) scale(.85)"><rect x="-1.5" y="0" width="3" height="8" fill="#6b4a32"/><path d="M0 -16 L8 2 H-8Z" fill="#3f8a4a"/><path d="M0 -22 L6 -6 H-6Z" fill="#4f9d55"/></g>
+      </g>
+      <use href="#treeset" x="200"/>
+    </g>
+    <path d="M0 150 Q60 134 120 146 T200 142 V200 H0Z" fill="url(#hill2)"/>
+
+    <!-- road -->
+    <path d="M0 156 Q100 150 200 156 V176 Q100 170 0 176Z" fill="url(#road)"/>
+    <path d="M0 156 Q100 150 200 156" stroke="#d2b47c" stroke-width="1.2" fill="none" opacity=".7"/>
+
+    <!-- near layer: pebbles, flowers, grass (tiled ×2) -->
+    <g class="near a">
+      <g id="nearset">
+        <g fill="#cfae76"><ellipse cx="30" cy="166" rx="2.2" ry="1.2"/><ellipse cx="88" cy="170" rx="1.6" ry="1"/><ellipse cx="146" cy="164" rx="2" ry="1.1"/><ellipse cx="182" cy="171" rx="1.5" ry=".9"/></g>
+        <g stroke="#3f8a3c" stroke-width="1.8" stroke-linecap="round" fill="none">
+          <path d="M12 192 l-3 -8 M15 192 l0 -10 M18 192 l3 -8"/><path d="M70 196 l-3 -7 M73 196 l0 -9 M76 196 l3 -7"/>
+          <path d="M120 190 l-3 -8 M123 190 l0 -10 M126 190 l3 -8"/><path d="M170 197 l-3 -7 M173 197 l0 -9 M176 197 l3 -7"/>
+        </g>
+        <g><line x1="40" y1="194" x2="40" y2="184" stroke="#3f8a3c" stroke-width="1.4"/><circle cx="40" cy="183" r="3" fill="#ff7fa8"/><circle cx="40" cy="183" r="1.2" fill="#ffe36b"/></g>
+        <g><line x1="98" y1="192" x2="98" y2="183" stroke="#3f8a3c" stroke-width="1.4"/><circle cx="98" cy="182" r="2.6" fill="#ffffff"/><circle cx="98" cy="182" r="1.1" fill="#ffc93c"/></g>
+        <g><line x1="148" y1="195" x2="148" y2="185" stroke="#3f8a3c" stroke-width="1.4"/><circle cx="148" cy="184" r="3" fill="#b48cff"/><circle cx="148" cy="184" r="1.2" fill="#ffe36b"/></g>
+        <g><line x1="190" y1="193" x2="190" y2="185" stroke="#3f8a3c" stroke-width="1.4"/><circle cx="190" cy="184" r="2.4" fill="#ffb24a"/></g>
+      </g>
+      <use href="#nearset" x="200"/>
+    </g>
+
+    <!-- butterfly -->
+    <g class="fly a">
+      <g class="fw a"><path d="M150 150 q-6 -7 -8 -1 q2 5 8 1 q6 4 8 -1 q-2 -6 -8 1" fill="#ff9f43"/></g>
+      <line x1="150" y1="147" x2="150" y2="153" stroke="#3d2f2a" stroke-width="1.2" stroke-linecap="round"/>
+    </g>
+
+    <!-- shadow -->
+    <ellipse class="shadow a" cx="100" cy="166" rx="15" ry="2.6" fill="#3b2f1e"/>
+
+    <!-- walker (faces right) -->
+    <g class="body a">
+      <!-- back arm -->
+      <g class="arm armB a">
+        <line x1="100" y1="91" x2="100" y2="104" stroke="#d9634a" stroke-width="7" stroke-linecap="round"/>
+        <g transform="rotate(-28 100 104)"><line x1="100" y1="104" x2="100" y2="114" stroke="#e2a882" stroke-width="5.5" stroke-linecap="round"/></g>
+      </g>
+      <!-- back leg -->
+      <g class="thigh legB a">
+        <line x1="100" y1="120" x2="100" y2="141" stroke="#2c3866" stroke-width="8.5" stroke-linecap="round"/>
+        <g class="shin a">
+          <line x1="100" y1="141" x2="100" y2="160" stroke="#2c3866" stroke-width="7.5" stroke-linecap="round"/>
+          <path d="M96 159 h8 q5 0 5 4 v1 h-14 v-2 q0 -3 1 -3z" fill="#2b2b33"/>
+        </g>
+      </g>
+
+      <!-- backpack -->
+      <rect x="84" y="92" width="10" height="20" rx="4" fill="#2aa79b"/>
+      <rect x="85.5" y="100" width="7" height="6" rx="2" fill="#24897f"/>
+      <!-- torso -->
+      <rect x="91" y="86" width="19" height="36" rx="9" fill="#ff7a59"/>
+      <path d="M92 116 h17 v4 q0 3 -3 3 h-11 q-3 0 -3 -3z" fill="#2c3866"/>
+      <line x1="94" y1="88" x2="92" y2="106" stroke="#1f6f68" stroke-width="2.2" stroke-linecap="round"/>
+
+      <!-- head -->
+      <g class="head a">
+        <rect x="97" y="77" width="7" height="8" rx="3" fill="#e9b48c"/>
+        <circle cx="101" cy="68" r="13" fill="#f6c9a2"/>
+        <path d="M88.5 68 q-1 -15 13 -14 q12 1 12.5 9 q-6 -4 -12 -2 q-4 1 -6 5 q-2 -2 -4 -1 q-2 1 -1.5 5z" fill="#3a2a2a"/>
+        <circle cx="91" cy="70" r="3" fill="#f0b48e"/>
+        <circle cx="108" cy="67" r="1.6" fill="#2d2330"/>
+        <circle cx="108.5" cy="66.4" r=".5" fill="#fff"/>
+        <path d="M105 74 q3 2.5 6.5 0" stroke="#a5523e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <circle cx="106" cy="71.5" r="2.2" fill="#ff8f8f" opacity=".45"/>
+      </g>
+
+      <!-- front leg -->
+      <g class="thigh a">
+        <line x1="100" y1="120" x2="100" y2="141" stroke="#3b4a82" stroke-width="8.5" stroke-linecap="round"/>
+        <g class="shin a">
+          <line x1="100" y1="141" x2="100" y2="160" stroke="#3b4a82" stroke-width="7.5" stroke-linecap="round"/>
+          <path d="M96 159 h8 q5 0 5 4 v1 h-14 v-2 q0 -3 1 -3z" fill="#34343e"/>
+          <rect x="95" y="163" width="14" height="1.6" rx=".8" fill="#fff" opacity=".8"/>
+        </g>
+      </g>
+      <!-- front arm -->
+      <g class="arm a">
+        <line x1="100" y1="91" x2="100" y2="104" stroke="#ff7a59" stroke-width="7" stroke-linecap="round"/>
+        <g transform="rotate(-28 100 104)"><line x1="100" y1="104" x2="100" y2="114" stroke="#f6c9a2" stroke-width="5.5" stroke-linecap="round"/></g>
+      </g>
+    </g>
+  </g>
+</svg>
+</div>
+    <div class="pill" id="pill"></div>
+  </div>
+  <p class="hint" id="hint">Зургийг дагаад хамт хийгээрэй. Нийт 11 мин.</p>
+  <ol id="list"></ol>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="meta"><span id="left">11:00</span><label>🐦 Ая <input type="range" id="vol" min="0" max="1" step="0.05" value="0.85"></label></div>
+  <div class="ctrl">
+    <button class="btn" id="go">▶ Дагаж эхлэх</button>
+    <button class="skip" id="skip" title="Дараагийн алхам" aria-label="Дараагийн алхам">⏭</button>
+  </div>
+</div>
+
+<script>/* Тайвшруулах байгалийн ая — Web Audio, ямар ч сангүй.
+ *
+ *   const music = createNatureMusic();   // товч дарсны дараа үүсгэнэ (хөтчийн дүрэм)
+ *   music.start();        // эхлүүлэх
+ *   music.pause();        // түр зогсоох  (бүх дуу, цаг хамт зогсоно)
+ *   music.resume();       // үргэлжлүүлэх
+ *   music.rep();          // давталт бүрийн эхэнд: зөөлөн хонх + аккорд «амьсгал авна»
+ *   music.step();         // дараагийн дасгал руу шилжихэд: хоёр нотын хонх
+ *   music.tense(at, sec); // булчин чангалах үе: хөгжим аажим өргөгдөнө
+ *   music.release(at);    // суллах үе: доошоо урсах хонх + далайн давалгаа
+ *
+ *   createNatureMusic({ preset: 'waves' }) — горхины оронд далайн давалгаа (хэвтээ дасгалд)
+ *   createNatureMusic({ preset: 'morning' }) — өглөөний шувуу + зөөлөн горхи + хөгжмийн хайрцаг (бичих дасгалд)
+ *   createNatureMusic({ preset: 'walk' }) — алхааны хэмнэлтэй (120 bpm, 0.5 сек алхам) зөөлөн ая
+ *   music.setWalking(false) // walk: алхаагүй үед хөлийн чимээг унтраана
+ *   music.beatOrigin      // walk: алхмын хэмнэл эхэлсэн цаг (анимацийг тааруулахад)
+ *   music.sparkle();      // нэг зүйл бичиж дуусахад: дээшээ гялалзах ноот
+ *   music.celebrate();    // дасгал дуусахад: дулаан арпеджио
+ *   music.setVolume(0.8); // 0…1
+ *   music.stop();         // унтрааж хаах
+ *   music.ctx.currentTime // анимацийг дуутай синк хийх цаг (pause үед зогсоно)
+ *
+ * Дуунд: горхины урсгал + дусал, салхи, 3 төрлийн шувуу, зөөлөн аккорд, калимба аялгуу.
+ */
+(function (global) {
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function createNatureMusic(opts = {}) {
+    const ctx = opts.ctx || new (global.AudioContext || global.webkitAudioContext)();
+    const rnd = mulberry32(opts.seed || 20261106);
+    const WAVES = opts.preset === 'waves', MORNING = opts.preset === 'morning', WALK = opts.preset === 'walk';
+    const BEAT = 0.5;
+    const R = (a, b) => a + (b - a) * rnd();
+    const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+    // ---- busses ----
+    const master = ctx.createGain(); master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 2;
+    master.connect(comp).connect(ctx.destination);
+    let volume = opts.volume ?? 0.9;
+
+    const rev = ctx.createConvolver();
+    {
+      const len = Math.floor(ctx.sampleRate * 3.2), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const d = ir.getChannelData(c);
+        for (let i = 0; i < len; i++) d[i] = (rnd() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+      }
+      rev.buffer = ir;
+    }
+    const revOut = ctx.createGain(); revOut.gain.value = 0.5;
+    rev.connect(revOut).connect(master);
+
+    const musicG = ctx.createGain(); musicG.gain.value = 0.7;
+    musicG.connect(master); musicG.connect(rev);
+
+    function noiseBuffer(sec, color) {
+      const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * sec), ctx.sampleRate), d = b.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, last = 0;
+      for (let i = 0; i < d.length; i++) {
+        const w = rnd() * 2 - 1;
+        if (color === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+        else { b0 = 0.997 * b0 + 0.029591 * w; b1 = 0.985 * b1 + 0.032534 * w; b2 = 0.95 * b2 + 0.048056 * w; d[i] = (b0 + b1 + b2 + 0.1848 * w) * 0.5; }
+      }
+      return b;
+    }
+    const pan = (node, p) => {
+      if (!ctx.createStereoPanner) return node;
+      const s = ctx.createStereoPanner(); s.pan.value = p; node.connect(s); return s;
+    };
+
+    // ---- continuous beds (stream + wind) ----
+    let wind = null, windF = null;
+    let sea = null, seaF = null;
+    function startBeds(t) {
+      if (WAVES) {
+        const s = ctx.createBufferSource(); s.buffer = noiseBuffer(11, 'brown'); s.loop = true;
+        seaF = ctx.createBiquadFilter(); seaF.type = 'lowpass'; seaF.frequency.value = 320;
+        sea = ctx.createGain(); sea.gain.value = 0.05;
+        s.connect(seaF).connect(sea).connect(master);
+        const foam = ctx.createBufferSource(); foam.buffer = noiseBuffer(6, 'pink'); foam.loop = true;
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+        const fg = ctx.createGain(); fg.gain.value = 0.012;
+        foam.connect(hp).connect(fg).connect(master);
+        s.start(t); foam.start(t);
+      } else {
+      const water = ctx.createBufferSource(); water.buffer = noiseBuffer(7, 'pink'); water.loop = true;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 0.55;
+      const wg = ctx.createGain(); wg.gain.value = MORNING ? 0.045 : WALK ? 0.04 : 0.09;
+      water.connect(bp).connect(wg).connect(master);
+      const sparkle = ctx.createBiquadFilter(); sparkle.type = 'highpass'; sparkle.frequency.value = 3200;
+      const sg = ctx.createGain(); sg.gain.value = 0.03;
+      water.connect(sparkle).connect(sg).connect(master);
+      water.start(t);
+      }
+
+      const air = ctx.createBufferSource(); air.buffer = noiseBuffer(9, 'brown'); air.loop = true;
+      windF = ctx.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 380;
+      wind = ctx.createGain(); wind.gain.value = 0.05;
+      air.connect(windF).connect(wind).connect(master);
+      air.start(t);
+    }
+
+    // ---- one-shot sounds ----
+    function drop(t) {                    // a droplet in the stream
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = R(480, 1250);
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * R(1.4, 1.9), t + 0.045);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(R(0.012, 0.035), t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      pan(o.connect(g), R(-0.6, 0.6)).connect(master);
+      o.start(t); o.stop(t + 0.07);
+    }
+
+    function birdNote(t, f0, f1, dur, amp, p, wet) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + dur * 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const n = pan(o.connect(g), p); n.connect(master);
+      const send = ctx.createGain(); send.gain.value = wet; n.connect(send).connect(rev);
+      o.start(t); o.stop(t + dur + 0.02);
+    }
+    function bird(t) {
+      const p = R(-0.85, 0.85), amp = R(0.018, 0.05), wet = R(0.3, 0.9), kind = rnd();
+      if (kind < 0.4) {                      // chirp series
+        const n = 2 + Math.floor(R(0, 5)), base = R(2800, 3800);
+        for (let i = 0; i < n; i++) birdNote(t + i * R(0.1, 0.15), base * 1.25, base * 0.85, 0.08, amp, p, wet);
+      } else if (kind < 0.75) {              // two-note whistle "fee-bee"
+        const f = R(3300, 4100);
+        birdNote(t, f, f * 0.98, 0.28, amp, p, wet);
+        birdNote(t + 0.34, f * 0.84, f * 0.82, 0.36, amp * 0.9, p, wet);
+      } else {                               // soft trill
+        const o = ctx.createOscillator(), m = ctx.createOscillator(), md = ctx.createGain(), g = ctx.createGain();
+        const f = R(3600, 4600), d = R(0.5, 0.9);
+        o.frequency.value = f; m.frequency.value = R(22, 32); md.gain.value = f * 0.12;
+        m.connect(md).connect(o.frequency);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp * 0.7, t + 0.08);
+        g.gain.setValueAtTime(amp * 0.7, t + d - 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        const n = pan(o.connect(g), p); n.connect(master);
+        const s = ctx.createGain(); s.gain.value = wet; n.connect(s).connect(rev);
+        o.start(t); m.start(t); o.stop(t + d + 0.02); m.stop(t + d + 0.02);
+      }
+    }
+
+    function footstep(t, left) {           // soft step on a dirt path
+      const src = ctx.createBufferSource(); src.buffer = stepBuf;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = R(700, 1000);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(R(0.05, 0.07), t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      pan(src.connect(lp).connect(g), left ? -0.15 : 0.15).connect(master);
+      src.start(t, R(0, 1.5), 0.2);
+    }
+    let stepBuf = null, walking = true;
+
+    function wave(t, size = 1) {           // one ocean wave washing in and out
+      const up = R(3, 4.5) * size, down = R(4, 6) * size, peak = R(0.18, 0.26) * size;
+      sea.gain.cancelScheduledValues(t);
+      sea.gain.setTargetAtTime(peak, t, up / 3);
+      sea.gain.setTargetAtTime(0.04, t + up, down / 3);
+      seaF.frequency.cancelScheduledValues(t);
+      seaF.frequency.setTargetAtTime(R(800, 1100), t, up / 3);
+      seaF.frequency.setTargetAtTime(300, t + up, down / 3);
+      return up + down;
+    }
+
+    function pluck(t, f, amp) {            // kalimba-like note
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+      [[1, 1], [2.0, 0.18], [5.4, 0.04]].forEach(([m, a]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.frequency.value = f * m; og.gain.value = a; o.connect(og).connect(g);
+        o.start(t); o.stop(t + 2.3);
+      });
+      g.connect(musicG);
+    }
+    function bell(t, f, amp) {
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(amp, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
+      [[1, 1], [2.01, 0.25], [3.0, 0.08]].forEach(([m, a]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.frequency.value = f * m; og.gain.value = a; o.connect(og).connect(g);
+        o.start(t); o.stop(t + 3.9);
+      });
+      g.connect(master); g.connect(rev);
+    }
+
+    const CHORDS = [
+      [146.83, 220.00, 277.18, 329.63, 440.00],   // Dmaj9
+      [123.47, 185.00, 246.94, 293.66, 369.99],   // Bm7
+      [ 98.00, 196.00, 246.94, 293.66, 369.99],   // Gmaj7
+      [110.00, 164.81, 220.00, 277.18, 329.63],   // A6/9
+    ];
+    const PENTA = [587.33, 659.25, 739.99, 880.00, 987.77, 1174.66];
+    const CHORD_LEN = 16;
+    let chordIdx = 0;
+    function chord(t) {
+      const notes = CHORDS[chordIdx++ % CHORDS.length];
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(1, t + 3);
+      g.gain.setValueAtTime(1, t + CHORD_LEN - 1); g.gain.linearRampToValueAtTime(0.0001, t + CHORD_LEN + 2);
+      notes.forEach((f, i) => {
+        for (const [type, det, a] of [['sine', -5, 0.045], ['triangle', 6, 0.022]]) {
+          const o = ctx.createOscillator(), og = ctx.createGain();
+          o.type = type; o.frequency.value = f; o.detune.value = det + i; og.gain.value = a;
+          o.connect(og).connect(lp); o.start(t); o.stop(t + CHORD_LEN + 2.1);
+        }
+      });
+      lp.connect(g).connect(musicG);
+    }
+
+    // ---- scheduler: fills events between `horizon` and `until` ----
+    let nextWave = 0, nextBeat = 0, beatN = 0;
+    let horizon = 0, nextDrop = 0, nextBird = 0, nextNote = 0, nextChord = 0, nextWind = 0;
+    function scheduleTo(until) {
+      if (WAVES) { while (nextWave < until) nextWave += wave(nextWave) * R(0.9, 1.15); }
+      else { while (nextDrop < until) { drop(nextDrop); nextDrop += R(0.07, 0.45); } }
+      while (nextBird < until) { if (!WAVES || rnd() < 0.5) bird(nextBird); nextBird += WAVES ? R(6, 14) : MORNING ? R(1.8, 5) : R(2.5, 8); }
+      while (nextChord < until) { chord(nextChord); nextChord += CHORD_LEN; }
+      if (WALK) {
+        while (nextBeat < until) {
+          if (walking) footstep(nextBeat, beatN % 2 === 0);
+          const bar = beatN % 8, root = CHORDS[(chordIdx + 3) % CHORDS.length][0];
+          if (bar === 0) pluck(nextBeat, root, 0.06);
+          if (bar === 4) pluck(nextBeat, root * 1.5, 0.045);
+          if (rnd() < 0.32) pluck(nextBeat + (rnd() < 0.3 ? BEAT / 2 : 0), pick(PENTA), R(0.03, 0.05));
+          nextBeat += BEAT; beatN++;
+        }
+        nextNote = until;
+      }
+      while (nextNote < until) {
+        if (MORNING) {                       // music-box: short rising/falling figures
+          if (rnd() < 0.6) {
+            const i0 = Math.floor(R(0, PENTA.length - 2)), dir = rnd() < 0.5 ? 1 : -1, n = 2 + Math.floor(R(0, 3));
+            for (let k = 0; k < n; k++) {
+              const idx = Math.max(0, Math.min(PENTA.length - 1, i0 + dir * k));
+              pluck(nextNote + k * 0.38, PENTA[idx] * 2, R(0.025, 0.04));
+            }
+          }
+          nextNote += pick([2.4, 3, 3.6, 4.8]);
+        } else {
+          if (rnd() < 0.7) pluck(nextNote, pick(PENTA), R(0.045, 0.075));
+          nextNote += pick([1.5, 2, 2, 3, 4]);
+        }
+      }
+      while (nextWind < until) {
+        wind.gain.linearRampToValueAtTime(R(0.025, 0.1), nextWind + 3);
+        windF.frequency.linearRampToValueAtTime(R(260, 520), nextWind + 3);
+        nextWind += 3;
+      }
+      horizon = until;
+    }
+
+    let timer = null, started = false;
+    const api = {
+      ctx, beatOrigin: 0,
+      start(at) {
+        if (started) return; started = true;
+        const t = at ?? ctx.currentTime + 0.05;
+        if (!opts.ctx && ctx.resume) ctx.resume();
+        startBeds(t);
+        if (WALK) { stepBuf = noiseBuffer(2, 'pink'); nextBeat = t + 1; api.beatOrigin = t + 1; }
+        nextWave = t + 0.5; nextDrop = t + 0.3; nextBird = t + 1.2; nextNote = t + 2; nextChord = t; nextWind = t;
+        master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(volume, t + 2.5);
+        if (!opts.ctx) {
+          scheduleTo(t + 1.5);
+          timer = setInterval(() => scheduleTo(ctx.currentTime + 1.5), 300);
+        }
+      },
+      renderTo(until) { scheduleTo(until); },          // for OfflineAudioContext
+      pause() { return ctx.suspend && ctx.suspend(); },
+      resume() { return ctx.resume && ctx.resume(); },
+      rep(at) {                                         // breathe-in swell + soft chime
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.6, t);
+        musicG.gain.linearRampToValueAtTime(1.0, t + 3.2);
+        musicG.gain.setValueAtTime(1.0, t + 5);
+        musicG.gain.linearRampToValueAtTime(0.6, t + 8);
+        bell(t, 1174.66, 0.04);
+      },
+      step(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        bell(t, 587.33, 0.07); bell(t + 0.3, 880.0, 0.06);
+      },
+      tense(at, sec = 7) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.5, t);
+        musicG.gain.linearRampToValueAtTime(0.95, t + sec);
+        bell(t, 659.25, 0.045); bell(t + 0.18, 880.0, 0.03);
+      },
+      release(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        musicG.gain.cancelScheduledValues(t);
+        musicG.gain.setValueAtTime(0.95, t);
+        musicG.gain.linearRampToValueAtTime(0.55, t + 9);
+        [1174.66, 987.77, 880.0, 739.99, 587.33].forEach((f, i) => bell(t + i * 0.16, f, 0.05 - i * 0.006));
+        if (WAVES) { wave(t + 0.2, 1.25); nextWave = Math.max(nextWave, t + 10); }
+      },
+      sparkle(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        [587.33, 739.99, 880.0, 1174.66].forEach((f, i) => pluck(t + i * 0.09, f * 2, 0.05));
+      },
+      celebrate(at) {
+        const t = Math.max(at ?? 0, ctx.currentTime);
+        [293.66, 369.99, 440.0, 587.33, 739.99, 880.0, 1174.66].forEach((f, i) => pluck(t + i * 0.14, f, 0.07));
+        bell(t + 1.1, 1174.66, 0.05);
+      },
+      setWalking(v) { walking = !!v; },        // walk: footsteps on/off
+      setVolume(v) { volume = v; master.gain.setTargetAtTime(v, ctx.currentTime, 0.2); },
+      stop() {
+        clearInterval(timer);
+        master.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        if (!opts.ctx) setTimeout(() => ctx.close(), 2000);
+      },
+    };
+    return api;
+  }
+
+  global.createNatureMusic = createNatureMusic;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+const STEPS = [
+  { text: 'Утсаа чимээгүй горимд тавь',            sec: 60,  walk: false, tip: 'Утсаа чимээгүй болгоод, гутлаа өмсөөрэй' },
+  { text: 'Гадаа гараад тайван алх',                sec: 300, walk: true,  tip: 'Хөлийнхөө чимээтэй хэмнэлээ тааруулж алх' },
+  { text: 'Эргэн тойрныхоо өнгө, дууг ажиглан алх', sec: 300, walk: true,  tip: 'Шувууны дуу, салхи, өнгө бүрийг анзаар' },
+];
+const TOTAL = STEPS.reduce((a, s) => a + s.sec, 0);
+const $ = id => document.getElementById(id);
+const art = $('art'), svg = art.querySelector('svg');
+const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+$('list').innerHTML = STEPS.map(s => `<li>${s.text}<small>${fmt(s.sec)}</small></li>`).join('');
+const items = [...document.querySelectorAll('#list li')];
+let music = null, origin = 0, playing = false, raf = 0, last = -1;
+
+function stepAt(e) { let acc = 0; for (let i = 0; i < STEPS.length; i++) { if (e < acc + STEPS[i].sec) return { i, inS: e - acc, start: acc }; acc += STEPS[i].sec; } return { i: STEPS.length - 1, inS: 0, start: 0 }; }
+
+// legs swing on the music's beat: 1 s stride = 2 footsteps
+function syncArt() {
+  const t = (music.ctx.currentTime - music.beatOrigin) * 1000;
+  svg.getAnimations({ subtree: true }).forEach(a => {
+    const d = a.effect.getTiming().duration;
+    if (d === 1000 || d === 500) a.currentTime = ((t % d) + d) % d;
+  });
+}
+
+function loop() {
+  const e = music.ctx.currentTime - origin;
+  if (e >= TOTAL) return finish();
+  const { i, inS } = stepAt(e), s = STEPS[i];
+  if (i !== last) {
+    if (last !== -1) music.step();
+    music.setWalking(s.walk);
+    art.classList.toggle('paused', !s.walk);
+    if (s.walk) syncArt();
+    items.forEach((li, k) => li.className = k < i ? 'done' : k === i ? 'now' : '');
+    $('hint').textContent = s.tip;
+    last = i;
+  }
+  $('pill').className = 'pill on';
+  $('pill').textContent = `Алхам ${i + 1} / ${STEPS.length} · ${fmt(Math.ceil(s.sec - inS))}`;
+  $('bar').style.width = (100 * e / TOTAL).toFixed(2) + '%';
+  $('left').textContent = fmt(Math.ceil(TOTAL - e)) + ' үлдсэн';
+  raf = requestAnimationFrame(loop);
+}
+function play() {
+  if (!music) { music = createNatureMusic({ preset: 'walk', volume: +$('vol').value, seed: 5 }); music.start(); origin = music.ctx.currentTime + 0.3; last = -1; }
+  else music.resume();
+  playing = true; $('go').textContent = '⏸ Түр зогсоох';
+  if (STEPS[stepAt(Math.max(0, music.ctx.currentTime - origin)).i].walk) art.classList.remove('paused');
+  loop();
+}
+function pause() { playing = false; cancelAnimationFrame(raf); music.pause(); art.classList.add('paused'); $('go').textContent = '▶ Үргэлжлүүлэх'; }
+function skip() {
+  if (!music) return play();
+  const { i, start } = stepAt(Math.max(0, music.ctx.currentTime - origin));
+  origin = music.ctx.currentTime - (start + STEPS[i].sec);
+  if (!playing) play();
+}
+function finish() {
+  cancelAnimationFrame(raf); playing = false; music.step();
+  const m = music; music = null; setTimeout(() => m.stop(), 4000);
+  art.classList.add('paused'); items.forEach(li => li.className = 'done');
+  $('pill').textContent = 'Сайхан алхлаа! 🌿'; $('hint').textContent = 'Гэртээ ирээд нэг аяга ус уугаарай.';
+  $('bar').style.width = '100%'; $('left').textContent = '0:00'; $('go').textContent = '▶ Дахин эхлэх';
+}
+function stopAll() {
+  cancelAnimationFrame(raf); playing = false; if (music) { music.stop(); music = null; }
+  art.classList.add('paused'); items.forEach(li => li.className = ''); $('pill').className = 'pill';
+  $('hint').textContent = 'Зургийг дагаад хамт хийгээрэй. Нийт 11 мин.'; $('bar').style.width = '0'; $('left').textContent = '11:00';
+  $('go').textContent = '▶ Дагаж эхлэх';
+}
+$('go').onclick = () => (playing ? pause() : play());
+$('skip').onclick = skip;
+$('vol').oninput = e => music && music.setVolume(+e.target.value);
+</script>
+</body>
+</html>

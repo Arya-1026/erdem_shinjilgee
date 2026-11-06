@@ -163,7 +163,13 @@ html { scrollbar-color: color-mix(in srgb, var(--primary) 45%, transparent) tran
 }
 
 /* ---------- Layout ---------- */
-.app-main { padding: 8px 16px calc(var(--nav-h) + var(--safe-b) + 20px); max-width: 1180px; margin: 0 auto; }
+.app-main { padding: 8px 16px calc(var(--nav-h) + var(--safe-b) + 20px); max-width: 1180px; margin: 0 auto; min-width: 0; }
+/* Ямар нэг өргөн элемент утсан дээр хуудсыг хажуу тийш гүйлгэхгүй (clip нь sticky-г эвдэхгүй) */
+html, body { overflow-x: clip; }
+/* Сонголтын (select) нээгдэх жагсаалт: хөтөч цагаан дэвсгэр дээр апп-ын цайвар бичгийг харуулаад уншигдахгүй байсан */
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
+select option { background-color: var(--popover); color: var(--popover-foreground); }
 body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 96px); }
 .app-nav { height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b); }
 .topbar { padding-top: env(safe-area-inset-top); min-height: var(--head-h); background: color-mix(in srgb, var(--background) 88%, transparent); backdrop-filter: blur(10px); }

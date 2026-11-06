@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ExerciseArt } from '@/components/exercise-art';
 import { Button } from '@/components/ui/button';
 import { cueAt, moveSeconds, PREP_SECONDS, totalSeconds, type Move } from '@/lib/exercise-moves';
 import { useT } from '@/components/providers/locale-provider';
+import { createNatureMusic, type NatureMusic } from '@/lib/nature-music';
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 type Status = 'ready' | 'run' | 'pause' | 'done';
+
+// Байгалийн тайвшруулах аятай дасгалууд (иогийн сунгалт)
+const NATURE_MUSIC = new Set(['e4']);
+const SOUND_KEY = 'setgel-yoga-sound';
 
 /* Дасгалыг хөдөлгөөнт зурагтай хамт алхам алхмаар дагуулна. Хөдөлгөөн бүрийн өмнө 3 секунд бэлдэнэ.
    (Өмнө нь three.js 3D загвар байсан: утсан дээр удаан байсан тул хөнгөн SVG анимациар сольсон.) */
@@ -18,6 +23,9 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
   const [i, setI] = useState(0);
   const [t, setT] = useState(-PREP_SECONDS);
   const m = moves[i];
+  const withMusic = NATURE_MUSIC.has(recId);
+  const [sound, setSound] = useState(() => { try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; } });
+  const music = useRef<NatureMusic | null>(null);
 
   const go = (n: number) => {
     if (n >= moves.length) return setStatus('done');
@@ -47,6 +55,35 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
   const prep = t < 0;
   const done = status === 'done', ready = status === 'ready';
   const rep = Math.min(m.reps, Math.floor(Math.max(0, t) / m.period) + 1);
+
+  // Ая: зогсоовол хамт зогсоно, дуусахад/хаахад унтарна
+  useEffect(() => {
+    const mu = music.current;
+    if (!mu) return;
+    if (status === 'pause') mu.pause();
+    else if (status === 'run') mu.resume();
+    else if (status === 'done') { mu.stop(); music.current = null; }
+  }, [status]);
+  useEffect(() => () => { music.current?.stop(); }, []);
+  // Дараагийн дасгал руу шилжихэд хоёр нотын хонх, давталт бүрийн эхэнд аккорд «амьсгал авна»
+  const firstMove = useRef(true);
+  useEffect(() => { if (firstMove.current) { firstMove.current = false; return; } music.current?.step(); }, [i]);
+  useEffect(() => { if (status === 'run' && !prep) music.current?.rep(); }, [status, prep, rep, i]);
+
+  function begin() {
+    // Товч дарсан мөчид эхлүүлнэ: хөтөч дууг зөвхөн хэрэглэгчийн үйлдлээр зөвшөөрдөг
+    if (withMusic && !music.current) {
+      music.current = createNatureMusic({ volume: sound ? 0.9 : 0 });
+      music.current?.start();
+    }
+    setStatus('run');
+  }
+  function toggleSound() {
+    const on = !sound;
+    setSound(on);
+    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* хувийн цонх */ }
+    music.current?.setVolume(on ? 0.9 : 0);
+  }
   const count = m.hold ? clock(Math.max(0, Math.ceil(moveSeconds(m) - Math.max(0, t)))) : `${rep} / ${m.reps}`;
   const cue = cueAt(m, Math.max(0, t));
   const spent = moves.slice(0, i).reduce((s, x) => s + moveSeconds(x) + PREP_SECONDS, 0) + t + PREP_SECONDS;
@@ -78,7 +115,7 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
         <>
           <p className="mt-3 text-sm text-muted-foreground">{tr('Зургийг дагаад хамт хийгээрэй. Нийт {0} мин.', Math.ceil(total / 60))}</p>
           <ol className="mt-2 list-decimal pl-5 text-sm">{[...new Set(moves.map(x => x.label))].map(l => <li key={l} className="mb-1">{tr(l)}</li>)}</ol>
-          <Button size="xl" className="mt-3 w-full" onClick={() => setStatus('run')}>{tr('▶ Дагаж эхлэх')}</Button>
+          <Button size="xl" className="mt-3 w-full" onClick={begin}>{tr('▶ Дагаж эхлэх')}</Button>
         </>
       ) : (
         <>
@@ -93,6 +130,12 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
             <Button size="xl" variant="secondary" className="flex-none" aria-label={tr('Дараагийн алхам')} onClick={() => go(i + 1)}>⏭</Button>
           </div>
         </>
+      )}
+      {withMusic && !done && (
+        <button type="button" onClick={toggleSound} aria-pressed={sound}
+          className="mx-auto mt-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-secondary">
+          <span aria-hidden="true">{sound ? '🔔' : '🔕'}</span>{sound ? tr('Байгалийн ая асаалттай') : tr('Байгалийн ая унтраалттай')}
+        </button>
       )}
     </div>
   );
