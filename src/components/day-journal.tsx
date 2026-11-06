@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { Button } from '@/components/ui/button';
+import { VoiceInput } from '@/components/voice-input';
 import { MOODS, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import type { DayJournal, DayNote, MoodId } from '@/lib/types';
@@ -79,6 +80,7 @@ export function DayJournalForm({ date, onDone }: { date: string; onDone: () => v
       </div>
       <textarea rows={4} value={body} onChange={e => setBody(e.target.value)} maxLength={5000} placeholder={tr('Өнөөдөр өдөр чинь ямар өнгөрөв?')} aria-label={tr('Өдрийн тэмдэглэл')}
         className="w-full resize-y rounded-xl border-[1.5px] bg-background px-3 py-2.5 focus:border-primary focus:outline-none" />
+      <VoiceInput onText={t => setBody(b => (b.trim() ? `${b.trimEnd()} ${t}` : t).slice(0, 5000))} />
       <Button size="xl" className="w-full" disabled={busy || (!body.trim() && !mood)} onClick={() => void submit()}>{busy ? tr('Хадгалж байна…') : tr('Хадгалах')}</Button>
     </div>
   );
