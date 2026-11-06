@@ -2,6 +2,8 @@
 export const PROFILE_COLS = 'id,name,email,hobbies,theme,language,reminder_time,reminder_enabled,art_mode,chat_mode,exercises_done,birth_year,fav_artists,mood_images,avatar,handle,profile_visibility,mood_visibility,message_permission,friends_visibility,show_active,note_text,note_mood,note_at';
 export const TODO_COLS = 'id,title,category,effort,minutes,due_date,planned_date,planned_time,emoji,reason,done,done_at';
 export const SONG_COLS = 'video_id,title,artist,thumbnail,duration_s';
+export const JOURNAL_COLS = 'day,mood,body';
+export const DAY_NOTE_COLS = 'id,day,body,created_at';
 export const ENTRY_COLS = 'id,entry_date,entry_time,mood,intensity,tags,note,sleep';
 export const BOOKING_COLS = 'id,expert_id,booking_date,slot,kind,share_report,status,meeting_url';
 export const EXPERT_COLS = 'id,name,title,spec,experience_years,rating,price,color';

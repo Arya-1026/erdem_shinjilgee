@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { type CalendarMark, MoodCalendar } from '@/components/charts';
+import { DayWriting } from '@/components/day-journal';
 import { DayMood, MoodOverview } from '@/components/mood-overview';
 import { useApp } from '@/components/providers/app-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { dayAvg } from '@/lib/analytics';
 import { WD, WD_SHORT } from '@/lib/data';
 import { TODO_COLS } from '@/lib/db';
@@ -27,11 +29,13 @@ type NewTodo = { title: string; category: string; effort: number; minutes: numbe
 
 export default function TodoPage() {
   const tr = useT();
-  const { supabase, todos, setTodos, entries, openDialog } = useApp();
+  const { supabase, todos, setTodos, entries, openDialog, journals, dayNotes } = useApp();
   const [now] = useState(() => new Date());
   const [month, setMonth] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [today] = useState(todayStr);
   const [day, setDay] = useState(today);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const jump = useRef(false);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState('');
@@ -89,10 +93,24 @@ export default function TodoPage() {
     if (error) { setTodos(l => l.map(x => (x.id === t.id ? t : x))); toast.error(tr('Хадгалж чадсангүй')); }
   }
 
+  // Өдөр дээр дарахад товч тойм нээгдэнэ
+  const past = day < today;
+  const dayJournal = journals.find(j => j.day === day), dayExtras = dayNotes.filter(n => n.day === day);
+  const pick = (d: string) => { setDay(d); setPeekOpen(true); };
+
+  // Нээлттэй цонх хуудсыг түгжиж, хаагдахдаа focus-ийг буцаадаг тул бүрэн хаагдсаны дараа доорх хэсэг рүү шилжинэ
+  function afterPeek(open: boolean) {
+    if (open || !jump.current) return;
+    jump.current = false;
+    document.getElementById('day-edit')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    document.querySelector<HTMLInputElement>('#day-add input')?.focus({ preventScroll: true });
+  }
+
   // Календарийн эможи дээр дарахад тухайн ажлыг засах горимд нээнэ
   function editFromCalendar(id: string) {
     const t = todos.find(x => x.id === id);
     if (!t?.planned_date) return;
+    if (t.planned_date < today) return pick(t.planned_date);
     setDay(t.planned_date);
     setEditing(id);
     requestAnimationFrame(() => document.getElementById(`todo-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
@@ -127,7 +145,7 @@ export default function TodoPage() {
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <LoadStrip today={today} selected={day} onPick={setDay} />
+        <LoadStrip today={today} selected={day} onPick={pick} />
         {hints.slice(0, 2).map(h => (
           <section key={h.date} className="card-x grad-dawn border-0">
             <h3 className="mb-1 font-semibold">{tr('Урьдчилан бэлдье 💜')}</h3>
@@ -145,20 +163,48 @@ export default function TodoPage() {
             <h2 className="font-bold">{tr('{0} оны {1}-р сар', month.y, month.m + 1)}</h2>
             <button className="grid size-10 place-items-center rounded-full border text-xl" aria-label={tr('Дараагийн сар')} onClick={() => shift(1)}>›</button>
           </div>
-          <MoodCalendar year={month.y} month={month.m} today={today} avgOf={d => dayAvg(entries, d)} counts={counts} marks={marks} fire={activeDays} selected={day} onPick={setDay} onMark={editFromCalendar} />
+          <MoodCalendar year={month.y} month={month.m} today={today} avgOf={d => dayAvg(entries, d)} counts={counts} marks={marks} fire={activeDays} selected={day} onPick={pick} onMark={editFromCalendar} />
         </section>
 
-        <section className="card-x">
+        <section id="day-edit" className="card-x scroll-mt-[calc(var(--head-h)+12px)]">
           <h2 className="mb-1 font-bold">{day === today ? tr('Өнөөдөр') : dayName(day, tr)}</h2>
           <DayMood date={day} />
-          {dayTodos.length ? dayTodos.map(t => editing === t.id
+          {(dayJournal || dayExtras.length > 0) && <div className="mb-2"><DayWriting journal={dayJournal} notes={dayExtras} /></div>}
+          {dayTodos.length ? dayTodos.map(t => editing === t.id && !past
             ? <div key={t.id} id={`todo-${t.id}`} className="border-b py-2.5 last:border-0"><TodoForm initial={t} submitLabel={tr('✓ Хадгалах')} onSubmit={p => save(t, { ...p, planned_date: p.planned_date ?? t.planned_date ?? day })} onCancel={() => setEditing(null)} /></div>
-            : <TodoRow key={t.id} t={t} onToggle={toggle} onRemove={remove} onEdit={() => setEditing(t.id)} />)
+            : <TodoRow key={t.id} t={t} readOnly={past} onToggle={toggle} onRemove={remove} onEdit={() => setEditing(t.id)} />)
             : <p className="text-sm text-muted-foreground">{tr('Энэ өдөр ажил алга.')}</p>}
-          <TodoForm submitLabel={tr('＋ Нэмэх')} onSubmit={add} />
+          {past
+            ? <p className="mt-2 text-xs text-muted-foreground">{tr('Өнгөрсөн өдрийн ажлыг өөрчлөхгүй. Тэмдэглэл нэмэхдээ календарь дээрх өдрөө дарна уу.')}</p>
+            : <div id="day-add"><TodoForm submitLabel={tr('＋ Нэмэх')} onSubmit={add} /></div>}
         </section>
       </div>
     </div>
+    <Dialog open={peekOpen} onOpenChange={setPeekOpen} onOpenChangeComplete={afterPeek}>
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{day === today ? tr('Өнөөдөр') : dayName(day, tr)}</DialogTitle>
+          <DialogDescription>{tr('Энэ өдрийн товч тойм')}</DialogDescription>
+        </DialogHeader>
+        <DayMood date={day} brief />
+        <DayWriting journal={dayJournal} notes={dayExtras} brief />
+        {dayTodos.length > 0 && (
+          <ul className="text-sm">
+            {dayTodos.slice(0, 5).map(t => (
+              <li key={t.id} className={cn('flex items-baseline gap-2 border-b py-1.5 last:border-0', t.done && 'text-muted-foreground line-through')}>
+                <span aria-hidden>{t.emoji ?? '•'}</span><span className="min-w-0 flex-1 truncate">{t.title}</span>
+                {t.planned_time && <span className="text-xs text-muted-foreground tabular-nums">{t.planned_time.slice(0, 5)}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {dayTodos.length > 5 && <p className="text-xs text-muted-foreground">{tr('Бас {0} ажил', dayTodos.length - 5)}</p>}
+        {!dayTodos.length && !entries.some(e => e.entry_date === day) && !dayJournal && !dayExtras.length && <p className="text-sm text-muted-foreground">{tr('Энэ өдөр бүртгэл, ажил алга.')}</p>}
+        {day <= today && !(past && dayJournal) && <Button size="xl" variant="secondary" className="w-full" onClick={() => { setPeekOpen(false); openDialog({ kind: 'journal', date: day }); }}>{tr('📔 Өдрийн тэмдэглэл')}</Button>}
+        {past ? <PastNote key={day} date={day} />
+          : <Button size="xl" className="w-full" onClick={() => { jump.current = true; setPeekOpen(false); }}>{tr('✏️ Засах')}</Button>}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
@@ -194,19 +240,49 @@ function LoadStrip({ today, selected, onPick }: { today: string; selected: strin
   );
 }
 
-function TodoRow({ t, onToggle, onRemove, onEdit }: { t: Todo; onToggle: (t: Todo) => void; onRemove: (t: Todo) => void; onEdit: () => void }) {
+/* Өнгөрсөн өдөрт нэмэлт тэмдэглэл бичнэ: сэтгэл хөдлөлийн бүртгэлээс тусдаа хадгалагдана */
+function PastNote({ date }: { date: string }) {
+  const tr = useT();
+  const { addDayNote } = useApp();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!open) return <Button size="xl" className="w-full" onClick={() => setOpen(true)}>{tr('📝 Нэмэлт тэмдэглэл')}</Button>;
+
+  async function submit() {
+    setBusy(true);
+    const ok = await addDayNote(date, text.trim());
+    setBusy(false);
+    if (!ok) return;
+    setText(''); setOpen(false);
+    toast(tr('Нэмэлт тэмдэглэл хадгалагдлаа'));
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <textarea autoFocus rows={3} value={text} onChange={e => setText(e.target.value)} maxLength={2000} placeholder={tr('Нэмэлт тэмдэглэл бичих')} aria-label={tr('📝 Нэмэлт тэмдэглэл')}
+        className="w-full resize-y rounded-xl border-[1.5px] bg-background px-3 py-2.5 focus:border-primary focus:outline-none" />
+      <div className="flex gap-2">
+        <Button size="xl" variant="outline" className="flex-1" onClick={() => setOpen(false)}>{tr('Болих')}</Button>
+        <Button size="xl" className="flex-1" disabled={busy || !text.trim()} onClick={() => void submit()}>{tr('Хадгалах')}</Button>
+      </div>
+    </div>
+  );
+}
+
+function TodoRow({ t, readOnly, onToggle, onRemove, onEdit }: { t: Todo; readOnly?: boolean; onToggle: (t: Todo) => void; onRemove: (t: Todo) => void; onEdit: () => void }) {
   const tr = useT();
   const { locale } = useLocale();
   return (
     <div id={`todo-${t.id}`} className="border-b py-2.5 last:border-0">
       <div className="flex items-start gap-2.5">
-        <input type="checkbox" className="mt-0.5 size-6 flex-none accent-primary" checked={t.done} onChange={() => onToggle(t)} aria-label={tr('{0} дууссан', t.title)} />
-        <button className="min-w-0 flex-1 rounded-lg text-left hover:bg-secondary/60" title={tr('Дарж засах')} aria-label={tr('{0} засах', t.title)} onClick={onEdit}>
+        <input type="checkbox" className="mt-0.5 size-6 flex-none accent-primary" checked={t.done} disabled={readOnly} onChange={() => onToggle(t)} aria-label={tr('{0} дууссан', t.title)} />
+        <button disabled={readOnly} className="min-w-0 flex-1 rounded-lg text-left enabled:hover:bg-secondary/60" title={readOnly ? undefined : tr('Дарж засах')} aria-label={readOnly ? undefined : tr('{0} засах', t.title)} onClick={onEdit}>
           <b className={cn('block [overflow-wrap:anywhere]', t.done && 'text-muted-foreground line-through')}>{t.emoji && <span className="mr-1.5" aria-hidden>{t.emoji}</span>}{t.title}</b>
           <span className="text-xs text-muted-foreground">{t.planned_time && <b className="text-foreground">{hhmm(t.planned_time)} · </b>}{tr('{0} · {1} · {2} мин', tr(t.category), tr(effortLabel(t.effort)), t.minutes)}{t.due_date && tr(' · эцсийн хугацаа {0}', t.due_date.slice(5).replace('-', '/'))}</span>
         </button>
-        <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={tr('{0} засах', t.title)} title={tr('Засах')} onClick={onEdit}>✎</button>
-        <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={tr('{0} устгах', t.title)} onClick={() => onRemove(t)}>✕</button>
+        {!readOnly && <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={tr('{0} засах', t.title)} title={tr('Засах')} onClick={onEdit}>✎</button>}
+        {!readOnly && <button className="grid size-9 flex-none place-items-center rounded-lg text-muted-foreground" aria-label={tr('{0} устгах', t.title)} onClick={() => onRemove(t)}>✕</button>}
       </div>
       {translateReason(locale, t.reason) && (
         <details className="mt-1.5 ml-[34px] text-sm">

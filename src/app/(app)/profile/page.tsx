@@ -7,9 +7,11 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
 import { FriendsTile } from '@/components/friends-tile';
+import { MoodHistory } from '@/components/mood-history';
 import { MoodImages } from '@/components/mood-images';
 import { PasswordReset } from '@/components/password-reset';
 import { PalettePicker } from '@/components/palette-picker';
+import { Segmented } from '@/components/segmented';
 import { useSeasonPref } from '@/components/seasonal';
 import { isSeasonPref, saveSeasonPref } from '@/lib/season';
 import { useApp } from '@/components/providers/app-provider';
@@ -37,6 +39,17 @@ const useMounted =() => useSyncExternalStore(() => () => {}, () => true, () => f
 
 export default function ProfilePage() {
   const tr = useT();
+  const [tab, setTab] = useState<'profile' | 'history'>('profile');
+  return (
+    <>
+      <Segmented full label={tr('Профайлын хэсэг')} className="mb-4 w-full desk:max-w-[420px]" value={tab} onChange={setTab} options={[['profile', tr('👤 Профайл')], ['history', tr('🕘 Түүх')]]} />
+      {tab === 'history' ? <MoodHistory /> : <ProfileMain />}
+    </>
+  );
+}
+
+function ProfileMain() {
+  const tr = useT();
   const app = useApp();
   const { profile: u, entries, updateProfile, supabase } = app;
   const player = usePlayer();
@@ -50,8 +63,8 @@ export default function ProfilePage() {
 
   async function exportData() {
     const { data: chat } = await supabase.from('chat_messages').select('role,content,crisis,created_at').order('created_at');
-    const { profile, entries, feedback, watchlist, bookings } = app;
-    const blob = new Blob([JSON.stringify({ profile, entries, feedback, watchlist, bookings, chat }, null, 2)], { type: 'application/json' });
+    const { profile, entries, feedback, watchlist, bookings, journals, dayNotes } = app;
+    const blob = new Blob([JSON.stringify({ profile, entries, journals, dayNotes, feedback, watchlist, bookings, chat }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'setgel-data.json'; a.click(); URL.revokeObjectURL(a.href);
   }

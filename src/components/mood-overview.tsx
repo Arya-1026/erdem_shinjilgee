@@ -116,7 +116,7 @@ export function MoodOverview() {
 }
 
 /* Календарь дээр сонгосон өдрийн сэтгэл санаа */
-export function DayMood({ date }: { date: string }) {
+export function DayMood({ date, brief }: { date: string; brief?: boolean }) {
   const tr = useT();
   const { entries } = useApp();
   const dayE = entries.filter(e => e.entry_date === date);
@@ -133,7 +133,7 @@ export function DayMood({ date }: { date: string }) {
             <div className="min-w-0 flex-1 text-sm">
               <b>{tr(m.label)}</b> <span className="text-muted-foreground">{tr('· {0} · эрч хүч {1}/5', e.entry_time.slice(0, 5), e.intensity)}{e.sleep != null && tr(' · нойр {0} цаг', e.sleep)}</span>
               {e.tags.length > 0 && <div className="text-muted-foreground">{e.tags.map(t => tr(t)).join(', ')}</div>}
-              {e.note && <div className="[overflow-wrap:anywhere]">{e.note}</div>}
+              {e.note && <div className={cn('[overflow-wrap:anywhere]', brief && 'line-clamp-3')}>{e.note}</div>}
             </div>
           </div>
         );

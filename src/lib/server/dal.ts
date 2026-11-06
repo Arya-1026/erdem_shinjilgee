@@ -1,9 +1,9 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
-import { BOOKING_COLS, ENTRY_COLS, EXPERT_COLS, groupSlots, normalizeEntry, PROFILE_COLS, SONG_COLS, TODO_COLS, toExpert } from '@/lib/db';
+import { BOOKING_COLS, DAY_NOTE_COLS, ENTRY_COLS, JOURNAL_COLS, EXPERT_COLS, groupSlots, normalizeEntry, PROFILE_COLS, SONG_COLS, TODO_COLS, toExpert } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
-import type { Booking, Entry, Expert, ExpertSlots, LikedSong, MusicConfig, Profile, Todo } from '@/lib/types';
+import type { Booking, DayJournal, DayNote, Entry, Expert, ExpertSlots, LikedSong, MusicConfig, Profile, Todo } from '@/lib/types';
 import { spotifyConfigured } from './spotify';
 
 // Data Access Layer: session шалгах, хэрэглэгчийн өгөгдөл ачаалах цорын ганц газар.
@@ -67,6 +67,8 @@ export type AppData = {
   music: MusicConfig;
   likedSongs: LikedSong[];
   todos: Todo[];
+  journals: DayJournal[];
+  dayNotes: DayNote[];
 };
 
 export async function getAppData(): Promise<AppData> {
@@ -74,7 +76,7 @@ export async function getAppData(): Promise<AppData> {
   const since = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
   const profile = await loadProfile(supabase, user);
   if (!profile.hobbies.length) redirect('/onboarding');
-  const [e, f, w, b, ex, sl, me, ls, td] = await Promise.all([
+  const [e, f, w, b, ex, sl, me, ls, td, dj, dn] = await Promise.all([
     supabase.from('mood_entries').select(ENTRY_COLS).gte('entry_date', since).order('entry_date').order('entry_time').returns<Entry[]>(),
     supabase.from('rec_feedback').select('rec_id,value'),
     supabase.from('watchlist').select('rec_id'),
@@ -84,6 +86,8 @@ export async function getAppData(): Promise<AppData> {
     supabase.rpc('my_expert_id'),
     supabase.from('liked_songs').select(SONG_COLS).order('created_at', { ascending: false }).returns<LikedSong[]>(),
     supabase.from('todos').select(TODO_COLS).order('created_at').returns<Todo[]>(),
+    supabase.from('day_journals').select(JOURNAL_COLS).gte('day', since).returns<DayJournal[]>(),
+    supabase.from('day_notes').select(DAY_NOTE_COLS).gte('day', since).order('created_at').returns<DayNote[]>(),
   ]);
   return {
     restored,
@@ -98,5 +102,7 @@ export async function getAppData(): Promise<AppData> {
     music: { discovery: spotifyConfigured() },
     likedSongs: ls.data ?? [],
     todos: td.data ?? [],
+    journals: dj.data ?? [],
+    dayNotes: dn.data ?? [],
   };
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SupportBody } from '@/components/daily-support';
+import { DayJournalForm } from '@/components/day-journal';
 import { ExerciseCoach } from '@/components/exercise/coach';
 import { PmrCoach } from '@/components/exercise/pmr';
 import { PLAYERS, PlayerFrame } from '@/components/exercise/player-frame';
@@ -26,6 +27,7 @@ import { useT } from '@/components/providers/locale-provider';
 const SHEET = 'top-auto bottom-0 left-0 max-h-[92dvh] max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden translate-x-0 translate-y-0 gap-0 overflow-auto rounded-t-[22px] rounded-b-none px-[18px] pt-[22px] pb-[calc(22px+var(--safe-b))] text-base ring-0 max-sm:data-open:zoom-in-100 max-sm:data-open:slide-in-from-bottom-10 max-sm:data-closed:zoom-out-100 max-sm:data-closed:slide-out-to-bottom-10 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[22px] sm:p-[26px]';
 
 export function DialogHost() {
+  const tr = useT();
   const { dialog, openDialog } = useApp();
   // Хаах animation дуусах хүртэл сүүлийн агуулгыг хадгална
   const [shown, setShown] = useState<DialogState>(dialog);
@@ -38,6 +40,7 @@ export function DialogHost() {
         {d?.kind === 'exercise' && <Exercise recId={d.recId} />}
         {d?.kind === 'breath' && <Breath />}
         {d?.kind === 'wipe' && <Wipe />}
+        {d?.kind === 'journal' && <><Title>{tr('📔 Өдрийн тэмдэглэл')}</Title><DialogDescription>{tr('Өдрийн ерөнхий сэтгэл санаа')}</DialogDescription><DayJournalForm key={d.date} date={d.date} onDone={() => openDialog(null)} /></>}
         {d?.kind === 'movie' && <Movie recId={d.recId} moodId={d.mood} />}
         {d?.kind === 'book' && <Book key={d.expertId} expertId={d.expertId} />}
       </DialogContent>
