@@ -27,15 +27,16 @@ const getCtor = (): SRCtor | null => {
 const INFO_KEY = 'setgel-voice-info';
 const noop = () => () => {};
 
-export function VoiceInput({ onText, className }: { onText: (text: string) => void; className?: string }) {
+/** compact: зөвхөн 🎤 дүрс товч (чатын илгээх товчны хажууд). onInterim: ярьж байх үеийн түр текст (талбарт харуулахад). */
+export function VoiceInput({ onText, onInterim, compact, className }: { onText: (text: string) => void; onInterim?: (text: string) => void; compact?: boolean; className?: string }) {
   const tr = useT();
   const { locale } = useLocale();
   const supported = useSyncExternalStore(noop, () => !!getCtor() && window.isSecureContext, () => false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const rec = useRef<SR | null>(null);
-  const cb = useRef(onText);
-  useEffect(() => { cb.current = onText; });
+  const cb = useRef(onText), cbInterim = useRef(onInterim);
+  useEffect(() => { cb.current = onText; cbInterim.current = onInterim; });
   useEffect(() => () => rec.current?.abort(), []);
 
   if (!supported) return null;
@@ -62,17 +63,27 @@ export function VoiceInput({ onText, className }: { onText: (text: string) => vo
       }
       if (fin.trim()) cb.current(fin.trim());
       setInterim(mid);
+      cbInterim.current?.(mid);
     };
     r.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast.error(tr('Микрофон ашиглах зөвшөөрөл өгөөгүй байна. Хөтчийн тохиргооноос зөвшөөрнө үү.'));
       else if (e.error === 'language-not-supported') toast.error(tr('Энэ хөтөч монгол яриа танихгүй байна. Chrome ашиглаад үзээрэй.'));
       else if (e.error !== 'no-speech' && e.error !== 'aborted') toast.error(tr('Яриа танихад алдаа гарлаа'));
     };
-    r.onend = () => { setListening(false); setInterim(''); rec.current = null; };
+    r.onend = () => { setListening(false); setInterim(''); cbInterim.current?.(''); rec.current = null; };
     rec.current = r;
     try { r.start(); setListening(true); } catch { setListening(false); }
   }
   const stop = () => rec.current?.stop();
+
+  if (compact) return (
+    <button type="button" onClick={listening ? stop : start} aria-pressed={listening}
+      aria-label={listening ? tr('Дуугаар бичихийг зогсоох') : tr('Дуугаар бичих')} title={listening ? tr('Дуугаар бичихийг зогсоох') : tr('Дуугаар бичих')}
+      className={cn('grid size-12 flex-none place-items-center rounded-xl border-[1.5px] text-xl transition-colors',
+        listening ? 'animate-pulse border-red-500 bg-red-500/10' : 'bg-background hover:border-primary', className)}>
+      <span aria-hidden="true">{listening ? '⏺' : '🎤'}</span>
+    </button>
+  );
 
   return (
     <div className={cn('flex min-w-0 items-center gap-2', className)}>
