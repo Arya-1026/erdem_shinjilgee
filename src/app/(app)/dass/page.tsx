@@ -162,6 +162,7 @@ function Quiz({ answers, saving, onAnswer, onBack, onExit }: { answers: number[]
 /* ---------- Үр дүн ---------- */
 function ResultView({ history, onRetake }: { history: Result[]; onRetake: () => void }) {
   const tr = useT();
+  const router = useRouter();
   const { openDialog } = useApp();
   const r = history[0];
   const [now] = useState(() => Date.now());
@@ -176,6 +177,9 @@ function ResultView({ history, onRetake }: { history: Result[]; onRetake: () => 
 
   return (
     <div className="mx-auto grid max-w-[620px] gap-4">
+      {/* Нүүр/Профайлаас орж ирсэн газар руугаа буцна (шууд нээсэн бол Нүүр) */}
+      <button type="button" className="justify-self-start text-sm font-semibold text-primary"
+        onClick={() => (window.history.length > 1 ? router.back() : router.push('/home'))}>{tr('← Буцах')}</button>
       <section className="card-x">
         <h1 className="text-xl font-bold">{tr('Таны үр дүн')}</h1>
         <p className="text-sm text-muted-foreground">{days === 0 ? tr('Өнөөдөр бөглөсөн · сүүлийн 7 хоногийн байдал') : tr('{0} өдрийн өмнө бөглөсөн · тухайн үеийн 7 хоногийн байдал', days)}</p>

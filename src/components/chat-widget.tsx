@@ -17,6 +17,7 @@ import { QUICK, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import type { ChatMessage, ChatMode, SongRec } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
+import { VoiceInput } from '@/components/voice-input';
 
 const MODES: [ChatMode, string][] = [['calm', '🌊 Тайван'], ['motivate', '💪 Урам'], ['listen', '👂 Сонсох']];
 
@@ -62,6 +63,7 @@ function ChatBody() {
   const [msgs, setMsgs] = useState<ChatMessage[] | null>(null);
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState('');
+  const [heard, setHeard] = useState(''); // дуугаар бичих үеийн түр текст
   const box = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -157,13 +159,15 @@ function ChatBody() {
       </div>
       <div className="flex gap-2 overflow-x-auto pt-1.5 no-scrollbar">{QUICK.map(q => <Chip key={q} onClick={() => send(tr(q))}>{tr(q)}</Chip>)}</div>
       <form className="flex items-end gap-2 pt-2" onSubmit={e => { e.preventDefault(); void send(text); }}>
-        <textarea ref={input} rows={1} placeholder={tr('Мессеж бичих...')} aria-label={tr('Мессеж')} value={text} maxLength={2000}
+        <textarea ref={input} rows={1} placeholder={heard || tr('Мессеж бичих...')} aria-label={tr('Мессеж')} value={text} maxLength={2000}
           className="max-h-[120px] min-h-12 flex-1 resize-none rounded-xl border-[1.5px] bg-background px-3.5 py-3 focus:border-primary focus:outline-none"
           onChange={e => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
           onKeyDown={e => {
             // Компьютер дээр Enter дарахад илгээнэ, Shift+Enter дарахад шинэ мөрөнд шилжинэ
             if (e.key === 'Enter' && !e.shiftKey && matchMedia('(hover:hover)').matches) { e.preventDefault(); void send(text); }
           }} />
+        {/* Ярьсныг текст болгож мессежид нэмнэ, илгээхээсээ өмнө засаж болно */}
+        <VoiceInput compact onInterim={setHeard} onText={t => setText(v => (v.trim() ? `${v.trimEnd()} ${t}` : t).slice(0, 2000))} />
         <Button type="submit" size="xl" className="w-12 flex-none px-0 text-xl" aria-label={tr('Илгээх')}>➤</Button>
       </form>
       <p className="mt-1.5 text-center text-xs text-muted-foreground">{tr('AI туслах нь мэргэжлийн эмчилгээг орлохгүй.')}</p>
