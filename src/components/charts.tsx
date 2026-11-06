@@ -103,7 +103,7 @@ export function MoodCalendar({ year, month, today, avgOf, counts, marks, showTit
               {i + 1}
               <span className="mt-1 flex text-[clamp(.7rem,2.2vw,1.05rem)] whitespace-nowrap" aria-hidden>
                 {em.slice(0, 3).map(m => (
-                  <span key={m.id} title={m.title} className="cursor-pointer rounded px-px hover:bg-foreground/15" onClick={() => onMark?.(m.id)}>{m.emoji}</span>
+                  <span key={m.id} title={m.title} className="cursor-pointer rounded px-px hover:bg-foreground/15" onClick={e => { if (onMark) { e.stopPropagation(); onMark(m.id); } }}>{m.emoji}</span>
                 ))}
                 {em.length > 3 && <small className="self-center text-[.6rem]" title={em.slice(3).map(m => m.title).join('\n')}>+{em.length - 3}</small>}
               </span>

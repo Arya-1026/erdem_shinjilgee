@@ -4,13 +4,13 @@ import { createContext, use, useCallback, useEffect, useMemo, useState } from 'r
 import { toast } from 'sonner';
 import { lastMood } from '@/lib/analytics';
 import { moodById } from '@/lib/data';
-import { ENTRY_COLS, normalizeEntry } from '@/lib/db';
+import { DAY_NOTE_COLS, ENTRY_COLS, JOURNAL_COLS, normalizeEntry } from '@/lib/db';
 import { hhmm, today } from '@/lib/date';
 import { languageSync } from '@/lib/i18n';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
 import { createClient } from '@/lib/supabase/client';
 import type { AppData } from '@/lib/server/dal';
-import type { Booking, Entry, EntryDraft, LikedSong, Mood, MoodId, Profile, Todo } from '@/lib/types';
+import type { Booking, DayJournal, DayNote, Entry, EntryDraft, LikedSong, Mood, MoodId, Profile, Todo } from '@/lib/types';
 import { useLocale, useT } from '@/components/providers/locale-provider';
 
 // Нээгдэх цонхнууд (хуучин showModal-ын оронд)
@@ -21,6 +21,7 @@ export type DialogState =
   | { kind: 'movie'; recId: string; mood: MoodId }
   | { kind: 'book'; expertId: string }
   | { kind: 'wipe' }
+  | { kind: 'journal'; date: string }
   | null;
 
 type AppCtx = Omit<AppData, 'restored'> & {
@@ -32,6 +33,10 @@ type AppCtx = Omit<AppData, 'restored'> & {
   setTint: (c: string) => void;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   addEntry: (d: EntryDraft) => Promise<Entry | null>;
+  /** Нэмэлт тэмдэглэл: сэтгэл хөдлөлийн бүртгэлд хүрэхгүй, тусдаа хадгална */
+  addDayNote: (day: string, body: string) => Promise<boolean>;
+  /** Өдрийн тэмдэглэл: өдөрт нэг, дахин хадгалахад шинэчлэгдэнэ */
+  saveJournal: (day: string, mood: MoodId | null, body: string) => Promise<boolean>;
   setFeedback: (recId: string, value: number) => void;
   toggleWatch: (recId: string) => Promise<boolean>;
   /** true: амжилттай, 'taken': цаг өөр хүнд дөнгөж захиалагдсан, false: алдаа */
@@ -73,6 +78,8 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [dialog, openDialog] = useState<DialogState>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [likedSongs, setLiked] = useState(initial.likedSongs);
+  const [journals, setJournals] = useState(initial.journals);
+  const [dayNotes, setDayNotes] = useState(initial.dayNotes);
   const [todos, setTodos] = useState(initial.todos);
 
   // Хэрэглэгчийн сонгосон өнгө (өөр төхөөрөмж дээр сонгосон байж болно → localStorage-тай тааруулна)
@@ -103,9 +110,25 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
       .select(ENTRY_COLS).single<Entry>();
     if (fail(tr('Бүртгэл хадгалагдсангүй'))(error) || !data) return null;
     const e = normalizeEntry(data);
+    // Хадгалагдсан мөрөөс шалгана: тэмдэглэл чимээгүй алдагдахгүй
+    if (d.note && e.note !== d.note) toast.error(tr('Тэмдэглэл хадгалагдсангүй. Дахин оролдоно уу.'));
     setEntries(list => [...list, e]);
     return e;
   }, [supabase, tr]);
+
+  const addDayNote = useCallback(async (day: string, body: string) => {
+    const { data, error } = await supabase.from('day_notes').insert({ day, body }).select(DAY_NOTE_COLS).single<DayNote>();
+    if (fail(tr('Тэмдэглэл хадгалагдсангүй. Дахин оролдоно уу.'))(error) || !data) return false;
+    setDayNotes(l => [...l, data]);
+    return true;
+  }, [supabase, tr]);
+
+  const saveJournal = useCallback(async (day: string, mood: MoodId | null, body: string) => {
+    const { data, error } = await supabase.from('day_journals').upsert({ user_id: profile.id, day, mood, body, updated_at: new Date().toISOString() }, { onConflict: 'user_id,day' }).select(JOURNAL_COLS).single<DayJournal>();
+    if (fail(tr('Тэмдэглэл хадгалагдсангүй. Дахин оролдоно уу.'))(error) || !data) return false;
+    setJournals(l => [...l.filter(j => j.day !== day), data]);
+    return true;
+  }, [profile.id, supabase, tr]);
 
   const setFeedback = useCallback((recId: string, value: number) => {
     setFb(f => ({ ...f, [recId]: value }));
@@ -154,12 +177,12 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
 
   const value = useMemo<AppCtx>(() => ({
     supabase, profile, entries, feedback, watchlist, bookings,
-    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, likedSongs, todos, setTodos, toggleLike,
+    experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, likedSongs, todos, journals, dayNotes, setTodos, toggleLike,
     activeMood: lastMood(entries),
-    tint, setTint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
+    tint, setTint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     dialog, openDialog, chatOpen, setChatOpen,
-  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, likedSongs, todos, toggleLike,
-    tint, updateProfile, addEntry, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
+  }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, likedSongs, todos, journals, dayNotes, toggleLike,
+    tint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     dialog, chatOpen]);
 
   return <Ctx value={value}>{children}</Ctx>;

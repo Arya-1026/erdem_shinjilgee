@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Botgo3D } from '@/components/botgo-3d';
 import { DassReminder } from '@/components/dass-reminder';
 import { FriendsMoods } from '@/components/friends-moods';
+import { JournalButton } from '@/components/day-journal';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
 import { MoodFace } from '@/components/mood-face';
@@ -16,6 +17,7 @@ import { Eq } from '@/components/player';
 import { usePlayer, songTrack } from '@/components/providers/player-provider';
 import { usePlay, useSongRecs } from '@/components/use-play';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { ymd } from '@/lib/date';
 import { needsExpert, prediction, todaysEntries } from '@/lib/analytics';
 import { MOOD_CAP, MOODS, TAGS, WD, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
@@ -41,6 +43,7 @@ export default function HomePage() {
         </div>
         <TodayStatus entries={todays} />
       </div>
+      <JournalButton date={ymd(d)} />
       <SeasonalGreeting />
       <FriendsMoods />
       <DassReminder />
@@ -117,6 +120,7 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
   const [custom, setCustom] = useState('');
   const [sleep, setSleep] = useState(7);
   const [note, setNote] = useState('');
+  const noteBox = useRef<HTMLTextAreaElement>(null);
   const [saving, setSaving] = useState(false);
   const m = MOODS[moodIdx];
 
@@ -141,7 +145,8 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
 
   async function save() {
     setSaving(true);
-    const e = await addEntry({ mood: m.id, intensity, tags, sleep, note: note.trim() });
+    // Гар утасны гарууд бичвэрийг state-д оруулж амжаагүй байж болох тул талбарын утгыг шууд уншина
+    const e = await addEntry({ mood: m.id, intensity, tags, sleep, note: (noteBox.current?.value ?? note).trim() });
     setSaving(false);
     if (!e) return;
     setIntensity(3); setTags([]); setNote(''); setSleep(7);
@@ -182,7 +187,7 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
       <Range id="sl" label={<>{tr('Өнгөрсөн шөнө унтсан:')}{' '}<b>{sleep}</b>{' '}{tr('цаг')}</>} min={0} max={12} step={0.5} value={sleep} onChange={setSleep} />
       <div className="mb-3.5 flex flex-col gap-1.5">
         <label htmlFor="note" className="text-sm font-semibold">{tr('Тэмдэглэл')}{' '}<span className="font-normal text-muted-foreground">{tr('(заавал биш)')}</span></label>
-        <textarea id="note" rows={3} placeholder={tr('Өнөөдөр юу болов?')} value={note} onChange={e => setNote(e.target.value)} maxLength={2000}
+        <textarea ref={noteBox} id="note" rows={3} placeholder={tr('Өнөөдөр юу болов?')} value={note} onChange={e => setNote(e.target.value)} maxLength={2000}
           className="min-h-12 w-full resize-y rounded-xl border-[1.5px] bg-background px-3.5 py-3 focus:border-primary focus:outline-none" />
       </div>
       <Button size="xl" className="w-full" disabled={saving} onClick={save}>{saving ? tr('Хадгалж байна…') : tr('Хадгалах')}</Button>

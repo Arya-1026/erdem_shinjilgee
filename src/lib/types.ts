@@ -131,3 +131,8 @@ export type Todo = {
   done: boolean;
   done_at: string | null;
 };
+
+/** Өдрийн тэмдэглэл: өдөрт нэг, тухайн өдрийн ерөнхий сэтгэл санаатай */
+export type DayJournal = { day: string; mood: MoodId | null; body: string };
+/** Нэмэлт тэмдэглэл: бүртгэлээс тусдаа, өдөрт хэд ч байж болно */
+export type DayNote = { id: string; day: string; body: string; created_at: string };
