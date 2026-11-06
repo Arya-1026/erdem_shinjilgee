@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { moodById } from '@/lib/data';
 import { today } from '@/lib/date';
-import { moodAgo, shortId, social, socialError, type Person, type UserCard } from '@/lib/social';
+import { notifyFriend, moodAgo, shortId, social, socialError, type Person, type UserCard } from '@/lib/social';
 import { useT } from '@/components/providers/locale-provider';
 
 /* Хүний профайл: харилцаа (найз нэмэх, хасах, блок), сэтгэл санаа, найзууд. Зурвас бичих боломжгүй. */
@@ -81,9 +81,9 @@ export default function PersonPage() {
         </label>
 
         <div className="flex flex-wrap gap-2">
-          {card.relation === 'none' && <Button onClick={() => void act(supabase.rpc('send_friend_request', { target: card.id }), tr('Найзын хүсэлт илгээлээ 📨'))}>{tr('＋ Найз нэмэх')}</Button>}
+          {card.relation === 'none' && <Button onClick={() => { void act(supabase.rpc('send_friend_request', { target: card.id }), tr('Найзын хүсэлт илгээлээ 📨')); setTimeout(() => notifyFriend(card.id, 'request'), 1500); }}>{tr('＋ Найз нэмэх')}</Button>}
           {card.relation === 'incoming' && <>
-            <Button onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: card.id, accept: true }), tr('{0} найз боллоо 🎉', card.name))}>{tr('Хүсэлт зөвшөөрөх')}</Button>
+            <Button onClick={() => { void act(supabase.rpc('respond_friend_request', { from_user: card.id, accept: true }), tr('{0} найз боллоо 🎉', card.name)); setTimeout(() => notifyFriend(card.id, 'accepted'), 1500); }}>{tr('Хүсэлт зөвшөөрөх')}</Button>
             <Button variant="outline" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: card.id, accept: false }), tr('Татгалзлаа'))}>{tr('Татгалзах')}</Button>
           </>}
           {card.relation === 'outgoing' && <Button variant="outline" onClick={() => void act(supabase.rpc('remove_friend', { target: card.id }), tr('Хүсэлтээ цуцаллаа'))}>{tr('Хүсэлт цуцлах')}</Button>}

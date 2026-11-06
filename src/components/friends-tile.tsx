@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { moodById } from '@/lib/data';
-import { shortId, social, socialError, type FriendRow, type Person, type RequestRow, type SearchRow } from '@/lib/social';
+import { notifyFriend, shortId, social, socialError, type FriendRow, type Person, type RequestRow, type SearchRow } from '@/lib/social';
 import { ActionMenu } from './action-menu';
 import { useFriendActions } from './friend-actions';
 import { PersonAvatar } from './person-avatar';
@@ -31,7 +31,8 @@ export function IncomingRequests({ list, onDone, onGo }: { list: RequestRow[]; o
     const { error } = await supabase.rpc('respond_friend_request', { from_user: r.id, accept });
     setBusy(null);
     if (error) return void toast.error(tr(socialError(error)));
-    toast(accept ? tr('{0} найз боллоо 🎉', r.name) : tr('Татгалзлаа'));
+    toast(accept ? tr('{0} найз боллоо 🎉', r.name) : tr('Цуцаллаа'));
+    if (accept) notifyFriend(r.id, 'accepted');
     onDone();
   };
   return (
@@ -39,15 +40,15 @@ export function IncomingRequests({ list, onDone, onGo }: { list: RequestRow[]; o
       <h4 className="text-sm font-semibold text-primary">{tr('📨 Найзын хүсэлт · {0}', list.length)}</h4>
       {list.map(r => (
         <Row key={r.id} p={r} href={`/friends/${r.id}`} onGo={onGo} title={r.name} sub={r.handle ? `@${r.handle}` : tr('Танд хүсэлт илгээсэн')}>
-          <Button size="sm" className="h-8 px-3" disabled={busy === r.id} onClick={() => void respond(r, true)}>{tr('Зөвшөөрөх')}</Button>
-          <Button size="sm" variant="secondary" className="h-8 px-3" disabled={busy === r.id} onClick={() => void respond(r, false)}>{tr('Устгах')}</Button>
+          <Button size="sm" className="h-8 px-3" disabled={busy === r.id} onClick={() => void respond(r, true)}>{tr('Хүлээн авах')}</Button>
+          <Button size="sm" variant="secondary" className="h-8 px-3" disabled={busy === r.id} onClick={() => void respond(r, false)}>{tr('Цуцлах')}</Button>
         </Row>
       ))}
     </div>
   );
 }
 
-/* Найзын цонх. Таб бүр өөрийн хайлттай: Найзууд (зөвхөн найзаас), Нэмэх (шинэ хүн), Хүсэлт, Блок.
+/* Найзын цонх. Таб бүр өөрийн хайлттай: Найзууд (зөвхөн найзаас), Шинэ найз (шинэ хүн), Хүсэлт, Блок.
    focus: «＋ Найз нэмэх»-ээр нээгдвэл хайлтын талбарт шууд бичих боломжтой */
 export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends', focus = false }: { open: boolean; onOpenChange: (o: boolean) => void; tab?: SheetTab; focus?: boolean }) {
   const tr = useT();
@@ -68,7 +69,7 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends', foc
   // Цонх өөр табаар нээгдэх бүрт тэр таб руу шилжинэ
   useEffect(() => { if (!open) return; const t = setTimeout(() => { setTab(initial); setQ(''); }, 0); return () => clearTimeout(t); }, [open, initial]);
 
-  // «Нэмэх» таб: бичих зогсоход шинэ хүн хайна (найз биш хүмүүс)
+  // «Шинэ найз» таб: бичих зогсоход шинэ хүн хайна (найз биш хүмүүс)
   useEffect(() => {
     const term = q.trim();
     const t = setTimeout(() => {
@@ -85,10 +86,13 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends', foc
     toast(ok);
     load();
   };
+  // Зөвшөөрсөн нь бичигдсэний дараа сервер шалгана
+  const notifyAfter = (id: string) => setTimeout(() => notifyFriend(id, 'accepted'), 1500);
   const add = async (p: SearchRow) => {
     const { data, error } = await supabase.rpc('send_friend_request', { target: p.id });
     if (error) return void toast.error(tr(socialError(error)));
     toast(data === 'friend' ? tr('{0} найз боллоо 🎉', p.name) : tr('Найзын хүсэлт илгээлээ 📨'));
+    notifyFriend(p.id, data === 'friend' ? 'accepted' : 'request');
     setFound(r => r?.map(x => (x.id === p.id ? { ...x, relation: data as SearchRow['relation'] } : x)) ?? null);
     load();
   };
@@ -115,7 +119,7 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends', foc
         <div className="flex flex-col gap-2">
           <Segmented full label={tr('Хэсэг')} value={tab} onChange={switchTab} options={[
             ['friends', tr('Найзууд{0}', friends?.length ? ` ${friends.length}` : '')],
-            ['add', tr('＋ Нэмэх')],
+            ['add', tr('＋ Шинэ найз')],
             ['requests', tr('Хүсэлт{0}', incoming.length ? ` ${incoming.length}` : '')],
             ['blocked', tr('Блок{0}', blocked.length ? ` ${blocked.length}` : '')],
           ]} />
@@ -161,7 +165,7 @@ export function FriendsSheet({ open, onOpenChange, tab: initial = 'friends', foc
             {requests.filter(match).map(r => (
               <Row key={r.id} p={r} href={`/friends/${r.id}`} onGo={close} title={r.name} sub={r.direction === 'incoming' ? tr('Танд хүсэлт илгээсэн') : tr('Хариу хүлээж байна')}>
                 {r.direction === 'incoming' ? <>
-                  <Button size="sm" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: true }), tr('{0} найз боллоо 🎉', r.name))}>{tr('Зөвшөөрөх')}</Button>
+                  <Button size="sm" className="h-8 px-3" onClick={() => { void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: true }), tr('{0} найз боллоо 🎉', r.name)); notifyAfter(r.id); }}>{tr('Зөвшөөрөх')}</Button>
                   <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: r.id, accept: false }), tr('Татгалзлаа'))}>{tr('Устгах')}</Button>
                 </> : <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => void act(supabase.rpc('remove_friend', { target: r.id }), tr('Хүсэлтээ цуцаллаа'))}>{tr('Цуцлах')}</Button>}
               </Row>

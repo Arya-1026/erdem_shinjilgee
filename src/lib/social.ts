@@ -65,6 +65,10 @@ export const social = {
     .or(`and(sender.eq.${me},recipient.eq.${other}),and(sender.eq.${other},recipient.eq.${me})`).order('created_at').limit(200)),
 };
 
+/** Найзын хүсэлт илгээсэн/зөвшөөрсний дараа нөгөө хүнд push илгээнэ. Амжилтгүй болсон ч үйлдэлд нөлөөлөхгүй. */
+export const notifyFriend = (target: string, event: 'request' | 'accepted') =>
+  void fetch('/api/push/friend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target, event }) }).catch(() => {});
+
 /** Сүүлд идэвхтэй байснаас 2 минут болоогүй бол «онлайн» */
 /** Бодол (note) 24 цаг харагдана */
 export const NOTE_MAX = 60;

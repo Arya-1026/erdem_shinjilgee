@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
+import { cronAuthorized } from '@/lib/server/cron';
 import { createServiceClient } from '@/lib/supabase/server';
 
 // Supabase pg_cron өдөр бүр дууддаг (supabase/migrations/0010_purge_cron.sql).
 // Устгах хүсэлт гаргаад 30 хоног нэвтрээгүй бүртгэлийг бүрмөсөн устгана.
 // auth.users-ээс устгахад бүх хүснэгт "on delete cascade"-ээр цэвэрлэгдэнэ.
 export async function POST(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`)
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await cronAuthorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const admin = createServiceClient();
   const { data, error } = await admin.rpc('due_deletions');

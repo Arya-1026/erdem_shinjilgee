@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server';
 import { isLocale, LOCALES, translator, type Locale } from '@/lib/i18n';
 import { sendReminder } from '@/lib/server/email';
 import { sendPush } from '@/lib/server/push';
+import { cronAuthorized } from '@/lib/server/cron';
 import { createServiceClient } from '@/lib/supabase/server';
 
 // Supabase pg_cron 5 минут тутамд pg_net-ээр дууддаг (supabase/migrations/0002_cron.sql).
 // Сануулгыг имэйл болон push (бүртгүүлсэн төхөөрөмж бүр) хоёроор илгээнэ.
 export async function POST(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`)
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await cronAuthorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const admin = createServiceClient();
   const { data: due, error } = await admin.rpc('due_reminders');

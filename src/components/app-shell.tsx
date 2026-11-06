@@ -9,6 +9,7 @@ import { Avatar } from './avatar';
 import { ChatWidget } from './chat-widget';
 import { DialogHost } from './dialogs/dialog-host';
 import { Logo } from './logo';
+import { NotificationBell } from './notification-bell';
 import { SantaHat, SeasonalNav } from './seasonal';
 import { ThemeToggle } from './theme-toggle';
 import { useReminder } from './use-reminder';
@@ -70,11 +71,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/home" aria-label={tr('Нүүр')} className="text-[1.35rem] leading-none desk:hidden"><Logo /></Link>
           <h1 className="m-0 sr-only text-xl font-bold desk:not-sr-only">{tr(title)}</h1>
           <div className="topbar-actions flex items-center gap-2">
+            <NotificationBell />
             <ThemeToggle />
             <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title={tr('Тасралтгүй бүртгэсэн өдөр')}><Flame /> {streak(entries)}</span>
-            <Link href="/profile" aria-label={badge ? tr('Профайл, {0} найзын хүсэлт', badge) : tr('Профайл')} className="relative rounded-full desk:hidden">
+            <Link href="/profile" aria-label={tr('Профайл')} className="relative rounded-full desk:hidden">
               <Avatar className="size-10" />
-              {badge > 0 && <b className="absolute -top-1 -right-1 grid min-w-4.5 place-items-center rounded-full bg-primary px-1 text-[.62rem] leading-[1.15rem] text-primary-foreground">{badge > 9 ? '9+' : badge}</b>}
             </Link>
           </div>
         </header>

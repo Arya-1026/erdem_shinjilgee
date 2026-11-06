@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useLocale, useT } from '@/components/providers/locale-provider';
 import { PermissionDialog } from '@/components/permission-help';
 import { permissionState, type PermState } from '@/lib/permissions';
+import { speechFilter } from '@/lib/speech';
 import { cn } from '@/lib/utils';
 
 /* 🎤 Дуугаар бичих: хөтчийн Web Speech API (түлхүүр, төлбөргүй).
@@ -63,17 +64,23 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
         localStorage.setItem(INFO_KEY, '1');
       }
     } catch { /* хувийн цонх */ }
+    // Хоёр сонсолт зэрэг явбал нэг яриа хоёр бичигдэнэ
+    if (rec.current) return;
     const r = new Ctor();
     r.lang = locale === 'en' ? 'en-US' : 'mn-MN';
     r.continuous = true;
     r.interimResults = true;
+    const fresh = speechFilter();
     r.onresult = e => {
-      let fin = '', mid = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      const fin: string[] = [];
+      let mid = '';
+      // resultIndex-д найдаж болохгүй (Android дээр 0 хэвээр үлддэг) тул бүгдийг шалгаж, шүүлтүүрээр давхардлыг хасна
+      for (let i = 0; i < e.results.length; i++) {
         const res = e.results[i];
-        if (res.isFinal) fin += res[0].transcript; else mid += res[0].transcript;
+        if (res.isFinal) fin.push(fresh(i, res[0].transcript)); else mid += res[0].transcript;
       }
-      if (fin.trim()) cb.current(fin.trim());
+      const text = fin.filter(Boolean).join(' ');
+      if (text) cb.current(text);
       setInterim(mid);
       cbInterim.current?.(mid);
     };
