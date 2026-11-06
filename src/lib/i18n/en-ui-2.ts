@@ -375,4 +375,12 @@ export const EN_UI_2: Record<string, string> = {
   "2 долоо хоног өнгөрлөө: дахин бөглөх үү?": "Two weeks have passed: take it again?",
   "21 асуулт, 3 минут. Гутрал, түгшүүр, стрессээ хараад танд тохирох дасгал аваарай.": "21 questions, 3 minutes. See your depression, anxiety and stress levels and get exercises that fit.",
   "Бөглөх": "Start",
+  "🎤 Таны яриаг хөтөч (Google) танина. Бичлэг хадгалагдахгүй, зөвхөн текст нь талбарт орно.": "🎤 Your browser (Google) recognises your speech. No recording is kept; only the text goes into the field.",
+  "Микрофон ашиглах зөвшөөрөл өгөөгүй байна. Хөтчийн тохиргооноос зөвшөөрнө үү.": "Microphone access is blocked. Please allow it in your browser settings.",
+  "Энэ хөтөч монгол яриа танихгүй байна. Chrome ашиглаад үзээрэй.": "This browser can't recognise Mongolian speech. Try Chrome.",
+  "Яриа танихад алдаа гарлаа": "Speech recognition failed",
+  "Дуугаар бичихийг зогсоох": "Stop voice typing",
+  "Дуугаар бичих": "Voice typing",
+  "Сонсож байна… зогсоох": "Listening… stop",
+  "Ярина уу…": "Speak now…",
 };

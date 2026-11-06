@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Botgo3D } from '@/components/botgo-3d';
 import { DassReminder } from '@/components/dass-reminder';
 import { FriendsMoods } from '@/components/friends-moods';
+import { VoiceInput } from '@/components/voice-input';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
 import { MoodFace } from '@/components/mood-face';
@@ -184,6 +185,8 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
         <label htmlFor="note" className="text-sm font-semibold">{tr('Тэмдэглэл')}{' '}<span className="font-normal text-muted-foreground">{tr('(заавал биш)')}</span></label>
         <textarea id="note" rows={3} placeholder={tr('Өнөөдөр юу болов?')} value={note} onChange={e => setNote(e.target.value)} maxLength={2000}
           className="min-h-12 w-full resize-y rounded-xl border-[1.5px] bg-background px-3.5 py-3 focus:border-primary focus:outline-none" />
+        {/* Ярьсныг текст болгож тэмдэглэлийн төгсгөлд нэмнэ (хөтөч дэмжихгүй бол харагдахгүй) */}
+        <VoiceInput onText={t => setNote(n => (n.trim() ? `${n.trimEnd()} ${t}` : t).slice(0, 2000))} />
       </div>
       <Button size="xl" className="w-full" disabled={saving} onClick={save}>{saving ? tr('Хадгалж байна…') : tr('Хадгалах')}</Button>
     </section>
