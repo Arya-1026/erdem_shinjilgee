@@ -148,7 +148,8 @@ body { background-image: var(--wash); background-attachment: fixed; }
 html { scrollbar-color: color-mix(in srgb, var(--primary) 45%, transparent) transparent; }
 
 /* ---------- Design system-ийн градиентууд (зөвхөн том гадаргууд) ---------- */
-.grad-dawn { background: linear-gradient(135deg, var(--emotion-joy), var(--emotion-love)); color: var(--on-emotion); }
+/* Hero/урамшууллын карт: хэрэглэгчийн сонгосон өнгөөс (primary → primary-2) тооцно, тиймээс бүх хуудсанд өнгө солигдоно */
+.grad-dawn { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 24%, var(--card)), color-mix(in srgb, var(--primary-2) 38%, var(--card))); color: var(--foreground); }
 .grad-water { background: linear-gradient(160deg, var(--emotion-calm), var(--emotion-sad)); color: var(--on-emotion); }
 .grad-sunset { background: linear-gradient(135deg, var(--emotion-anxiety), var(--emotion-anger)); color: var(--on-emotion); }
 .grad-meadow { background: linear-gradient(180deg, var(--secondary), var(--background)); }
@@ -178,7 +179,7 @@ body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 
   .app-main { padding: 16px 32px 32px; }
   body.has-player .app-main { padding-bottom: 100px; }
 }
-.card-x.grad-dawn { background: linear-gradient(135deg, var(--emotion-joy), var(--emotion-love)); }
+.card-x.grad-dawn { background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 24%, var(--card)), color-mix(in srgb, var(--primary-2) 38%, var(--card))); }
 .card-x { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -343,11 +344,11 @@ body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px));
 .logo-moon svg { filter: drop-shadow(0 0 .12em color-mix(in srgb, #FFE9A8 55%, transparent)); }
 .logo-star { transform-origin: 18.5px 12.7px; animation: logo-twinkle 2.8s ease-in-out infinite; }
 @keyframes logo-twinkle { 50% { opacity: .35; transform: scale(.6) rotate(45deg); } }
-/* Цайвар (Үүр цайх) дэвсгэр дээр: сар нь бараан шаргал, текст ink */
-.logo-ink { color: #2B2724; }
-.logo-ink .logo-moon svg { filter: drop-shadow(0 2px 4px rgba(43,39,36,.25)); }
-.logo-ink stop:first-child { stop-color: #F2B544; } .logo-ink stop:last-child { stop-color: #C9567A !important; }
-.logo-ink .logo-star { fill: #E39B2E; }
+/* Цайвар hero (grad-dawn) дээр: сар нь сонгосон өнгөөр, текст ink */
+.logo-ink { color: var(--foreground); }
+.logo-ink .logo-moon svg { filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--foreground) 25%, transparent)); }
+.logo-ink stop:first-child { stop-color: var(--primary-2); } .logo-ink stop:last-child { stop-color: var(--primary) !important; }
+.logo-ink .logo-star { fill: var(--primary); }
 /* Календарь: идэвхтэй өдрийн гал */
 .cal-fire { filter: drop-shadow(0 0 3px rgba(255,140,40,.7)); animation: cal-fire 1.6s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 @keyframes cal-fire { to { transform: scale(1.12, .94); filter: drop-shadow(0 0 5px rgba(255,170,60,.9)); } }

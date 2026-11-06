@@ -1,7 +1,7 @@
 import { Logo } from '@/components/logo';
 import { LoginForm, LoginIntro } from './login-form';
 
-// Design system: hero нь «Үүр цайх» градиент (emotion-joy → emotion-love), дээр нь ink текст
+// Hero нь хэрэглэгчийн сонгосон өнгөний градиент (grad-dawn), дээр нь ink текст
 export default function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-6 desk:flex-row desk:gap-18">

@@ -17,6 +17,7 @@ import { snoozeDass } from '@/lib/dass-client';
 import { cn } from '@/lib/utils';
 
 type Result = DassScores & { id: string; answers: number[]; created_at: string };
+const PENDING_ID = 'pending';
 type Stage = 'loading' | 'intro' | 'quiz' | 'result';
 
 const PROGRESS_KEY = 'setgel-dass-progress';
@@ -50,6 +51,10 @@ export default function DassPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Сүлжээ/сервер алдаагаар хадгалагдаагүй үр дүн: «Хадгалаад нүүр хуудас руу» товч дахин илгээнэ
+  const [pending, setPending] = useState<number[] | null>(null);
+  // Бүртгүүлсний дараах анхны асуулга: «Буцах» нь onboarding руу биш Нүүр рүү очно
+  const [wasFirst, setWasFirst] = useState(false);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('dass_results').select('id,answers,depression,anxiety,stress,created_at').order('created_at', { ascending: false }).limit(12);
@@ -70,6 +75,29 @@ export default function DassPage() {
     router.replace('/home');
   }
 
+  /** Үр дүнг Supabase-д хадгална. Амжилттай бол true. */
+  async function save(all: number[]) {
+    setSaving(true);
+    const s = scoreDass(all);
+    const { data, error } = await supabase.from('dass_results').insert({ answers: all, ...s, research_consent: consent })
+      .select('id,answers,depression,anxiety,stress,created_at').single();
+    setSaving(false);
+    if (error || !data) {
+      toast.error(tr('Хадгалж чадсангүй: ') + (error?.message ?? ''));
+      // Хариултыг алдахгүй: үр дүнг түр харуулж, хадгалах товчоор дахин оролдуулна
+      setPending(all);
+      setHistory(h => [{ id: PENDING_ID, answers: all, ...s, created_at: new Date().toISOString() }, ...h.filter(x => x.id !== PENDING_ID)]);
+      return false;
+    }
+    clearProgress();
+    setPending(null);
+    setHistory(h => [data as Result, ...h.filter(x => x.id !== PENDING_ID)]);
+    // ?first=1 үлдвэл дахин орж ирэхэд танилцуулга харагдаж, «хадгалагдаагүй» мэт санагддаг байсан
+    if (isFirst()) { setWasFirst(true); router.replace('/dass', { scroll: false }); }
+    toast(tr('✅ Үр дүн хадгалагдлаа'));
+    return true;
+  }
+
   async function answer(v: number) {
     const next = [...answers, v];
     if (next.length < DASS_COUNT) {
@@ -77,24 +105,23 @@ export default function DassPage() {
       if (CHEER[next.length]) toast(`🐫 ${tr(CHEER[next.length])}`);
       return;
     }
-    setSaving(true);
-    const s = scoreDass(next);
-    const { data, error } = await supabase.from('dass_results').insert({ answers: next, ...s, research_consent: consent })
-      .select('id,answers,depression,anxiety,stress,created_at').single();
-    setSaving(false);
-    if (error) { setAnswers(next.slice(0, -1)); return void toast.error(tr('Хадгалж чадсангүй: ') + error.message); }
-    clearProgress();
-    setHistory(h => [data as Result, ...h]);
+    await save(next);
     setAnswers([]);
     setStage('result');
     window.scrollTo({ top: 0 });
+  }
+
+  /** «Хадгалаад нүүр хуудас руу шилжих»: хадгалагдаагүй бол хадгалаад, Нүүр рүү очно */
+  async function saveAndHome() {
+    if (pending && !(await save(pending))) return;
+    router.push('/home');
   }
   const back = () => { const a = answers.slice(0, -1); setAnswers(a); saveProgress(a); };
 
   if (stage === 'loading') return <p className="py-16 text-center text-muted-foreground">{tr('Ачаалж байна…')}</p>;
   if (stage === 'intro') return <Intro first={first} consent={consent} setConsent={setConsent} onStart={start} onLater={later} hasPrevious={history.length > 0} onBack={() => setStage('result')} />;
   if (stage === 'quiz') return <Quiz answers={answers} saving={saving} onAnswer={a => void answer(a)} onBack={back} onExit={() => setStage(history.length ? 'result' : 'intro')} />;
-  return <ResultView history={history} onRetake={() => setStage('intro')} />;
+  return <ResultView history={history} saved={!pending} saving={saving} backHome={first || wasFirst} onSaveHome={() => void saveAndHome()} onRetake={() => setStage('intro')} />;
 }
 
 /* ---------- Танилцуулга: зөвшөөрөл асууна ---------- */
@@ -160,7 +187,9 @@ function Quiz({ answers, saving, onAnswer, onBack, onExit }: { answers: number[]
 }
 
 /* ---------- Үр дүн ---------- */
-function ResultView({ history, onRetake }: { history: Result[]; onRetake: () => void }) {
+function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: {
+  history: Result[]; saved: boolean; saving: boolean; backHome: boolean; onSaveHome: () => void; onRetake: () => void;
+}) {
   const tr = useT();
   const router = useRouter();
   const { openDialog } = useApp();
@@ -179,7 +208,7 @@ function ResultView({ history, onRetake }: { history: Result[]; onRetake: () => 
     <div className="mx-auto grid max-w-[620px] gap-4">
       {/* Нүүр/Профайлаас орж ирсэн газар руугаа буцна (шууд нээсэн бол Нүүр) */}
       <button type="button" className="justify-self-start text-sm font-semibold text-primary"
-        onClick={() => (window.history.length > 1 ? router.back() : router.push('/home'))}>{tr('← Буцах')}</button>
+        onClick={() => (window.history.length > 1 && !backHome ? router.back() : router.push('/home'))}>{tr('← Буцах')}</button>
       <section className="card-x">
         <h1 className="text-xl font-bold">{tr('Таны үр дүн')}</h1>
         <p className="text-sm text-muted-foreground">{days === 0 ? tr('Өнөөдөр бөглөсөн · сүүлийн 7 хоногийн байдал') : tr('{0} өдрийн өмнө бөглөсөн · тухайн үеийн 7 хоногийн байдал', days)}</p>
@@ -200,6 +229,12 @@ function ResultView({ history, onRetake }: { history: Result[]; onRetake: () => 
           })}
         </div>
         <p className="mt-4 rounded-xl bg-secondary p-3 text-sm">⚠️ {tr('Энэ нь эмчийн онош биш, скрининг юм. Таны сэтгэл санааг ерөнхийд нь харуулах зорилготой.')}</p>
+        <p className={cn('mt-3 text-sm font-semibold', saved ? 'text-ok' : 'text-destructive')} role="status">
+          {saved ? tr('✅ Үр дүн таны профайлд хадгалагдсан') : tr('⚠️ Үр дүн хараахан хадгалагдаагүй байна')}
+        </p>
+        <Button size="xl" className="mt-3 w-full" disabled={saving} onClick={onSaveHome}>
+          {saving ? tr('Хадгалж байна…') : tr('💾 Хадгалаад нүүр хуудас руу шилжих')}
+        </Button>
       </section>
 
       {help && (

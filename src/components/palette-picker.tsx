@@ -8,8 +8,10 @@ import { useT } from '@/components/providers/locale-provider';
 
 const swatch = (from: string, to: string, kind?: string) => (kind === 'bold' ? from : `linear-gradient(135deg, ${from}, ${to})`);
 
-/* Апп-ын өнгө сонгох: зөөлөн, градиент, гүн тод, өөрийн өнгө. Сонгосон даруйд бүх системд хэрэглэгдэнэ. */
-export function PalettePicker({ value, onChange }: { value: PaletteId; onChange: (id: PaletteId) => void }) {
+/* Апп-ын өнгө сонгох: зөөлөн, градиент, гүн тод, өөрийн өнгө.
+   live=true (анхдагч): сонгосон даруйд бүх системд хэрэглэгдэнэ (onboarding).
+   live=false: зөвхөн сонголтыг буцаана. Профайл «Шинэчлэх» товчоор хэрэглэнэ. */
+export function PalettePicker({ value, onChange, live = true }: { value: PaletteId; onChange: (id: PaletteId) => void; live?: boolean }) {
   const tr = useT();
   const isCustom = value.startsWith('custom:');
   const cur = paletteColors(value);
@@ -23,6 +25,7 @@ export function PalettePicker({ value, onChange }: { value: PaletteId; onChange:
   function pick(a: string, b: string, gradient: boolean) {
     setFrom(a); setTo(b); setTwo(gradient);
     const id = customPalette(a, gradient ? b : undefined);
+    if (!live) return onChange(id);
     applyPalette(id);
     clearTimeout(save.current);
     save.current = setTimeout(() => onChange(id), 350);

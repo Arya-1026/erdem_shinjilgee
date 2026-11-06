@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
 import { FriendsTile } from '@/components/friends-tile';
@@ -22,7 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
 import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { isLocale, LOCALE_NAMES, LOCALES } from '@/lib/i18n';
-import { DEFAULT_PALETTE, isPaletteId } from '@/lib/palettes';
+import { applyPalette, DEFAULT_PALETTE, isPaletteId, paletteColors, paletteLabel, type PaletteId } from '@/lib/palettes';
 import { AUDIENCE, shortId } from '@/lib/social';
 import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -131,7 +131,7 @@ function ProfileMain() {
             <span aria-hidden="true">›</span>
           </Link>
           <h3 className="mb-2 font-semibold">{tr('Миний хобби')}</h3>
-          <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-white">{tr(h)}</span>)}</div>
+          <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-primary-foreground">{tr(h)}</span>)}</div>
           <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>{tr('✏️ Хобби, нас, дуучин засах')}</Link>
         </section>
       </div>
@@ -145,11 +145,7 @@ function ProfileMain() {
             {LOCALES.map(l => <option key={l} value={l}>{LOCALE_NAMES[l]}</option>)}
           </select>
         </Setting>
-        <div className="border-b py-3">
-          <b>{tr('Апп-ын өнгө')}</b>
-          <div className="mb-2.5 text-sm text-muted-foreground">{tr('Товч, цэс, графикийн үндсэн өнгө')}</div>
-          <PalettePicker value={isPaletteId(u.theme) ? u.theme : DEFAULT_PALETTE} onChange={v => void updateProfile({ theme: v })} />
-        </div>
+        <ThemeSetting />
         <MoodImages />
         <Setting title={tr('Өдөр тутмын сануулга')} sub={tr('Энэ цагт бүртгээгүй бол имэйл, push-ээр сануулна')}>
           <Switch checked={u.reminder_enabled} onCheckedChange={v => updateProfile({ reminder_enabled: v })} aria-label={tr('Сануулга')} />
@@ -197,6 +193,65 @@ function ProfileMain() {
         </div>
         <p className="mt-4 text-xs text-muted-foreground">{tr('⚠️ Энэхүү апп нь мэргэжлийн оношилгоо, эмчилгээг орлохгүй. Яаралтай тусламж хэрэгтэй бол 103 руу залгана уу.')}</p>
       </section>
+    </div>
+  );
+}
+
+/* Апп-ын өнгө: «Өнгө солих» дарахад палитрууд доош нээгдэнэ. Сонголт нь «Шинэчлэх» дартал зөвхөн урьдчилж харагдана,
+   дармагц бүх системийн (бүх хуудас, цэс, товч, график) өнгө солигдож, профайлд хадгалагдана. */
+function ThemeSetting() {
+  const tr = useT();
+  const { profile: u, updateProfile } = useApp();
+  const current: PaletteId = isPaletteId(u.theme) ? u.theme : DEFAULT_PALETTE;
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<PaletteId>(current);
+  const [busy, setBusy] = useState(false);
+  const panelId = useId();
+  const swatch = (id: PaletteId) => { const c = paletteColors(id); return `linear-gradient(135deg, ${c.from}, ${c.to})`; };
+
+  function toggle() {
+    setDraft(current);
+    setOpen(o => !o);
+  }
+
+  async function apply() {
+    setBusy(true);
+    applyPalette(draft);
+    await updateProfile({ theme: draft });
+    setBusy(false);
+    setOpen(false);
+    toast(tr('🎨 Апп-ын өнгө шинэчлэгдлээ'));
+  }
+
+  return (
+    <div className="border-b py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="size-10 flex-none rounded-xl border" style={{ background: swatch(current) }} aria-hidden="true" />
+          <div className="min-w-0">
+            <b>{tr('Апп-ын өнгө')}</b>
+            <div className="truncate text-sm text-muted-foreground">{tr('Одоогийн: {0}', tr(paletteLabel(current)))}</div>
+          </div>
+        </div>
+        <Button variant="outline" size="xl" className="h-10 flex-none gap-1.5 px-3.5" aria-expanded={open} aria-controls={panelId} onClick={toggle}>
+          🎨 {tr('Өнгө солих')}
+          <span aria-hidden="true" className={cn('text-xs transition-transform', open && 'rotate-180')}>▼</span>
+        </Button>
+      </div>
+      {open && (
+        <div id={panelId} className="fade-up mt-3 rounded-2xl border bg-background p-3">
+          <p className="mb-3 text-sm text-muted-foreground">{tr('Өнгөө сонгоод «Шинэчлэх» дарна уу. Бүх хуудас, цэс, товч, графикийн өнгө солигдоно.')}</p>
+          <PalettePicker live={false} value={draft} onChange={setDraft} />
+          <div className="sticky bottom-0 -mx-3 -mb-3 mt-3 flex items-center gap-2 rounded-b-2xl border-t bg-background p-3">
+            <span className="size-9 flex-none rounded-lg border" style={{ background: swatch(draft) }} aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{tr(paletteLabel(draft))}</span>
+            <Button variant="ghost" size="xl" className="h-10 px-3" onClick={() => setOpen(false)}>{tr('Болих')}</Button>
+            <Button size="xl" className="h-10 px-4" disabled={busy || draft === current} onClick={() => void apply()}>
+              {busy ? tr('Шинэчилж байна…') : tr('✓ Шинэчлэх')}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

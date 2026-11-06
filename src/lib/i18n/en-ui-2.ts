@@ -414,4 +414,16 @@ export const EN_UI_2: Record<string, string> = {
   "Ярина уу…": "Speak now…",
   "← Буцах": "← Back",
   "Сэтгэл зүйн асуулга": "Wellbeing questionnaire",
+  // DASS-21: хадгалах, Нүүр рүү шилжих
+  "✅ Үр дүн хадгалагдлаа": "✅ Results saved",
+  "💾 Хадгалаад нүүр хуудас руу шилжих": "💾 Save and go to home",
+  "✅ Үр дүн таны профайлд хадгалагдсан": "✅ Results are saved to your profile",
+  "⚠️ Үр дүн хараахан хадгалагдаагүй байна": "⚠️ Results aren't saved yet",
+  // Профайл: апп-ын өнгө солих
+  "🎨 Апп-ын өнгө шинэчлэгдлээ": "🎨 App color updated",
+  "Одоогийн: {0}": "Current: {0}",
+  "Өнгө солих": "Change color",
+  "Өнгөө сонгоод «Шинэчлэх» дарна уу. Бүх хуудас, цэс, товч, графикийн өнгө солигдоно.": "Pick a color and press «Update». Every page, menu, button and chart will change color.",
+  "Шинэчилж байна…": "Updating…",
+  "✓ Шинэчлэх": "✓ Update",
 };

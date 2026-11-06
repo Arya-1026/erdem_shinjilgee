@@ -281,7 +281,7 @@ function Book({ expertId }: { expertId: string }) {
         <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {days.map((d, i) => (
             <button key={i} onClick={() => { setDay(i); setSlot(null); }}
-              className={cn('w-15 flex-none rounded-xl border-[1.5px] py-2 text-center text-[.78rem]', day === i && 'border-primary bg-primary text-white')}>
+              className={cn('w-15 flex-none rounded-xl border-[1.5px] py-2 text-center text-[.78rem]', day === i && 'border-primary bg-primary text-primary-foreground')}>
               {tr(WD_SHORT[d.getDay()])}<b className="block text-lg">{d.getDate()}</b>
             </button>
           ))}
@@ -293,7 +293,7 @@ function Book({ expertId }: { expertId: string }) {
           <div className="mt-1.5 grid grid-cols-3 gap-2">
             {daySlots.map(s => (
               <button key={s} disabled={isTaken(s)} onClick={() => setSlot(s)}
-                className={cn('min-h-11 rounded-xl border-[1.5px] disabled:line-through disabled:opacity-35', slot === s && 'border-primary bg-primary text-white')}>{s}</button>
+                className={cn('min-h-11 rounded-xl border-[1.5px] disabled:line-through disabled:opacity-35', slot === s && 'border-primary bg-primary text-primary-foreground')}>{s}</button>
             ))}
           </div>
         ) : <p className="mt-1.5 text-sm text-muted-foreground">{tr('Энэ өдөр чөлөөт цаг алга. Өөр өдөр сонгоно уу.')}</p>}

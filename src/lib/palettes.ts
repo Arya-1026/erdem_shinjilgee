@@ -46,6 +46,9 @@ export function paletteColors(id: PaletteId): { from: string; to: string } {
   return { from: p.from, to: p.to };
 }
 
+/** Дэлгэцэд харуулах нэр: бэлэн палитрын нэр эсвэл «Өөрийн өнгө» */
+export const paletteLabel = (id: PaletteId) => PALETTES.find(p => p.id === id)?.label ?? 'Өөрийн өнгө';
+
 /* ---------- Өнгөний тооцоо ---------- */
 const rgb = (h: string) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const hex = (c: number[]) => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
