@@ -3,6 +3,7 @@ import { Nunito } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { ThemeProvider } from 'next-themes';
 import { Suspense } from 'react';
+import { ConfirmHost } from '@/components/confirm-host';
 import { LocaleProvider } from '@/components/providers/locale-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE } from '@/lib/i18n';
@@ -54,5 +55,5 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 
 async function Locale({ children }: { children: React.ReactNode }) {
   const v = (await cookies()).get(LOCALE_COOKIE)?.value;
-  return <LocaleProvider initial={isLocale(v) ? v : DEFAULT_LOCALE} chosen={isLocale(v)}>{children}</LocaleProvider>;
+  return <LocaleProvider initial={isLocale(v) ? v : DEFAULT_LOCALE} chosen={isLocale(v)}>{children}<ConfirmHost /></LocaleProvider>;
 }

@@ -46,6 +46,24 @@ export function NotificationBell() {
     return () => { clearTimeout(t); clearInterval(id); };
   }, [load, path]);
 
+  // Бодит цагт: хүсэлт ирэх, хариу авахад хонх шууд шинэчлэгдэж, апп дотор мэдэгдэнэ
+  useEffect(() => {
+    const onRow = (p: { eventType: string; new: { requester?: string; addressee?: string; status?: string } }) => {
+      void load();
+      const incoming = p.eventType === 'INSERT' && p.new.addressee === profile.id;
+      const accepted = p.eventType === 'UPDATE' && p.new.requester === profile.id && p.new.status === 'accepted';
+      if (!incoming && !accepted) return;
+      const text = incoming ? tr('Танд шинэ найзын хүсэлт ирлээ 📨') : tr('Таны найзын хүсэлтийг зөвшөөрлөө 🎉');
+      toast(text);
+      if (document.hidden) void showLocal(tr('Сэтгэл 🌙'), text, 'friend');
+    };
+    const ch = supabase.channel(`notices:${profile.id}`);
+    for (const filter of [`addressee=eq.${profile.id}`, `requester=eq.${profile.id}`])
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter }, onRow);
+    ch.subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [supabase, profile.id, load, tr]);
+
   // Зөвшөөрөл өгсөн төхөөрөмжийг энэ хаягт автоматаар бүртгэнэ: хаяг өөрчлөгдсөн, бүртгэл устсан үед ч push үргэлжилнэ
   useEffect(() => {
     if (!pushSupported()) return;

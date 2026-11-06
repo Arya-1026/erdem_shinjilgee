@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/confirm-host';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -51,8 +52,8 @@ export default function PersonPage() {
   if (card.relation === 'self') return null;
 
   const m = card.mood ? moodById(card.mood) : null;
-  const block = () => {
-    if (!confirm(tr('{0}-г блоклох уу? Тэр таныг хайж олох, сэтгэл санааг тань харах боломжгүй болно.', card.name))) return;
+  const block = async () => {
+    if (!await askConfirm(tr('{0}-г блоклох уу? Тэр таныг хайж олох, сэтгэл санааг тань харах боломжгүй болно.', card.name), tr('🚫 Блоклох'))) return;
     void act(supabase.rpc('block_user', { target: card.id }), tr('Блоклолоо')).then(() => router.push('/home'));
   };
 
@@ -87,8 +88,8 @@ export default function PersonPage() {
             <Button variant="outline" onClick={() => void act(supabase.rpc('respond_friend_request', { from_user: card.id, accept: false }), tr('Татгалзлаа'))}>{tr('Татгалзах')}</Button>
           </>}
           {card.relation === 'outgoing' && <Button variant="outline" onClick={() => void act(supabase.rpc('remove_friend', { target: card.id }), tr('Хүсэлтээ цуцаллаа'))}>{tr('Хүсэлт цуцлах')}</Button>}
-          {card.relation === 'friend' && <Button variant="outline" onClick={() => { if (confirm(tr('{0}-г найзаас хасах уу?', card.name))) void act(supabase.rpc('remove_friend', { target: card.id }), tr('Найзаас хаслаа')); }}>{tr('Найзаас хасах')}</Button>}
-          <Button variant="ghost" className="text-destructive" onClick={block}>{tr('🚫 Блоклох')}</Button>
+          {card.relation === 'friend' && <Button variant="outline" onClick={() => void askConfirm(tr('{0}-г найзаас хасах уу?', card.name), tr('Хасах')).then(ok => ok && act(supabase.rpc('remove_friend', { target: card.id }), tr('Найзаас хаслаа')))}>{tr('Найзаас хасах')}</Button>}
+          <Button variant="ghost" className="text-destructive" onClick={() => void block()}>{tr('🚫 Блоклох')}</Button>
         </div>
 
         <div>

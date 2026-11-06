@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { socialError, type Person } from '@/lib/social';
 import type { MenuItem } from './action-menu';
+import { askConfirm } from './confirm-host';
 import { useApp } from './providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 
@@ -27,8 +28,8 @@ export function useFriendActions(reload: () => void) {
     o.isFriend && { label: p.mood_hidden ? tr('🙂 Миний mood-ыг харуулах') : tr('🙈 Миний mood-ыг нуух'),
       onSelect: () => void act(supabase.rpc('set_mood_hidden', { target: p.id, hidden: !p.mood_hidden }), p.mood_hidden ? tr('{0} таны сэтгэл санааг харна', p.name) : tr('{0}-аас сэтгэл санаагаа нууллаа 🙈', p.name)) },
     o.isFriend && { label: tr('👋 Unfriend (найзаас хасах)'), danger: true,
-      onSelect: () => { if (confirm(tr('{0}-г найзаас хасах уу?', p.name))) void act(supabase.rpc('remove_friend', { target: p.id }), tr('Найзаас хаслаа')); } },
+      onSelect: () => void askConfirm(tr('{0}-г найзаас хасах уу?', p.name), tr('Хасах')).then(ok => { if (ok) void act(supabase.rpc('remove_friend', { target: p.id }), tr('Найзаас хаслаа')); }) },
     { label: tr('🚫 Блоклох'), danger: true,
-      onSelect: () => { if (confirm(tr('{0}-г блоклох уу? Тэр таныг хайж олох, сэтгэл санааг тань харах боломжгүй болно.', p.name))) void act(supabase.rpc('block_user', { target: p.id }), tr('Блоклолоо')); } },
+      onSelect: () => void askConfirm(tr('{0}-г блоклох уу? Тэр таныг хайж олох, сэтгэл санааг тань харах боломжгүй болно.', p.name), tr('🚫 Блоклох')).then(ok => { if (ok) void act(supabase.rpc('block_user', { target: p.id }), tr('Блоклолоо')); }) },
   ], [act, supabase, tr]);
 }

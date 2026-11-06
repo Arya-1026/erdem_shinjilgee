@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/confirm-host';
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -92,7 +93,7 @@ function BookingCard({ b, onChange }: { b: ExpertBooking; onChange: (p: Partial<
           <Input value={url} onChange={e => setUrl(e.target.value)} placeholder={tr('Уулзалтын холбоос (Google Meet, Zoom…)')} className="h-10 min-w-0 flex-1 rounded-xl" inputMode="url" />
           <Button size="xl" className="h-10" disabled={busy} onClick={() => save('booked')}>{tr('Холбоос хадгалах')}</Button>
           <Button size="xl" variant="secondary" className="h-10" disabled={busy} onClick={() => save('done')}>{tr('✓ Болсон')}</Button>
-          <Button size="xl" variant="destructive" className="h-10" disabled={busy} onClick={() => { if (confirm(tr('Захиалгыг цуцлах уу? Үйлчлүүлэгчид харагдана.'))) void save('cancelled', ''); }}>{tr('Цуцлах')}</Button>
+          <Button size="xl" variant="destructive" className="h-10" disabled={busy} onClick={() => void askConfirm(tr('Захиалгыг цуцлах уу? Үйлчлүүлэгчид харагдана.'), tr('Цуцлах')).then(ok => { if (ok) void save('cancelled', ''); })}>{tr('Цуцлах')}</Button>
         </div>
       )}
 

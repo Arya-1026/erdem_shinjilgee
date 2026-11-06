@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/confirm-host';
 import { useState } from 'react';
 import { useApp } from '@/components/providers/app-provider';
 import { Chip } from '@/components/segmented';
@@ -35,7 +36,7 @@ export default function ExpertsPage() {
                   {b.meeting_url && b.status === 'booked' && (
                     <a href={b.meeting_url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ size: 'xl', className: 'h-10' })}>{tr('Уулзалтад орох')}</a>
                   )}
-                  {b.status === 'booked' && <Button variant="destructive" size="xl" className="h-10" onClick={() => { if (confirm(tr('Захиалгаа цуцлах уу?'))) void cancelBooking(b.id); }}>{tr('Цуцлах')}</Button>}
+                  {b.status === 'booked' && <Button variant="destructive" size="xl" className="h-10" onClick={() => void askConfirm(tr('Захиалгаа цуцлах уу?'), tr('Цуцлах')).then(ok => { if (ok) void cancelBooking(b.id); })}>{tr('Цуцлах')}</Button>}
                 </div>
               </div>
             );
