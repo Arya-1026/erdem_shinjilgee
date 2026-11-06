@@ -66,7 +66,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')} style={{ '--mc': tint } as React.CSSProperties}>
         <header className="topbar sticky top-0 z-20 flex items-center justify-between px-4 desk:px-8">
-          <h1 className="m-0 text-xl font-bold">{tr(title)}</h1>
+          {/* Утсан дээр хажуу цэс байхгүй тул лого энд харагдана (хуудасны нэр доод цэсэнд тодорно) */}
+          <Link href="/home" aria-label={tr('Нүүр')} className="text-[1.35rem] leading-none desk:hidden"><Logo /></Link>
+          <h1 className="m-0 sr-only text-xl font-bold desk:not-sr-only">{tr(title)}</h1>
           <div className="topbar-actions flex items-center gap-2">
             <ThemeToggle />
             <span className="rounded-full bg-warm/25 px-3 py-1.5 text-sm font-bold text-foreground" title={tr('Тасралтгүй бүртгэсэн өдөр')}><Flame /> {streak(entries)}</span>
