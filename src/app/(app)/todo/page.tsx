@@ -16,6 +16,7 @@ import { dayCapacity, EFFORT, effortLabel, FIXED, hhmm, recentState, supportHint
 import { cn } from '@/lib/utils';
 import type { Todo } from '@/lib/types';
 import { useLocale, useT } from '@/components/providers/locale-provider';
+import { VoiceInput } from '@/components/voice-input';
 import { translateReason, type Translate } from '@/lib/i18n';
 
 const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
@@ -116,6 +117,8 @@ export default function TodoPage() {
         <textarea id="todo-ai" rows={4} value={text} onChange={e => setText(e.target.value)} maxLength={2000}
           placeholder={tr('Жишээ нь: Баасан гараг гэхэд тайлангаа дуусгах, өрөөгөө цэвэрлэх, 3 удаа гүйх')}
           className="w-full resize-y rounded-xl border-[1.5px] bg-background px-3 py-2.5 focus:border-primary focus:outline-none" />
+        {/* Ажлуудаа хэлээд текст болгоно (жишээ нь «Баасан гэхэд тайлангаа дуусгах») */}
+        <VoiceInput onText={t => setText(v => (v.trim() ? `${v.trimEnd()} ${t}` : t).slice(0, 2000))} />
         <Button size="xl" className="w-full" disabled={busy || (!text.trim() && !waiting.length)} onClick={() => void plan()}>{busy ? tr('Хуваарилж байна…') : tr('✨ Календарьт хуваарилах')}</Button>
         {todos.some(t => !t.done) && <Button size="xl" variant="secondary" className="w-full" disabled={busy} onClick={() => void plan('gentle')}>{tr('🌿 Ачааллаа бууруулах')}</Button>}
         {todos.some(t => !t.done) && <Button size="xl" variant="outline" className="w-full" disabled={busy} onClick={() => void plan('replan')}>{tr('↻ Бүх ажлыг дахин хуваарилах')}</Button>}
