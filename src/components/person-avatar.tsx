@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 /** Өөр хүний профайл зураг (нууцлалаас болж байхгүй бол нэрийн эхний үсэг), сүүлийн mood-ийн эможи буланд нь */
 export function PersonAvatar({ name, avatar, mood, className }: { name: string; avatar: string | null; mood?: MoodId | null; className?: string }) {
   return (
-    <span className={cn('relative grid flex-none place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-white', className)}>
+    <span className={cn('relative grid flex-none place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-primary-foreground', className)}>
       {avatar
         // eslint-disable-next-line @next/next/no-img-element -- data URL
         ? <img src={avatar} alt="" className="size-full rounded-full object-cover" />

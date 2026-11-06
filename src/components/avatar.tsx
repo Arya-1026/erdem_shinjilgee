@@ -14,7 +14,7 @@ import { useT } from '@/components/providers/locale-provider';
 export function Avatar({ className }: { className?: string }) {
   const { profile } = useApp();
   return (
-    <span className={cn('grid flex-none place-items-center overflow-hidden rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-white', className)}>
+    <span className={cn('grid flex-none place-items-center overflow-hidden rounded-full bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] font-bold text-primary-foreground', className)}>
       {profile.avatar
         // eslint-disable-next-line @next/next/no-img-element -- data URL, next/image оновчлох шаардлагагүй
         ? <img src={profile.avatar} alt="" className="size-full object-cover" />

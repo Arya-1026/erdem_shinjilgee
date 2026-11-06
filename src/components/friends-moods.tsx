@@ -3,29 +3,35 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Avatar } from '@/components/avatar';
-import { FriendsSheet } from '@/components/friends-tile';
+import { FriendsSheet, IncomingRequests } from '@/components/friends-tile';
 import { MoodHalo, NoteBubble } from '@/components/note-bubble';
 import { NoteEditor } from '@/components/note-editor';
 import { PersonAvatar } from '@/components/person-avatar';
 import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { today } from '@/lib/date';
-import { moodAgo, noteLive, social, type FriendRow } from '@/lib/social';
+import { moodAgo, noteLive, social, type FriendRow, type RequestRow } from '@/lib/social';
 
 const firstName = (n: string) => n.split(/[\s.]+/).filter(Boolean).pop() ?? n;
 
 /* Нүүр хуудас: найзууд маань ямар сэтгэл санаатай байна (аватарын дээрх бөмбөлөг).
-   Чат, зурвас байхгүй. Найз нэмэх, хүсэлт, блок нь профайлын «Найзууд» цонхонд. */
+   Чат, зурвас байхгүй. Ирсэн хүсэлтийг энд шууд зөвшөөрнө. «＋ Найз нэмэх» нь үргэлж харагдаж, хайлтын цонхыг нээнэ. */
 export function FriendsMoods() {
   const tr = useT();
   const { supabase, profile, entries } = useApp();
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  // 'add': «＋ Найз нэмэх»-ээр нээгдсэн, хайлтын талбарт шууд бичнэ
+  const [sheet, setSheet] = useState<false | 'list' | 'add'>(false);
   const [now] = useState(() => Date.now());
+  // Зөвхөн найзуудаасаа хайна (шинэ хүн нэмэх нь «＋ Найз нэмэх»-д)
+  const [q, setQ] = useState('');
 
   const load = useCallback(async () => {
-    try { setFriends(await social.friends(supabase)); } catch { setFriends([]); }
+    const [f, r] = await Promise.allSettled([social.friends(supabase), social.requests(supabase)]);
+    setFriends(f.status === 'fulfilled' ? f.value : []);
+    setRequests(r.status === 'fulfilled' ? r.value.filter(x => x.direction === 'incoming') : []);
   }, [supabase]);
   useEffect(() => {
     const t = setTimeout(() => void load(), 0);
@@ -38,14 +44,24 @@ export function FriendsMoods() {
   const myMood = (myNote ? profile.note_mood : null) ?? last?.mood ?? null;
   const mySub = (myNote ? profile.note_text : null) || (last ? moodAgo(last.entry_date, today()) : null);
   // Сэтгэл санаа нь харагддаг найзууд эхэнд, дараа нь favorite
-  const list = [...(friends ?? [])].sort((a, b) => Number(!!(b.note_mood ?? b.mood)) - Number(!!(a.note_mood ?? a.mood)) || Number(b.favorite) - Number(a.favorite));
+  const t = q.trim().toLowerCase().replace(/^@/, '');
+  const list = [...(friends ?? [])].filter(f => !t || f.name.toLowerCase().includes(t) || (f.handle ?? '').includes(t)).sort((a, b) => Number(!!(b.note_mood ?? b.mood)) - Number(!!(a.note_mood ?? a.mood)) || Number(b.favorite) - Number(a.favorite));
 
   return (
     <section className="card-x mt-4" aria-labelledby="friends-moods">
       <div className="flex items-center justify-between gap-2">
         <h3 id="friends-moods" className="font-semibold">{tr('👥 Найзууд маань ямар байна?')}</h3>
-        <button type="button" className="text-sm font-semibold text-primary" onClick={() => setSheet(true)}>{tr('Найзууд')}</button>
+        <button type="button" className="flex items-center gap-1.5 text-sm font-semibold text-primary" onClick={() => setSheet('list')}>
+          {tr('Найзууд')}
+          {requests.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground" aria-label={tr('{0} найзын хүсэлт', requests.length)}>{requests.length}</span>}
+        </button>
       </div>
+      {requests.length > 0 && <div className="mt-3"><IncomingRequests list={requests} onDone={() => void load()} /></div>}
+      {!!friends?.length && (
+        <input type="search" value={q} onChange={e => setQ(e.target.value)} enterKeyHint="search" placeholder={tr('🔍 Найзаасаа хайх')} aria-label={tr('Найзаасаа хайх')}
+          className="mt-3 min-h-10 w-full rounded-xl border-0 bg-secondary px-3.5 text-base focus:ring-2 focus:ring-primary focus:outline-none" />
+      )}
+      {t && !list.length && <p className="mt-2 text-center text-sm text-muted-foreground">{tr('Найз олдсонгүй')}</p>}
       <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pt-[50px] pb-1 no-scrollbar">
         {/* Өөрийн аватар дээр дарж бодол (Messenger-ийн Note шиг) хуваалцана */}
         <button type="button" onClick={() => setNoteOpen(true)} aria-label={myNote ? tr('Бодлоо засах') : tr('Бодол хуваалцах')}
@@ -69,15 +85,16 @@ export function FriendsMoods() {
             </Link>
           );
         })}
-        {friends !== null && !friends.length && (
-          <button type="button" onClick={() => setSheet(true)} className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
-            <span className="grid size-[72px] place-items-center rounded-full border-2 border-dashed border-primary text-2xl text-primary">＋</span>
+        {/* Найзтай болсон ч үргэлж харагдана */}
+        {friends !== null && (
+          <button type="button" onClick={() => setSheet('add')} className="flex w-[88px] flex-none flex-col items-center gap-1 text-center">
+            <span className="grid size-[72px] place-items-center rounded-full border-2 border-dashed border-primary text-2xl text-primary" aria-hidden>＋</span>
             <span className="w-full truncate text-xs text-primary">{tr('Найз нэмэх')}</span>
           </button>
         )}
       </div>
       {noteOpen && <NoteEditor open onOpenChange={setNoteOpen} />}
-      <FriendsSheet open={sheet} tab="friends" onOpenChange={o => { setSheet(o); if (!o) void load(); }} />
+      <FriendsSheet open={!!sheet} tab={sheet === 'add' ? 'add' : 'friends'} focus={sheet === 'add'} onOpenChange={o => { if (!o) { setSheet(false); void load(); } }} />
     </section>
   );
 }
