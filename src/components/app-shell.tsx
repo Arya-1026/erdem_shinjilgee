@@ -30,7 +30,7 @@ const SUB_PAGES: [prefix: string, parent: string, title: string][] = [['/dass', 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const tr = useT();
   const path = usePathname();
-  const { entries, tint, isExpert, supabase } = useApp();
+  const { entries, isExpert, supabase } = useApp();
   const badge = useSocialBadge(supabase);
   const sub = SUB_PAGES.find(([p]) => path.startsWith(p));
   const active = NAV.find(([href]) => (sub ? sub[1] : path).startsWith(href)) ?? NAV[0];
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SeasonalNav />
       </nav>
 
-      <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')} style={{ '--mc': tint } as React.CSSProperties}>
+      <div className={cn('shell desk:ml-60', active[0] === '/home' && 'tinted')}>
         <header className="topbar sticky top-0 z-20 flex items-center justify-between px-4 desk:px-8">
           {/* Утсан дээр хажуу цэс байхгүй тул лого энд харагдана (хуудасны нэр доод цэсэнд тодорно) */}
           <Link href="/home" aria-label={tr('Нүүр')} className="text-[1.35rem] leading-none desk:hidden"><Logo /></Link>

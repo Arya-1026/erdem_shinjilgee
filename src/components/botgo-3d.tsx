@@ -48,6 +48,18 @@ export function Botgo3D({ mood, className }: { mood: MoodId; className?: string 
     return () => clearInterval(id);
   }, [ready, mood, tr, pet.name]);
 
+  // Дэлгэцээс гарсан үед 3D дүрийг зурахаа зогсооно (утсан дээр гүйлгэхэд гацахгүй, батерей хэмнэнэ)
+  useEffect(() => {
+    const el = frame.current;
+    if (!ready || !el) return;
+    const io = new IntersectionObserver(([e]) => {
+      const w = el.contentWindow as (PetWin & { __setgelPaused?: boolean }) | null;
+      if (w) w.__setgelPaused = !e.isIntersecting;
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ready]);
+
   // Апп-ын гэрэлтэй/харанхуй горимыг дагана (artifact data-theme-ийг дэмждэг)
   useEffect(() => {
     if (ready && resolvedTheme) frame.current?.contentDocument?.documentElement.setAttribute('data-theme', resolvedTheme === 'dark' ? 'dark' : 'light');

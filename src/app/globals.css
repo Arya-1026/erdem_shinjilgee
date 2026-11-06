@@ -139,7 +139,9 @@
 /* ---------- Хэрэглэгчийн сонгосон өнгө ----------
    Хувьсагчдыг src/lib/palettes.ts тооцож <style id="setgel-palette">-д тавина. Доорх нь тэдгээрийг бүх системд хэрэглэнэ. */
 :root { --grad: linear-gradient(135deg, var(--primary), var(--primary-2)); --wash: none; --nav-bg: var(--card); }
-body { background-image: var(--wash); background-attachment: fixed; }
+/* Дэвсгэрийн градиент: background-attachment: fixed нь утсан дээр гүйлгэх бүрт бүтэн хуудсыг дахин зурдаг тул
+   тусдаа fixed давхарга болгоно (GPU дээр хөдөлгөөнгүй үлдэнэ) */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--wash); pointer-events: none; }
 .bg-primary { background-image: var(--grad); }
 .bg-spotify { background-image: none; } /* Spotify-ийн брэнд өнгө сонгосон өнгөөр солигдохгүй */
 .app-nav { background: var(--nav-bg); }
@@ -173,7 +175,9 @@ html, body { overflow-x: clip; }
 select option { background-color: var(--popover); color: var(--popover-foreground); }
 body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 96px); }
 .app-nav { height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b); }
-.topbar { padding-top: env(safe-area-inset-top); min-height: var(--head-h); background: color-mix(in srgb, var(--background) 88%, transparent); backdrop-filter: blur(10px); }
+.topbar { padding-top: env(safe-area-inset-top); min-height: var(--head-h); background: color-mix(in srgb, var(--background) 88%, transparent); }
+/* Гүйлгэх бүрт blur дахин тооцогддог тул зөвхөн хулганатай төхөөрөмж дээр */
+@media (pointer: fine) { .topbar { backdrop-filter: blur(10px); } }
 @media (min-width: 900px) {
   .app-nav { height: 100dvh; padding-bottom: 20px; }
   .app-main { padding: 16px 32px 32px; }
@@ -370,3 +374,11 @@ body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px));
 @keyframes mood-droop { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(8%) scale(.95, 1.03); } }
 @keyframes mood-shake { 0%, 100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-12deg) scale(1.1); } 40% { transform: rotate(10deg) scale(1.1); } 60% { transform: rotate(-6deg) scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .mood-anim { animation: none; } }
+
+/* ---------- Утсан дээр хөнгөн (хүрэлтээр удирддаг төхөөрөмж) ----------
+   Том blur-тэй хөдөлгөөн, scroll үеийн backdrop blur, бүтэн хуудасны өнгөний шилжилт нь утасны GPU-г ачаалж гацуулдаг. */
+@media (pointer: coarse) {
+  .shell { transition: none; }
+  .checkin::before, .checkin::after { animation: none; filter: blur(28px); }
+  .topbar { background: color-mix(in srgb, var(--background) 96%, transparent); }
+}

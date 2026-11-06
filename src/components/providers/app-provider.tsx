@@ -3,7 +3,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { lastMood } from '@/lib/analytics';
-import { moodById } from '@/lib/data';
 import { DAY_NOTE_COLS, ENTRY_COLS, JOURNAL_COLS, normalizeEntry } from '@/lib/db';
 import { hhmm, today } from '@/lib/date';
 import { languageSync } from '@/lib/i18n';
@@ -28,8 +27,8 @@ type AppCtx = Omit<AppData, 'restored'> & {
   supabase: ReturnType<typeof createClient>;
   /** Хамгийн сүүлд хадгалсан бүртгэлийн mood. Carousel, зөвлөмжийн түр сонголт үүнд нөлөөлөхгүй. */
   activeMood: Mood;
-  /** Нүүр хуудасны дэвсгэрийн өнгө (carousel дээр сонгож буй mood) */
-  tint: string;
+  /** Нүүр хуудасны дэвсгэрийн өнгө (carousel дээр сонгож буй mood). React state биш, --mc CSS хувьсагчийг шууд солино:
+   *  carousel эргэх бүрт бүх апп дахин render хийгдэж утсан дээр гацдаг байсан */
   setTint: (c: string) => void;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   addEntry: (d: EntryDraft) => Promise<Entry | null>;
@@ -56,6 +55,8 @@ type AppCtx = Omit<AppData, 'restored'> & {
 
 const Ctx = createContext<AppCtx | null>(null);
 
+const setTint = (c: string) => document.documentElement.style.setProperty('--mc', c);
+
 // Supabase алдааг toast-оор харуулна. Алдаа гарсан бол true буцаана.
 const fail = (msg: string) => (e: { message: string } | null) => { if (e) toast.error(`${msg}: ${e.message}`); return Boolean(e); };
 
@@ -74,7 +75,6 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [feedback, setFb] = useState(initial.feedback);
   const [watchlist, setWatch] = useState(initial.watchlist);
   const [bookings, setBookings] = useState(initial.bookings);
-  const [tint, setTint] = useState(moodById('neutral').color);
   const [dialog, openDialog] = useState<DialogState>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [likedSongs, setLiked] = useState(initial.likedSongs);
@@ -179,10 +179,10 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     supabase, profile, entries, feedback, watchlist, bookings,
     experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, likedSongs, todos, journals, dayNotes, setTodos, toggleLike,
     activeMood: lastMood(entries),
-    tint, setTint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
+    setTint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     dialog, openDialog, chatOpen, setChatOpen,
   }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, likedSongs, todos, journals, dayNotes, toggleLike,
-    tint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
+    updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
     dialog, chatOpen]);
 
   return <Ctx value={value}>{children}</Ctx>;

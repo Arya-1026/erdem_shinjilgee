@@ -86,8 +86,9 @@ const MOODS=[
 ];
 
 /* ---------- renderer / scene ---------- */
+const __SG_LITE=!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches); // Сэтгэл апп: утсан дээр хөнгөн горим
 const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia("(pointer: coarse)").matches?1.5:2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia("(pointer: coarse)").matches?1.5:2));if(__SG_LITE)renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.25));
 const scene=new T.Scene();
 const camera=new T.PerspectiveCamera(30,1,.1,50);
 camera.position.set(0,1.55,7.6); camera.lookAt(0,1.22,0);
@@ -104,7 +105,7 @@ function ell(r,s,seg){const g=new T.SphereGeometry(r,seg||40,(seg||40)*.6|0);if(
 function rnd(a){let s=a;return()=>{s=(s*9301+49297)%233280;return s/233280}}
 
 /* ---------- fur (shell texturing) ---------- */
-const FUR_LAYERS=20;
+const FUR_LAYERS=__SG_LITE?12:20;
 const furVS=`
 uniform float uLayer; uniform vec3 uGrav;
 attribute vec3 aTint; attribute float aLen; attribute float aDens;
@@ -454,7 +455,10 @@ function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)retur
 new ResizeObserver(resize).observe(stage); resize();
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function frame(){
+let __sgLast=0;
+function frame(now){
+  if(window.__setgelPaused||(__SG_LITE&&now-__sgLast<25)){requestAnimationFrame(frame);return}
+  __sgLast=now;
   const dt=Math.min(clock.getDelta(),.05), t=clock.elapsedTime, k=1-Math.exp(-dt*6);
   for(const key in target) cur[key]+=(target[key]-cur[key])*k;
   // reaction overlay
