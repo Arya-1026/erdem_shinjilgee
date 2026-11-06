@@ -78,10 +78,20 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
     router.refresh();
   }
 
+  // Дуусаагүй бүртгэлийн session үлдсэн бол нэвтрэх хуудас руу буцах зам
+  async function switchAccount() {
+    await createClient().auth.signOut();
+    router.replace('/login');
+    router.refresh();
+  }
+
   if (step === 'theme') return (
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="grad-dawn mb-5 rounded-3xl p-5">
-        <p className="text-sm font-semibold opacity-80">{tr('Алхам 1 / 2')}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold opacity-80">{tr('Алхам 1 / 2')}</p>
+          <button type="button" className="min-h-9 text-sm font-semibold underline" onClick={() => void switchAccount()}>{tr('← Нэвтрэх хуудас руу')}</button>
+        </div>
         <h1 className="my-1 text-[28px] leading-9 font-bold">{tr('Тавтай морил 🌙')}</h1>
         <p>{tr('Апп-аа өөрт таалагдах өнгөөр тохируулъя. Энэ өнгө товч, цэс, график дээр харагдана. Дараа нь Профайл хэсгээс сольж болно.')}</p>
       </div>

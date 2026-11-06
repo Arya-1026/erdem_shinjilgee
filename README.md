@@ -123,7 +123,7 @@ public/sw.js          push мэдэгдлийн service worker
 3. **Authentication → URL Configuration**:
    - Site URL: `http://127.0.0.1:3000`
    - Redirect URLs: `http://127.0.0.1:3000/auth/callback`, `https://<таны-апп>.vercel.app/auth/callback`
-4. **Имэйл илгээдэггүй**: бүртгэлийг `/api/auth/register` шууд үүсгэнэ (`email_confirm`), нэвтрэхэд нууц үгийг Supabase шалгана. Нууц үгээ мартвал бүртгүүлэхдээ авсан сэргээх кодоор солино (`/api/auth/recover`), hash нь `auth.users.app_metadata`-д хадгалагдана. Шинэ кодыг Профайлаас авна.
+4. **Имэйл илгээдэггүй**: бүртгэлийг `/api/auth/register` шууд үүсгэнэ (`email_confirm`), нэвтрэхэд нууц үгийг Supabase шалгана. Нууц үгээ мартвал имэйлээ оруулаад шууд солино (`/api/auth/recover`). **Энэ нь түр шийдэл:** имэйл эзэмшдэг эсэхийг шалгадаггүй тул имэйлийг мэдсэн хэн ч нууц үг сольж чадна. Жинхэнэ хэрэглэгчидтэй болохоос өмнө баталгаажуулалт нэмнэ.
 
 ### 2. Spotify
 

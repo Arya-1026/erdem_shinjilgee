@@ -288,4 +288,9 @@ export const EN_UI_2: Record<string, string> = {
   "Шинэ код үүсгэхэд хуучин код хүчингүй болно.": "Creating a new code cancels the old one.",
   "Код үүсгэх": "Create code",
   "Энэ бүртгэл идэвхжээгүй байна. «Бүртгүүлэх» хэсгээс дахин бүртгүүлнэ үү.": "This account was never activated. Please sign up again.",
+  "Энэ имэйлээр бүртгэл олдсонгүй": "No account found with this email",
+  "Шинэ нууц үгээ оруулаад шууд солино.": "Enter a new password to change it right away.",
+  "Нууц үгээ мартвал нэвтрэх хуудаснаас шинээр тохируулна.": "If you forget your password, set a new one from the login page.",
+  "Одоогийн нууц үгээ мартсан уу? Шинээр тохируулах": "Forgot your current password? Set a new one",
+  "← Нэвтрэх хуудас руу": "← Back to login",
 };

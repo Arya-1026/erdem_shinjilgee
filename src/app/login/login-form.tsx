@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/password-input';
 import { Label } from '@/components/ui/label';
-import { PasswordReset, RecoveryCode } from '@/components/password-reset';
+import { PasswordReset } from '@/components/password-reset';
 import { Segmented } from '@/components/segmented';
 import { createClient } from '@/lib/supabase/client';
 import { LanguageSwitch, useT } from '@/components/providers/locale-provider';
@@ -27,7 +27,6 @@ export function LoginForm() {
   const router = useRouter();
   const [tab, setTab] = useState<'register' | 'login'>('register');
   const [busy, setBusy] = useState(false);
-  const [recovery, setRecovery] = useState<string | null>(null);
   const [forgot, setForgot] = useState(false);
   const reg = tab === 'register';
   const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -43,22 +42,18 @@ export function LoginForm() {
     setBusy(true);
     const supabase = createClient();
     // Бүртгэл шууд өгөгдлийн санд үүснэ, имэйл явахгүй (/api/auth/register)
-    let code: string | undefined;
     if (reg) {
       const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
-      const j: { recoveryCode?: string } = await res.json().catch(() => ({}));
-      if (!res.ok || !j.recoveryCode) {
+      if (!res.ok) {
         setBusy(false);
         return void toast.error(res.status === 409 ? tr('Энэ имэйлээр бүртгэл аль хэдийн байна. Нэвтэрнэ үү.') : res.status === 429 ? tr('Хэт олон удаа оролдлоо. Түр хүлээгээд дахин оролдоно уу.') : tr('Бүртгэл үүсгэж чадсангүй. Дахин оролдоно уу.'));
       }
-      code = j.recoveryCode;
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
 
     if (error) return toast.error(error.code === 'email_not_confirmed' ? tr('Энэ бүртгэл идэвхжээгүй байна. «Бүртгүүлэх» хэсгээс дахин бүртгүүлнэ үү.') : error.message === 'Invalid login credentials' ? tr('Имэйл эсвэл нууц үг буруу байна') : error.message);
-    if (code) return setRecovery(code);
-    enter('/home');
+    enter(reg ? '/onboarding' : '/home');
   }
 
   function enter(href: string) {
@@ -70,8 +65,6 @@ export function LoginForm() {
     const { error } = await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback('/home') } });
     if (error) toast.error(error.message);
   }
-
-  if (recovery) return <div className="card-x w-full max-w-[420px]"><RecoveryCode code={recovery} onDone={() => enter('/onboarding')} /></div>;
 
   if (forgot) return (
     <div className="card-x w-full max-w-[420px]">

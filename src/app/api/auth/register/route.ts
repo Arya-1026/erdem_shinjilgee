@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { clientIp, hashRecoveryCode, newRecoveryCode, rateLimited } from '@/lib/server/recovery';
+import { clientIp, rateLimited } from '@/lib/server/recovery';
 import { createServiceClient } from '@/lib/supabase/server';
 
 // POST /api/auth/register { name, email, password } → бүртгэлийг шууд өгөгдлийн санд үүсгэнэ, имэйл илгээхгүй.
@@ -13,9 +13,8 @@ export async function POST(req: Request) {
   const password = typeof body?.password === 'string' ? body.password : '';
   if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 6 || password.length > 72) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
-  const recoveryCode = newRecoveryCode();
   const db = createServiceClient();
-  const fields = { password, email_confirm: true, user_metadata: { name }, app_metadata: { recovery: hashRecoveryCode(recoveryCode) } };
+  const fields = { password, email_confirm: true, user_metadata: { name } };
   const { error } = await db.auth.admin.createUser({ email, ...fields });
   if (error) {
     if (error.code === 'email_exists') {
@@ -25,12 +24,12 @@ export async function POST(req: Request) {
       const { data } = profile ? await db.auth.admin.getUserById(profile.id) : { data: null };
       if (data?.user && !data.user.email_confirmed_at) {
         const { error: revive } = await db.auth.admin.updateUserById(data.user.id, fields);
-        if (!revive) return NextResponse.json({ recoveryCode });
+        if (!revive) return NextResponse.json({ ok: true });
       }
       return NextResponse.json({ error: 'exists' }, { status: 409 });
     }
     console.error('[auth] register', error);
     return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
-  return NextResponse.json({ recoveryCode });
+  return NextResponse.json({ ok: true });
 }

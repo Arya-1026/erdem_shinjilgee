@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashRecoveryCode, newRecoveryCode, rateLimited, recoveryCodeMatches } from './server/recovery';
+import { rateLimited } from './server/recovery';
 import { fallbackReply } from './chat-fallback';
 import { isCrisisText } from './crisis';
 import { moodById } from './data';
@@ -92,16 +92,7 @@ describe('db туслах', () => {
   });
 });
 
-describe('сэргээх код', () => {
-  it('хэлбэр, том жижиг үсэг, зураасаас хамаарахгүй шалгана', () => {
-    const c = newRecoveryCode();
-    expect(c).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
-    const h = hashRecoveryCode(c);
-    expect(h).not.toContain(c);
-    expect(recoveryCodeMatches(c.toLowerCase().replaceAll('-', ' '), h)).toBe(true);
-    expect(recoveryCodeMatches('AAAA-AAAA-AAAA', h)).toBe(false);
-    expect(recoveryCodeMatches(c, undefined)).toBe(false);
-  });
+describe('оролдлогын хязгаар', () => {
   it('оролдлогын хязгаар цонх дуусахад шинэчлэгдэнэ', () => {
     expect([1, 2, 3].map(() => rateLimited('t', 2, 1000, 5000))).toEqual([false, false, true]);
     expect(rateLimited('t', 2, 1000, 7000)).toBe(false);
