@@ -1,5 +1,5 @@
 import 'server-only';
-import { songKey, toTrack, type SpotifyTrack } from '@/lib/spotify-parse';
+import { sameTitle, songKey, toTrack, type SpotifyTrack } from '@/lib/spotify-parse';
 import { createServiceClient } from '@/lib/supabase/server';
 import { api, SpotifyError, spotifyConfigured } from './spotify';
 
@@ -105,18 +105,24 @@ async function cachedList(prefix: string, ttl: number, load: () => Promise<Found
   return found;
 }
 
-/** "Уран бүтээлч - дуу"-г Spotify-аас хайна. Уран бүтээлч таарахгүй бол null. */
+/**
+ * "Уран бүтээлч - дуу"-г Spotify-аас хайна. Нэр нь таарахгүй бол null: өөр дууг санал болгосон нэрээр тоглуулахгүй.
+ * Ая: суваг, тоглуулах жагсаалтын нэр уран бүтээлчтэй таарахгүй нь элбэг тул зөвхөн нэрээр шалгана.
+ * sp2: өмнөх хувилбар нэрийг шалгалгүй эхний дууг хадгалдаг байсан тул тэр cache-ийг ашиглахгүй.
+ */
 export async function findSong(artist: string, title: string, opts: { ambient?: boolean } = {}): Promise<FoundSong | null> {
   if (!spotifyConfigured()) return null;
-  const key = 'sp:' + songKey(artist, title);
+  const key = 'sp2:' + songKey(artist, title);
   const db = createServiceClient();
   const { data: hit } = await db.from('song_cache').select('*').eq('query_key', key).maybeSingle();
   if (hit && (hit.found || Date.now() - new Date(hit.cached_at).getTime() < MONTH)) return hit.found ? fromCache(hit) : null;
 
-  const pick = (items: RawTrack[]) => items.find(t => (t.artists ?? []).some(a => sameArtist(artist, a.name)));
+  const pick = (items: RawTrack[], anyArtist = false) => items.find(t => {
+    const got = toTrack(t);
+    return Boolean(got) && sameTitle(title, got!.name) && (anyArtist || (t.artists ?? []).some(a => sameArtist(artist, a.name)));
+  });
   const raw = pick(await search<RawTrack>('track', `track:"${title}" artist:"${artist}"`)) ?? pick(await search<RawTrack>('track', `${artist} ${title}`))
-    // Ая: суваг, тоглуулах жагсаалтын нэр уран бүтээлчтэй таарахгүй нь элбэг
-    ?? (opts.ambient ? (await search<RawTrack>('track', title))[0] : undefined);
+    ?? (opts.ambient ? pick(await search<RawTrack>('track', title), true) : undefined);
   const t = toTrack(raw);
   const found = t ? toFound(t) : null;
   await db.from('song_cache').upsert({ query_key: key, found: Boolean(found), ...(found ?? {}), cached_at: new Date().toISOString() });

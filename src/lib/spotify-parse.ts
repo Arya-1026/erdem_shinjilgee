@@ -43,3 +43,16 @@ export function spotifyTrackUrl(uri: string | null | undefined) {
 /** Cache-ийн түлхүүр: том жижиг үсэг, цэг таслал, илүү зайг үл тооно */
 export const songKey = (artist: string, title: string) =>
   `${artist} ${title}`.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+// Хаалт доторх «Remastered», «feat. ...», « - Live» зэргийг хаяж, үсэг тоог л харьцуулна
+const words = (s: string) => s.toLowerCase().normalize('NFKC').replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/\s[-–—]\s.*$/, ' ').split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 1);
+
+/** Олдсон дууны нэр хүссэн нэртэй таарах уу. Таараагүй дууг санал болгосон нэрээр нь харуулж, өөр дуу тоглуулахгүйн тулд. */
+export function sameTitle(wanted: string, got: string) {
+  const a = words(wanted), b = words(got);
+  if (!a.length || !b.length) return false;
+  const ja = a.join(''), jb = b.join('');
+  if (ja.includes(jb) || jb.includes(ja)) return true;
+  const set = new Set(b);
+  return a.filter(w => set.has(w)).length / a.length >= 0.6;
+}

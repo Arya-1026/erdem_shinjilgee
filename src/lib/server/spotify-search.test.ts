@@ -5,7 +5,10 @@ type Row = { query_key: string; found: boolean; cached_at: string; video_id?: st
 let cache: Row[] = [];
 const fakeDb = {
   from: () => ({
-    select: () => ({ like: async (_c: string, pattern: string) => ({ data: cache.filter(r => r.query_key.startsWith(pattern.slice(0, -1))) }) }),
+    select: () => ({
+      like: async (_c: string, pattern: string) => ({ data: cache.filter(r => r.query_key.startsWith(pattern.slice(0, -1))) }),
+      eq: (_c: string, key: string) => ({ maybeSingle: async () => ({ data: cache.find(r => r.query_key === key) ?? null }) }),
+    }),
     delete: () => ({ like: async (_c: string, pattern: string) => { cache = cache.filter(r => !r.query_key.startsWith(pattern.slice(0, -1))); return {}; } }),
     upsert: async (rows: Row | Row[]) => {
       for (const r of [rows].flat()) cache = [...cache.filter(x => x.query_key !== r.query_key), r];
@@ -100,5 +103,20 @@ describe('spotify-search', () => {
     cache = ['0', '1', '2'].map(i => ({ query_key: `spgenre:pop:${i}`, found: true, video_id: i, title: `Old ${i}`, channel: 'A', thumbnail: null, duration_s: 1, cached_at: days(40) }));
     expect((await genreSongs('pop', { left: 5 })).map(s => s.title)).toEqual(['One']);
     expect(cache.map(r => r.query_key)).toEqual(['spgenre:pop:0']);
+  });
+
+  it('нэр нь таарахгүй дууг санал болгосон нэрээр нь өгөхгүй', async () => {
+    mockSpotify(() => json({ tracks: { items: [track('x1', 'Rich Mongol', 'MagGod')] } }));
+    const { findSong } = await load();
+    expect(await findSong('Hanggai', 'Mongolian Horsehead Fiddle', { ambient: true })).toBeNull();
+    expect(await findSong('MagGod', 'Other Song')).toBeNull();
+    expect(cache.find(r => r.query_key.startsWith('sp2:hanggai'))?.found).toBe(false);
+  });
+
+  it('нэр, уран бүтээлч таарсан дууг олно, ая бол уран бүтээлч өөр ч болно', async () => {
+    mockSpotify(() => json({ tracks: { items: [track('w1', 'Weightless (Remastered)', 'Marconi Union'), track('w2', 'Nuvole Bianche', 'Ludovico Einaudi')] } }));
+    const { findSong } = await load();
+    expect((await findSong('Marconi Union', 'Weightless'))?.video_id).toBe('w1');
+    expect((await findSong('Calm Radio', 'Nuvole Bianche', { ambient: true }))?.video_id).toBe('w2');
   });
 });
