@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DASS_COUNT, DASS_ITEMS, dassLevel, needsHelp, scoreDass } from './dass';
+import { DASS_COUNT, DASS_ITEMS, dassDaysLeft, dassLevel, isDassIntervalError, needsHelp, scoreDass } from './dass';
 
 describe('DASS-21', () => {
   it('21 асуулт, дэд хэмжүүр бүр 7, албан ёсны дугаарлалт', () => {
@@ -33,5 +33,24 @@ describe('DASS-21', () => {
     expect(needsHelp({ depression: 21, anxiety: 0, stress: 0 })).toBe(true);
     const a = Array(21).fill(0); a[20] = 2;
     expect(needsHelp(scoreDass(a), a)).toBe(true);
+  });
+});
+
+describe('14 хоногт нэг удаа', () => {
+  const now = Date.parse('2026-11-20T12:00:00Z');
+  it('бөглөөгүй эсвэл 14 хоног өнгөрсөн бол одоо бөглөнө', () => {
+    expect(dassDaysLeft(null, now)).toBe(0);
+    expect(dassDaysLeft('2026-11-06T12:00:00Z', now)).toBe(0);
+    expect(dassDaysLeft('2026-10-01T00:00:00Z', now)).toBe(0);
+  });
+  it('үлдсэн өдрийг дээш нь тоймлоно', () => {
+    expect(dassDaysLeft('2026-11-20T12:00:00Z', now)).toBe(14);
+    expect(dassDaysLeft('2026-11-07T11:00:00Z', now)).toBe(1);
+    expect(dassDaysLeft('2026-11-10T12:00:00Z', now)).toBe(4);
+  });
+  it('серверийн татгалзлыг таньна', () => {
+    expect(isDassIntervalError('dass_interval: DASS-21 can be taken once every 14 days')).toBe(true);
+    expect(isDassIntervalError('network error')).toBe(false);
+    expect(isDassIntervalError(undefined)).toBe(false);
   });
 });

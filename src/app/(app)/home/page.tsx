@@ -22,6 +22,7 @@ import { ymd } from '@/lib/date';
 import { needsExpert, prediction, todaysEntries } from '@/lib/analytics';
 import { MOOD_CAP, MOODS, TAGS, WD, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
+import { useMovieRecs } from '@/components/use-movies';
 import { cn } from '@/lib/utils';
 import type { MusicKind } from '@/lib/music-suggest';
 import type { Entry, Mood, RecType } from '@/lib/types';
@@ -214,7 +215,8 @@ function HomeRecs({ m }: { m: Mood }) {
   const tr = useT();
   const { profile, feedback, music } = useApp();
   const play = usePlay();
-  const recs = scoredRecs(m, profile.hobbies, feedback);
+  const movies = useMovieRecs(m.id, 10);
+  const recs = [...scoredRecs(m, profile.hobbies, feedback), ...(movies ?? [])];
   return (
     <section className="card-x" aria-live="polite">
       <div className="flex items-center justify-between">

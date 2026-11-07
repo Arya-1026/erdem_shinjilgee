@@ -41,7 +41,7 @@ export function DassHelpCard({ level, scores, className, showResult }: { level: 
       </p>
       <div className="mt-3 grid gap-2">
         <Link href="/experts" className={buttonVariants({ size: 'xl' })}>{tr('🧑‍⚕️ Сэтгэл зүйчтэй яаралтай цаг товлох')}</Link>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2 min-[380px]:grid-cols-2">
           <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:108">{tr('📞 108 Тусламжийн утас')}</a>
           <a className={buttonVariants({ variant: 'destructive', size: 'xl' })} href="tel:103">{tr('📞 103 Түргэн тусламж')}</a>
         </div>

@@ -9,6 +9,7 @@ import { Chip } from '@/components/segmented';
 import { ForYou, LikedSongs } from '@/components/music';
 import { MOODS, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
+import { useMovieRecs } from '@/components/use-movies';
 import { cn } from '@/lib/utils';
 import type { MoodId, RecType } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
@@ -24,7 +25,8 @@ export default function RecsPage() {
   const cm = picked ? moodById(picked) : saved;
   const preview = cm.id !== saved.id;
   const [tab, setTab] = useState<Tab>('all');
-  const list = scoredRecs(cm, profile.hobbies, feedback).filter(x => tab === 'all' || x.type === tab);
+  const movies = useMovieRecs(cm.id, 12);
+  const list = [...scoredRecs(cm, profile.hobbies, feedback), ...(movies ?? [])].filter(x => tab === 'all' || x.type === tab);
 
   const onFeedback = (id: string, v: number) => {
     setFeedback(id, feedback[id] === v ? 0 : v);

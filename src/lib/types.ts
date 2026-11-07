@@ -21,6 +21,9 @@ export type Rec = {
   action?: 'breath';
   /** Киноны постер */
   poster?: string;
+  /** Яагаад санал болгосон тайлбар, IMDb хуудас */
+  why?: string;
+  imdb?: string;
   /** 3D загварыг дагаж хийх алхмууд */
   moves?: Move[];
 };

@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
+import { DassHistory } from '@/components/dass-history';
 import { FriendsTile } from '@/components/friends-tile';
 import { MoodHistory } from '@/components/mood-history';
 import { MoodImages } from '@/components/mood-images';
@@ -125,11 +126,7 @@ function ProfileMain() {
             ))}
           </div>
           {u.fav_artists.length > 0 && <p className="mb-2 text-sm"><b>{tr('Дуртай дуучид:')}</b> {u.fav_artists.join(', ')}</p>}
-          <Link href="/dass" className="mb-3.5 flex items-center gap-3 rounded-2xl border bg-card p-3.5 hover:bg-secondary">
-            <span className="text-2xl" aria-hidden="true">🧠</span>
-            <span className="min-w-0 flex-1"><b className="block">{tr('Сэтгэл зүйн асуулга (DASS-21)')}</b><span className="block text-xs text-muted-foreground">{tr('Гутрал, түгшүүр, стресс · үр дүн, дахин бөглөх')}</span></span>
-            <span aria-hidden="true">›</span>
-          </Link>
+          <DassHistory />
           <h3 className="mb-2 font-semibold">{tr('Миний хобби')}</h3>
           <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-primary-foreground">{tr(h)}</span>)}</div>
           <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>{tr('✏️ Хобби, нас, дуучин засах')}</Link>

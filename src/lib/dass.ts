@@ -85,6 +85,14 @@ export const DASS_RECS: Record<DassScale, string[]> = {
 /** Дахин бөглөхийг санал болгох хугацаа (DASS сүүлийн 7 хоногийг асуудаг) */
 export const DASS_RETAKE_DAYS = 14;
 
+/** Дахин бөглөх хүртэл үлдсэн өдөр. 0 бол одоо бөглөж болно (14 хоногт нэг удаа, 0024_dass_interval.sql мөн шалгана). */
+export function dassDaysLeft(lastAt: string | null | undefined, now = Date.now()) {
+  if (!lastAt) return 0;
+  return Math.max(0, Math.ceil((new Date(lastAt).getTime() + DASS_RETAKE_DAYS * 864e5 - now) / 864e5));
+}
+/** Сервер 14 хоногийн дотор дахин бөглөхийг татгалзсан эсэх */
+export const isDassIntervalError = (msg: string | undefined) => Boolean(msg?.includes('dass_interval'));
+
 /* ---------- Үр дүнгийн тайлбар ---------- */
 /** Хэмжүүр бүр юуг хэмждэг вэ */
 export const SCALE_DESC: Record<DassScale, string> = {

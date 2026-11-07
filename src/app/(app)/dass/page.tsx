@@ -7,10 +7,11 @@ import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { ExerciseArt } from '@/components/exercise-art';
 import { DassHelpCard } from '@/components/dass-help';
+import { LEVEL_COLOR } from '@/components/dass-history';
 import { Button } from '@/components/ui/button';
 import { RECS } from '@/lib/data';
 import {
-  DASS_CHOICES, DASS_COUNT, DASS_EXPLAIN, DASS_ITEMS, DASS_MAX, DASS_RECS, DASS_RETAKE_DAYS, DASS_SCALES, dassLevel, helpLevel, LEVEL_LABEL,
+  DASS_CHOICES, DASS_COUNT, DASS_EXPLAIN, DASS_ITEMS, DASS_MAX, DASS_RECS, DASS_SCALES, dassDaysLeft, dassLevel, helpLevel, isDassIntervalError, LEVEL_LABEL,
   levelBand, SCALE_DESC, SCALE_LABEL, scoreDass, type DassLevel, type DassScale, type DassScores,
 } from '@/lib/dass';
 import { snoozeDass } from '@/lib/dass-client';
@@ -21,9 +22,6 @@ const PENDING_ID = 'pending';
 type Stage = 'loading' | 'intro' | 'quiz' | 'result';
 
 const PROGRESS_KEY = 'setgel-dass-progress';
-const LEVEL_COLOR: Record<DassLevel, string> = {
-  normal: 'bg-emerald-500', mild: 'bg-lime-500', moderate: 'bg-amber-500', severe: 'bg-orange-600', extreme: 'bg-red-600',
-};
 const SCALE_ICON: Record<DassScale, string> = { depression: '🌧️', anxiety: '🌀', stress: '🔥' };
 // 7, 14 дэх асуултын дараа Ботгоо урам өгнө
 const CHEER: Record<number, string> = { 7: 'Гуравны нэгийг дуусгалаа 👍', 14: 'Бараг дууслаа, ганцхан хэсэг үлдлээ 💪' };
@@ -61,11 +59,15 @@ export default function DassPage() {
     if (error) toast.error(tr('Асуулгын хүснэгт олдсонгүй. supabase/migrations/0020_dass.sql-ийг ажиллуулна уу.'));
     const rows = (data ?? []) as Result[];
     setHistory(rows);
-    setStage(rows.length && !isFirst() ? 'result' : 'intro');
+    // 14 хоног болоогүй бол асуулга биш, сүүлийн үр дүн харагдана
+    setStage(rows.length && (!isFirst() || dassDaysLeft(rows[0].created_at) > 0) ? 'result' : 'intro');
   }, [supabase, tr]);
   useEffect(() => { const t = setTimeout(() => void load(), 0); return () => clearTimeout(t); }, [load]);
 
+  const daysLeft = dassDaysLeft(history.find(h => h.id !== PENDING_ID)?.created_at);
+
   function start() {
+    if (daysLeft > 0) return void toast(tr('DASS-21-ийг 14 хоногт нэг удаа бөглөнө. {0} хоногийн дараа дахин бөглөөрэй.', daysLeft));
     setAnswers(loadProgress());
     setStage('quiz');
     window.scrollTo({ top: 0 });
@@ -82,6 +84,13 @@ export default function DassPage() {
     const { data, error } = await supabase.from('dass_results').insert({ answers: all, ...s, research_consent: consent })
       .select('id,answers,depression,anxiety,stress,created_at').single();
     setSaving(false);
+    if (isDassIntervalError(error?.message)) {
+      // Өөр төхөөрөмж дээр саяхан бөглөсөн: хариултыг хадгалахгүй, сүүлийн үр дүнг харуулна
+      clearProgress();
+      toast.error(tr('DASS-21-ийг 14 хоногт нэг удаа бөглөнө. Сүүлийн үр дүнг харуулж байна.'));
+      await load();
+      return false;
+    }
     if (error || !data) {
       toast.error(tr('Хадгалж чадсангүй: ') + (error?.message ?? ''));
       // Хариултыг алдахгүй: үр дүнг түр харуулж, хадгалах товчоор дахин оролдуулна
@@ -119,14 +128,14 @@ export default function DassPage() {
   const back = () => { const a = answers.slice(0, -1); setAnswers(a); saveProgress(a); };
 
   if (stage === 'loading') return <p className="py-16 text-center text-muted-foreground">{tr('Ачаалж байна…')}</p>;
-  if (stage === 'intro') return <Intro first={first} consent={consent} setConsent={setConsent} onStart={start} onLater={later} hasPrevious={history.length > 0} onBack={() => setStage('result')} />;
+  if (stage === 'intro') return <Intro first={first} consent={consent} setConsent={setConsent} onStart={start} onLater={later} hasPrevious={history.length > 0} onBack={() => setStage('result')} daysLeft={daysLeft} />;
   if (stage === 'quiz') return <Quiz answers={answers} saving={saving} onAnswer={a => void answer(a)} onBack={back} onExit={() => setStage(history.length ? 'result' : 'intro')} />;
-  return <ResultView history={history} saved={!pending} saving={saving} backHome={first || wasFirst} onSaveHome={() => void saveAndHome()} onRetake={() => setStage('intro')} />;
+  return <ResultView history={history} saved={!pending} saving={saving} backHome={first || wasFirst} onSaveHome={() => void saveAndHome()} onRetake={() => setStage('intro')} daysLeft={daysLeft} />;
 }
 
 /* ---------- Танилцуулга: зөвшөөрөл асууна ---------- */
-function Intro({ first, consent, setConsent, onStart, onLater, hasPrevious, onBack }: {
-  first: boolean; consent: boolean; setConsent: (v: boolean) => void; onStart: () => void; onLater: () => void; hasPrevious: boolean; onBack: () => void;
+function Intro({ first, consent, setConsent, onStart, onLater, hasPrevious, onBack, daysLeft }: {
+  first: boolean; consent: boolean; setConsent: (v: boolean) => void; onStart: () => void; onLater: () => void; hasPrevious: boolean; onBack: () => void; daysLeft: number;
 }) {
   const tr = useT();
   const resume = loadProgress().length;
@@ -148,7 +157,7 @@ function Intro({ first, consent, setConsent, onStart, onLater, hasPrevious, onBa
         <input type="checkbox" className="mt-0.5 size-4 accent-[var(--primary)]" checked={consent} onChange={e => setConsent(e.target.checked)} />
         <span>{tr('Хариултыг минь нэр нь үл мэдэгдэх байдлаар эрдэм шинжилгээний судалгаанд ашиглахыг зөвшөөрч байна (заавал биш).')}</span>
       </label>
-      <Button size="xl" className="mt-4 w-full" onClick={onStart}>{resume ? tr('▶ Үргэлжлүүлэх ({0}/21)', resume) : tr('▶ Эхлэх')}</Button>
+      <Button size="xl" className="mt-4 w-full" disabled={daysLeft > 0} onClick={onStart}>{daysLeft > 0 ? tr('{0} хоногийн дараа бөглөх боломжтой', daysLeft) : resume ? tr('▶ Үргэлжлүүлэх ({0}/21)', resume) : tr('▶ Эхлэх')}</Button>
       {hasPrevious ? <Button size="xl" variant="ghost" className="mt-2 w-full" onClick={onBack}>{tr('← Өмнөх үр дүн')}</Button>
         : <Button size="xl" variant="ghost" className="mt-2 w-full" onClick={onLater}>{tr('Дараа нь')}</Button>}
     </section>
@@ -204,8 +213,8 @@ function Explain({ scale, level }: { scale: DassScale; level: DassLevel }) {
 }
 
 /* ---------- Үр дүн ---------- */
-function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: {
-  history: Result[]; saved: boolean; saving: boolean; backHome: boolean; onSaveHome: () => void; onRetake: () => void;
+function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake, daysLeft }: {
+  history: Result[]; saved: boolean; saving: boolean; backHome: boolean; onSaveHome: () => void; onRetake: () => void; daysLeft: number;
 }) {
   const tr = useT();
   const router = useRouter();
@@ -280,14 +289,14 @@ function ResultView({ history, saved, saving, backHome, onSaveHome, onRetake }: 
 
       <section className="card-x">
         <h2 className="font-bold">{tr('📅 Дараагийн удаа')}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{days >= DASS_RETAKE_DAYS ? tr('2 долоо хоног өнгөрсөн байна. Дахин бөглөөд өөрчлөлтөө хараарай.') : tr('{0} хоногийн дараа дахин бөглөхийг санал болгоно. Ингэвэл өөрчлөлтөө харах боломжтой.', DASS_RETAKE_DAYS - days)}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{daysLeft === 0 ? tr('2 долоо хоног өнгөрсөн байна. Дахин бөглөөд өөрчлөлтөө хараарай.') : tr('Асуулгыг 14 хоногт нэг удаа бөглөнө. {0} хоногийн дараа дахин бөглөөд өөрчлөлтөө хараарай.', daysLeft)}</p>
         {history.length > 1 && (
           <table className="mt-3 w-full text-sm tabular-nums">
             <thead><tr className="text-left text-muted-foreground"><th className="font-medium">{tr('Огноо')}</th>{DASS_SCALES.map(k => <th key={k} className="font-medium">{tr(SCALE_LABEL[k])}</th>)}</tr></thead>
             <tbody>{history.map(h => <tr key={h.id}><td>{date(h.created_at)}</td>{DASS_SCALES.map(k => <td key={k}>{h[k]} <span className="text-xs text-muted-foreground">{tr(LEVEL_LABEL[dassLevel(k, h[k])])}</span></td>)}</tr>)}</tbody>
           </table>
         )}
-        <Button size="xl" variant={days >= DASS_RETAKE_DAYS ? 'default' : 'secondary'} className="mt-3 w-full" onClick={onRetake}>{tr('↻ Дахин бөглөх')}</Button>
+        <Button size="xl" variant={daysLeft === 0 ? 'default' : 'secondary'} className="mt-3 w-full" disabled={daysLeft > 0} onClick={onRetake}>{daysLeft > 0 ? tr('{0} хоногийн дараа бөглөх боломжтой', daysLeft) : tr('↻ Дахин бөглөх')}</Button>
       </section>
     </div>
   );

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BREATH_LEAD, startBreathMusic } from '@/lib/calm-audio';
 import { RECS, WD_SHORT, moodById } from '@/lib/data';
+import { shownMovie } from '@/components/use-movies';
 import { addDays, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { useT } from '@/components/providers/locale-provider';
@@ -213,10 +214,9 @@ function Wipe() {
 
 function Movie({ recId, moodId }: { recId: string; moodId: Parameters<typeof moodById>[0] }) {
   const tr = useT();
-  const { openDialog, watchlist, toggleWatch, setFeedback, profile } = useApp();
-  const r = RECS.find(x => x.id === recId)!, m = moodById(moodId);
-  const hob = (r.hobby || []).some(h => profile.hobbies.includes(h));
-  const soothing = ['sad', 'anxious', 'tired', 'angry'].includes(m.id);
+  const { openDialog, watchlist, toggleWatch, setFeedback } = useApp();
+  const r = shownMovie(recId), m = moodById(moodId);
+  if (!r) return <Title>{tr('Кино олдсонгүй')}</Title>;
   return (
     <>
       <div className="tile-cover -mt-1 mb-3.5 grid h-[230px] place-items-center rounded-[18px] py-3 text-6xl" style={{ '--tc': moodById(r.moods[0]).color } as React.CSSProperties}>
@@ -224,11 +224,12 @@ function Movie({ recId, moodId }: { recId: string; moodId: Parameters<typeof moo
       </div>
       <Title>{tr(r.title)}</Title>
       <DialogDescription className="mb-2">{tr(r.sub)}</DialogDescription>
-      <p className="mb-3">{r.desc && tr(r.desc)}</p>
+      {r.desc && <p className="mb-3 text-sm" lang="en">{r.desc}</p>}
       <div className="rounded-[18px] bg-secondary p-3">
         <b className="text-sm">{tr('💡 Яагаад санал болгож байна вэ?')}</b>
-        <p className="mt-1 text-sm">{tr('«{0}» мэдрэмжтэй үед энэ кино', tr(m.label))}{' '}{soothing ? tr('сэтгэлийг тайвшруулж, дулаахан мэдрэмж төрүүлдэг') : tr('эерэг эрч хүчийг тань улам нэмэгдүүлдэг')}.{hob && tr(' Мөн таны хоббид тохирсон.')}</p>
+        <p className="mt-1 text-sm">{tr('«{0}» мэдрэмжтэй үед:', tr(m.label))} {r.why}</p>
       </div>
+      {r.imdb && <a href={r.imdb} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-semibold text-primary">{tr('IMDb дээр харах ↗')}</a>}
       <div className="mt-4 flex flex-col gap-2.5">
         <Button size="xl" onClick={async () => { const added = await toggleWatch(r.id); openDialog(null); toast(added ? tr('Үзэх жагсаалтад нэмэгдлээ 🎬') : tr('Жагсаалтаас хасагдлаа')); }}>
           {watchlist.includes(r.id) ? tr('✓ Үзэх жагсаалтад байна') : tr('＋ Үзэх жагсаалтад нэмэх')}

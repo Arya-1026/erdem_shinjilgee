@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "keys": "node scripts/gen-keys.mjs",
-    "db:bundle": "node scripts/bundle-sql.mjs"
+    "db:bundle": "node scripts/bundle-sql.mjs",
+    "movies": "node scripts/build-movies.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

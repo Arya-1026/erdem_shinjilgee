@@ -74,6 +74,14 @@ export async function llmReply(messages: Msg[]) {
     ?? llmChat(messages, opts);
 }
 
+/** Монголоор бичих урт текст (өдрийн дэмжлэг гэх мэт): Qwen → gpt-oss-120b → жижиг загвар */
+export async function llmWrite(messages: Msg[], opts: Opts = {}) {
+  const o: Opts = { maxTokens: 1500, timeoutMs: 25_000, reasoning: 'low', ...opts };
+  return (await callProvider(groqQwen(), QWEN, messages, o))
+    ?? (await callProvider(PROVIDERS[0], 'openai/gpt-oss-120b', messages, { ...o, maxTokens: 900 }))
+    ?? llmChat(messages, { ...o, maxTokens: 900 });
+}
+
 const EDITOR = `Чи монгол хэлний туршлагатай редактор. Доорх чатын хариултыг утга, урт, бүтэц, асуултыг нь өөрчлөхгүйгээр зөв найруулгатай, байгалийн ярианы монгол хэлээр засна.
 Засах зүйл: үгийн дараалал (үйл үг өгүүлбэрийн төгсгөлд), нөхцөл дагавар, эгшиг зохицох ёс, англиас шууд орчуулсан хэллэг, монголд байхгүй эсвэл буруу утгатай үг, «чи», «та» холилдох (бүгдийг «чи» болго).
 Шинэ санаа, зөвлөгөө нэмэхгүй, хасахгүй. Хэрэв текст аль хэдийн зөв бол хэвээр нь буцаа. Зөвхөн засварласан хариултыг буцаа, тайлбар бичихгүй.`;
