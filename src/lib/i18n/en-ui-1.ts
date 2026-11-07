@@ -559,4 +559,11 @@ export const EN_UI_1: Record<string, string> = {
   "Таалагдсан": "Liked",
   "Дуу олдсонгүй. Өөр үгээр хайгаарай.": "No songs found. Try different words.",
   "Таны сонсдог дуу, хобби, үнэлгээнд тулгуурласан": "Based on what you listen to, your hobbies and ratings",
+  "Сонгосон өнгө тань шууд харагдана. Хадгалахын тулд «Шинэчлэх» дарна уу.": "Your chosen color shows right away. Press «Update» to save it.",
+  "«{0}»-г хасах": "Remove «{0}»",
+  "＋ Өөрийнхөө нэмэх": "＋ Add your own",
+  "«{0}» ангилалд хобби бичих": "Type a hobby for «{0}»",
+  "«{0}» ангилалд нэмэх хобби": "Hobby to add to «{0}»",
+  "Энэ хобби жагсаалтад аль хэдийн байна.": "This hobby is already on the list.",
+  "✕ Болих": "✕ Cancel",
 };
