@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useId, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
 import { FriendsTile } from '@/components/friends-tile';
@@ -197,8 +197,8 @@ function ProfileMain() {
   );
 }
 
-/* Апп-ын өнгө: «Өнгө солих» дарахад палитрууд доош нээгдэнэ. Сонголт нь «Шинэчлэх» дартал зөвхөн урьдчилж харагдана,
-   дармагц бүх системийн (бүх хуудас, цэс, товч, график) өнгө солигдож, профайлд хадгалагдана. */
+/* Апп-ын өнгө: «Өнгө солих» дарахад палитрууд доош нээгдэнэ. Сонгосон өнгө бүх системд (цэс, товч, график) шууд харагдана,
+   «Шинэчлэх» дарвал профайлд хадгалагдана. «Болих» дарах эсвэл хадгалалгүй гарвал өмнөх өнгө руугаа буцна. */
 function ThemeSetting() {
   const tr = useT();
   const { profile: u, updateProfile } = useApp();
@@ -209,6 +209,13 @@ function ThemeSetting() {
   const panelId = useId();
   const swatch = (id: PaletteId) => { const c = paletteColors(id); return `linear-gradient(135deg, ${c.from}, ${c.to})`; };
 
+  // Нээлттэй үед сонголтыг шууд харуулна, хаагдвал хадгалсан өнгө
+  useEffect(() => { applyPalette(open ? draft : current); }, [open, draft, current]);
+  // Хадгалалгүй өөр хуудас руу гарвал хадгалсан өнгө руу буцаана
+  const saved = useRef(current);
+  useEffect(() => { saved.current = current; }, [current]);
+  useEffect(() => () => applyPalette(saved.current), []);
+
   function toggle() {
     setDraft(current);
     setOpen(o => !o);
@@ -216,7 +223,6 @@ function ThemeSetting() {
 
   async function apply() {
     setBusy(true);
-    applyPalette(draft);
     await updateProfile({ theme: draft });
     setBusy(false);
     setOpen(false);
@@ -240,7 +246,7 @@ function ThemeSetting() {
       </div>
       {open && (
         <div id={panelId} className="fade-up mt-3 rounded-2xl border bg-background p-3">
-          <p className="mb-3 text-sm text-muted-foreground">{tr('Өнгөө сонгоод «Шинэчлэх» дарна уу. Бүх хуудас, цэс, товч, графикийн өнгө солигдоно.')}</p>
+          <p className="mb-3 text-sm text-muted-foreground">{tr('Сонгосон өнгө тань шууд харагдана. Хадгалахын тулд «Шинэчлэх» дарна уу.')}</p>
           <PalettePicker live={false} value={draft} onChange={setDraft} />
           <div className="sticky bottom-0 -mx-3 -mb-3 mt-3 flex items-center gap-2 rounded-b-2xl border-t bg-background p-3">
             <span className="size-9 flex-none rounded-lg border" style={{ background: swatch(draft) }} aria-hidden="true" />

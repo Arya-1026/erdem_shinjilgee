@@ -8,6 +8,7 @@ import { PalettePicker } from '@/components/palette-picker';
 import { Chip, Segmented } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
 import { ageGroup, artistOptions } from '@/lib/artists';
+import { canAddHobby, cleanHobby, pickHobbyCats } from '@/lib/custom-hobbies';
 import { CAT_ICON, GENRE_CAT, HOBBIES } from '@/lib/data';
 import { pickGenres } from '@/lib/mn-songs';
 import { tasteGenres } from '@/lib/music-taste';
@@ -20,7 +21,7 @@ const YEAR = new Date().getFullYear();
 const validAge = (a: number) => a >= 10 && a <= 100;
 
 /* Анх орж ирэхэд: 1) апп-ын өнгө сонгох → 2) нас, хобби, дууны төрөл, дуртай дуучин. Профайлаас засах үед зөвхөн 2-р алхам. */
-export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialArtists, editing, canSeed }: { initial: string[]; initialTheme: string; initialBirthYear: number | null; initialArtists: string[]; editing: boolean; canSeed: boolean }) {
+export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBirthYear, initialArtists, editing, canSeed }: { initial: string[]; initialCats?: Record<string, string>; initialTheme: string; initialBirthYear: number | null; initialArtists: string[]; editing: boolean; canSeed: boolean }) {
   const tr = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -34,6 +35,9 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
   const [age, setAge] = useState(initialBirthYear ? String(YEAR - initialBirthYear) : '');
   const [artists, setArtists] = useState(initialArtists);
   const [custom, setCustom] = useState('');
+  const [hobbyCats, setHobbyCats] = useState(initialCats);
+  const [addingTo, setAddingTo] = useState<string | null>(null);
+  const [catDraft, setCatDraft] = useState('');
   const { resolvedTheme, setTheme } = useTheme();
   // Сервер theme мэдэхгүй тул hydration дуустал гэрэлтэй гэж харуулна
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
@@ -45,19 +49,34 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
   // Сонгосон өнгө бүх дэлгэцэд шууд харагдана
   useEffect(() => { applyPalette(theme); }, [theme]);
 
-  const toggle = (h: string) => setSel(s => { const n = new Set(s); if (n.has(h)) n.delete(h); else n.add(h); return n; });
+  // Өөрөө нэмсэн хоббиг (✕) хасвал ангиллаас нь ч хасна
+  const toggle = (h: string) => {
+    setSel(s => { const n = new Set(s); if (n.has(h)) n.delete(h); else n.add(h); return n; });
+    if (hobbyCats[h]) setHobbyCats(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== h)));
+  };
   const q = query.trim().toLowerCase();
   // Монгол болон сонгосон хэлээрх нэрээр хоёуланд нь хайна
   const match = (s: string) => s.toLowerCase().includes(q) || tr(s).toLowerCase().includes(q);
-  const cats = Object.entries(HOBBIES)
-    .map(([cat, items]) => [cat, q && !match(cat) ? items.filter(match) : items] as const)
-    .filter(([, items]) => items.length);
-  // Жагсаалтад байхгүй, хэрэглэгч өөрөө нэмсэн хоббиуд
+  // Жагсаалтад байхгүй, хэрэглэгч өөрөө нэмсэн хоббиуд. Ангилал сонгож нэмсэн нь тухайн ангилалдаа харагдана.
   const known = new Set(Object.values(HOBBIES).flat().flatMap(h => [h.toLowerCase(), tr(h).toLowerCase()]));
-  const mine = [...sel].filter(h => !known.has(h.toLowerCase()));
-  const newHobby = query.trim().replace(/\s+/g, ' ').slice(0, 40);
-  const canAdd = newHobby.length > 1 && !known.has(newHobby.toLowerCase()) && !mine.some(h => h.toLowerCase() === newHobby.toLowerCase());
+  const customs = [...sel].filter(h => !known.has(h.toLowerCase()));
+  const mine = customs.filter(h => !hobbyCats[h]);
+  const inCat = (cat: string) => customs.filter(h => hobbyCats[h] === cat);
+  const cats = Object.entries(HOBBIES)
+    .map(([cat, items]) => [cat, q && !match(cat) ? items.filter(match) : items, q && !match(cat) ? inCat(cat).filter(match) : inCat(cat)] as const)
+    .filter(([, items, own]) => items.length || own.length);
+  const newHobby = cleanHobby(query);
+  const canAdd = canAddHobby(newHobby, known, sel);
   const addHobby = () => { if (!canAdd) return; setSel(s => new Set(s).add(newHobby)); setQuery(''); };
+  const catName = cleanHobby(catDraft);
+  const canAddToCat = canAddHobby(catName, known, sel);
+  const addToCat = () => {
+    if (!addingTo || !canAddToCat) return;
+    setSel(s => new Set(s).add(catName));
+    setHobbyCats(c => ({ ...c, [catName]: addingTo }));
+    setCatDraft('');
+  };
+  const openAdd = (cat: string) => { setAddingTo(a => (a === cat ? null : cat)); setCatDraft(''); };
 
   async function done() {
     setBusy(true);
@@ -66,6 +85,8 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
     if (!user) return router.replace('/login');
     const taste = { hobbies: [...sel], birth_year: birthYear, fav_artists: artists, language: locale };
     const { error } = await supabase.from('profiles').update(first ? { ...taste, theme } : taste).eq('id', user.id);
+    // Ангиллыг тусад нь хадгална: 0025 migration ороогүй DB дээр хобби хадгалахад саад болохгүй
+    if (!error) await supabase.from('profiles').update({ hobby_cats: pickHobbyCats(hobbyCats, sel, Object.keys(HOBBIES)) }).eq('id', user.id);
     if (!error && first && canSeed && seed) await supabase.from('mood_entries').insert(demoEntries());
     // Амт өөрчлөгдвөл хадгалсан дууны саналыг устгаж шинээр үүсгүүлнэ
     const genreKey = (hobbies: string[]) => tasteGenres(hobbies).map(t => t.genre).join();
@@ -138,13 +159,28 @@ export function HobbyPicker({ initial, initialTheme, initialBirthYear, initialAr
           <div className="flex flex-wrap gap-2">{mine.map(h => <Chip key={h} on onClick={() => toggle(h)}>{tr(h)} ✕</Chip>)}</div>
         </section>
       )}
-      {cats.map(([cat, items]) => {
-        const n = HOBBIES[cat].filter(h => sel.has(h)).length;
+      {cats.map(([cat, items, own]) => {
+        const n = HOBBIES[cat].filter(h => sel.has(h)).length + inCat(cat).length;
+        const adding = addingTo === cat;
         return (
           <section key={cat} className="mb-5">
             <h3 className="mb-2 font-semibold">{CAT_ICON[cat]} {tr(cat)}{n > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{n}</span>}</h3>
             {cat === GENRE_CAT && <p className="mb-2 text-sm text-muted-foreground">{tr('Сонгосон төрлөөр тань монгол болон олон улсын дуу санал болгоно.')}</p>}
-            <div className="flex flex-wrap gap-2">{items.map(h => <Chip key={h} on={sel.has(h)} onClick={() => toggle(h)}>{tr(h)}</Chip>)}</div>
+            <div className="flex flex-wrap gap-2">
+              {items.map(h => <Chip key={h} on={sel.has(h)} onClick={() => toggle(h)}>{tr(h)}</Chip>)}
+              {own.map(h => <Chip key={h} on onClick={() => toggle(h)} aria-label={tr('«{0}»-г хасах', h)}>{h} ✕</Chip>)}
+              <Chip aria-expanded={adding} onClick={() => openAdd(cat)} className="border-dashed text-primary">{adding ? tr('✕ Болих') : tr('＋ Өөрийнхөө нэмэх')}</Chip>
+            </div>
+            {adding && (
+              <div className="mt-2 flex gap-2">
+                <input autoFocus value={catDraft} onChange={e => setCatDraft(e.target.value)} maxLength={40}
+                  placeholder={tr('«{0}» ангилалд хобби бичих', tr(cat))} aria-label={tr('«{0}» ангилалд нэмэх хобби', tr(cat))}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addToCat(); } if (e.key === 'Escape') setAddingTo(null); }}
+                  className="h-11 min-w-0 flex-1 rounded-xl border-[1.5px] bg-card px-3.5 focus:border-primary focus:outline-none" />
+                <Button type="button" size="xl" className="h-11 flex-none px-4" disabled={!canAddToCat} onClick={addToCat}>{tr('Нэмэх')}</Button>
+              </div>
+            )}
+            {adding && catName.length > 1 && !canAddToCat && <p className="mt-1.5 text-sm text-muted-foreground">{tr('Энэ хобби жагсаалтад аль хэдийн байна.')}</p>}
           </section>
         );
       })}
