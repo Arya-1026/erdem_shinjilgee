@@ -10,6 +10,7 @@ import { ForYou, LikedSongs } from '@/components/music';
 import { MOODS, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
 import { useMovieRecs } from '@/components/use-movies';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { MoodId, RecType } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
@@ -25,7 +26,7 @@ export default function RecsPage() {
   const cm = picked ? moodById(picked) : saved;
   const preview = cm.id !== saved.id;
   const [tab, setTab] = useState<Tab>('all');
-  const movies = useMovieRecs(cm.id, 12);
+  const { recs: movies, refresh: moreMovies } = useMovieRecs(cm.id, 12);
   const list = [...scoredRecs(cm, profile.hobbies, feedback), ...(movies ?? [])].filter(x => tab === 'all' || x.type === tab);
 
   const onFeedback = (id: string, v: number) => {
@@ -59,6 +60,12 @@ export default function RecsPage() {
       <div className="mb-3.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(([k, l]) => <Chip key={k} on={tab === k} onClick={() => setTab(k)}>{tr(l)}</Chip>)}
       </div>
+      {(tab === 'all' || tab === 'movie') && (
+        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
+          <Button size="xl" variant="outline" className="h-10" disabled={!movies} onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</Button>
+        </div>
+      )}
       {tab !== 'song' && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
           {list.length ? list.map(x => <RecCard key={x.id} r={x} m={cm} onFeedback={onFeedback} />) : <p className="text-muted-foreground">{tr('Энэ төрөлд зөвлөмж олдсонгүй.')}</p>}

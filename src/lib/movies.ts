@@ -48,7 +48,8 @@ const HOBBY_FIT: Record<string, { g?: string[]; l?: string[] }> = {
 };
 const SCARY = new Set(['Horror', 'Thriller', 'War']);
 
-export type Taste = { mood: MoodId; hobbies: string[]; birthYear: number | null; feedback: Record<string, number>; watchlist?: string[]; seed?: string };
+/** exclude: «Өөр кинонууд» дарахад өмнө нь харуулсныг хасна */
+export type Taste = { mood: MoodId; hobbies: string[]; birthYear: number | null; feedback: Record<string, number>; watchlist?: string[]; seed?: string; exclude?: string[] };
 
 /** Өдөр бүр өөрчлөгдөх, гэхдээ тухайн өдөр тогтвортой санамсаргүй тоо */
 function hash(s: string) {
@@ -88,7 +89,7 @@ function genreAffinity(catalog: Movie[], feedback: Record<string, number>) {
 function reason(x: Movie, t: Taste, hobby: boolean) {
   const genres = x.g.map(g => GENRE_MN[g] ?? g).slice(0, 2).join(', ').toLowerCase();
   const bits = [`IMDb ${x.r.toFixed(1)}, ${Math.round(x.v / 1000).toLocaleString('en-US')} мянган хүн үнэлсэн`, `${WHY_MOOD[t.mood]} ${genres} кино`];
-  if (hobby) bits.push('таны сонирхолд тохирсон');
+  if (hobby) bits.push('Таны сонирхолд тохирсон');
   return bits.join('. ') + '.';
 }
 
@@ -96,8 +97,9 @@ function reason(x: Movie, t: Taste, hobby: boolean) {
 export function recommendMovies(catalog: Movie[], t: Taste, n = 12): ScoredRec[] {
   const liked = genreAffinity(catalog, t.feedback);
   const minor = Boolean(t.birthYear && new Date().getFullYear() - t.birthYear < 18);
+  const skip = new Set(t.exclude);
   const ranked = catalog.flatMap(x => {
-    if (t.feedback[x.id] === -1) return [];
+    if (t.feedback[x.id] === -1 || skip.has(x.id)) return [];
     const s = scoreMovie(x, t, liked);
     if (s.scary && !['happy', 'neutral', 'calm'].includes(t.mood)) return [];
     // 18-аас доош насныханд аймшгийн кино санал болгохгүй

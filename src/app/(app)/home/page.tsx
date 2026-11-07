@@ -215,7 +215,7 @@ function HomeRecs({ m }: { m: Mood }) {
   const tr = useT();
   const { profile, feedback, music } = useApp();
   const play = usePlay();
-  const movies = useMovieRecs(m.id, 10);
+  const { recs: movies, refresh: moreMovies } = useMovieRecs(m.id, 10);
   const recs = [...scoredRecs(m, profile.hobbies, feedback), ...(movies ?? [])];
   return (
     <section className="card-x" aria-live="polite">
@@ -235,7 +235,10 @@ function HomeRecs({ m }: { m: Mood }) {
         const list = recs.filter(r => r.type === type);
         return list.length > 0 && (
           <div key={type}>
-            <div className="mt-3.5 mb-2 text-sm font-bold">{tr(title)}</div>
+            <div className="mt-3.5 mb-2 flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">{tr(title)}</span>
+              {type === 'movie' && <button className="text-sm font-semibold text-primary" onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</button>}
+            </div>
             <div className="hscroll">{list.map(r => <RecTile key={r.id} r={r} m={m} />)}</div>
           </div>
         );

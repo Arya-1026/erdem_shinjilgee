@@ -219,8 +219,9 @@ function Movie({ recId, moodId }: { recId: string; moodId: Parameters<typeof moo
   if (!r) return <Title>{tr('Кино олдсонгүй')}</Title>;
   return (
     <>
-      <div className="tile-cover -mt-1 mb-3.5 grid h-[230px] place-items-center rounded-[18px] py-3 text-6xl" style={{ '--tc': moodById(r.moods[0]).color } as React.CSSProperties}>
-        <Poster src={r.poster} title={tr(r.title)} className="h-full rounded-xl shadow-[0_8px_24px_rgba(0,0,0,.35)]" />
+      {/* Өндөр нь тогтмол: постерын жинхэнэ хэмжээ доорх бичвэр дээр давхцахгүй */}
+      <div className="tile-cover -mt-1 mb-3.5 flex h-[230px] items-center justify-center overflow-hidden rounded-[18px] py-3 text-6xl" style={{ '--tc': moodById(r.moods[0]).color } as React.CSSProperties}>
+        <Poster src={r.poster} title={tr(r.title)} className="h-full max-h-full w-auto max-w-full rounded-xl object-contain shadow-[0_8px_24px_rgba(0,0,0,.35)]" />
       </div>
       <Title>{tr(r.title)}</Title>
       <DialogDescription className="mb-2">{tr(r.sub)}</DialogDescription>
