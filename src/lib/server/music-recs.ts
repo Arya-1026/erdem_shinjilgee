@@ -19,6 +19,8 @@ const NEW_SEARCHES = 5, CATALOG_ARTISTS = 4, CATALOG_INTL = 2, FAV_ARTISTS = 3, 
 const CLASSIFY_MAX = 30, POOL_MAX = 20;
 /** Spotify track id 22 тэмдэгт. Хуучин YouTube-ийн бичлэгтэй жагсаалтыг дахин үүсгэнэ. */
 const isSpotifyId = (id: string) => id.length === 22;
+/** Үүнээс өмнөх аяны жагсаалтад нэр нь таарахгүй дуу орсон байж болох тул дахин үүсгэнэ */
+const AMBIENT_CHECKED_SINCE = Date.parse('2026-11-07T10:00:00Z');
 const today = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); // Улаанбаатарын цагаар
 
 /** fit: mood-д таарах нь тодорхой. Монгол дууны нэрээр LLM ангилал найдваргүй тул таараагүй нь AI-ийн сонголтод үлдэж, автоматаар нөхөгдөхгүй. */
@@ -135,7 +137,8 @@ async function pickAmbient(base: Taste, skip: (id: string) => boolean) {
     let v;
     try { v = await findSong(s.artist, s.title, { ambient: true }); } catch (e) { if (e instanceof QuotaExceeded) { quota = true; break; } console.error('[music] search', e); continue; }
     if (!v || skip(v.video_id) || recs.some(r => r.video_id === v.video_id)) continue;
-    recs.push({ video_id: v.video_id, title: s.title, artist: s.artist, thumbnail: v.thumbnail, duration_s: v.duration_s, reason: matchesLocale(s.why, base.locale ?? 'mn') ? s.why : '' });
+    // Тоглох дууны жинхэнэ нэрийг харуулна
+    recs.push({ video_id: v.video_id, title: v.title, artist: v.channel, thumbnail: v.thumbnail, duration_s: v.duration_s, reason: matchesLocale(s.why, base.locale ?? 'mn') ? s.why : '' });
   }
   return { recs, quota, partial: false };
 }
@@ -149,7 +152,7 @@ export async function songRecs(supabase: SupabaseClient, userId: string, mood: M
   const { data: existing } = await supabase.from('song_recs').select(`${COLS},created_at`).eq('user_id', userId).eq('mood', mood).eq('kind', kind).order('position');
   const newest = Math.max(0, ...(existing ?? []).map(r => new Date(r.created_at).getTime()));
   const age = Date.now() - newest;
-  const usable = Boolean(existing?.length) && (existing ?? []).every(r => isSpotifyId(r.video_id));
+  const usable = Boolean(existing?.length) && (existing ?? []).every(r => isSpotifyId(r.video_id)) && (kind !== 'ambient' || newest >= AMBIENT_CHECKED_SINCE);
   if (usable && (!refresh ? age < FRESH_MS : age < MIN_REFRESH_MS)) return { recs: existing as SongRec[], cached: true };
 
   if (!spotifyConfigured()) return { recs: [] as SongRec[], cached: false, reason: 'not-configured' as const };

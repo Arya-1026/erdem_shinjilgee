@@ -6,7 +6,7 @@ import { moodById } from './data';
 import { groupSlots, normalizeEntry } from './db';
 import { classifyPrompt, heuristicMoods, parseClassification } from './mood-classify';
 import { scoredRecs } from './recs';
-import { pickImage, playlistEntryTrack, toTrack } from './spotify-parse';
+import { pickImage, playlistEntryTrack, toTrack, sameTitle } from './spotify-parse';
 
 describe('crisis шүүлтүүр', () => {
   it.each(['Би үхмээр байна', 'Амиа хорлох тухай бодож байна', 'өөрийгөө гэмтээмээр', 'АМЬДРАХ ХҮСЭЛ АЛГА'])('"%s" → crisis', t => expect(isCrisisText(t)).toBe(true));
@@ -96,5 +96,20 @@ describe('оролдлогын хязгаар', () => {
   it('оролдлогын хязгаар цонх дуусахад шинэчлэгдэнэ', () => {
     expect([1, 2, 3].map(() => rateLimited('t', 2, 1000, 5000))).toEqual([false, false, true]);
     expect(rateLimited('t', 2, 1000, 7000)).toBe(false);
+  });
+});
+
+describe('дууны нэр таарах эсэх', () => {
+  it('ижил дуу', () => {
+    expect(sameTitle('Weightless', 'Weightless (Remastered 2023)')).toBe(true);
+    expect(sameTitle('Нулимсаа тэвчье', 'Нулимсаа Тэвчье')).toBe(true);
+    expect(sameTitle('Clair de Lune', 'Suite bergamasque: III. Clair de lune')).toBe(true);
+    expect(sameTitle('Fix You', 'Fix You - Live in Buenos Aires')).toBe(true);
+  });
+  it('өөр дуу', () => {
+    expect(sameTitle('Mongolian Horsehead Fiddle', 'Rich Mongol')).toBe(false);
+    expect(sameTitle('Eternal Plain', 'хүн')).toBe(false);
+    expect(sameTitle('Calm Radio Ambient Sleep 2 Hours', '3030')).toBe(false);
+    expect(sameTitle('', 'X')).toBe(false);
   });
 });
