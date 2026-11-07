@@ -125,6 +125,7 @@ function ProfileMain() {
               <div key={l} className="rounded-2xl border bg-card p-3.5"><span className="text-xs text-muted-foreground">{l}</span><b className="block text-[1.4rem]">{v}</b></div>
             ))}
           </div>
+          <Link href="/recs#watchlist" className="mb-2 flex items-center justify-between rounded-2xl border bg-card p-3.5 text-sm"><span>{tr('📌 Үзэх жагсаалт')}</span><b>{tr('{0} кино →', app.watchlist.filter(id => id.startsWith('tt')).length)}</b></Link>
           {u.fav_artists.length > 0 && <p className="mb-2 text-sm"><b>{tr('Дуртай дуучид:')}</b> {u.fav_artists.join(', ')}</p>}
           <DassHistory />
           <h3 className="mb-2 font-semibold">{tr('Миний хобби')}</h3>

@@ -97,7 +97,8 @@ function reason(x: Movie, t: Taste, hobby: boolean) {
 export function recommendMovies(catalog: Movie[], t: Taste, n = 12): ScoredRec[] {
   const liked = genreAffinity(catalog, t.feedback);
   const minor = Boolean(t.birthYear && new Date().getFullYear() - t.birthYear < 18);
-  const skip = new Set(t.exclude);
+  // Үзэх жагсаалтад байгаа, үзсэн кинонууд дээд талын жагсаалтад тусдаа харагдана
+  const skip = new Set([...(t.exclude ?? []), ...(t.watchlist ?? [])]);
   const ranked = catalog.flatMap(x => {
     if (t.feedback[x.id] === -1 || skip.has(x.id)) return [];
     const s = scoreMovie(x, t, liked);
@@ -115,9 +116,23 @@ export function recommendMovies(catalog: Movie[], t: Taste, n = 12): ScoredRec[]
     perGenre[main] = (perGenre[main] ?? 0) + 1;
     picked.push(c);
   }
-  return picked.map(({ x, score, hobby }) => ({
+  return picked.map(({ x, score, hobby }) => movieRec(x, t, hobby, score));
+}
+
+export function movieRec(x: Movie, t: Taste, hobby: boolean, score = 0): ScoredRec {
+  return {
     id: x.id, type: 'movie', title: movieTitle(x), sub: `⭐ ${x.r.toFixed(1)} IMDb · ${x.g.map(g => GENRE_MN[g] ?? g).join(', ')}`,
     moods: [t.mood], poster: posterUrl(x.p), desc: x.d, why: reason(x, t, hobby), imdb: `https://www.imdb.com/title/${x.id}/`,
     hob: hobby, fb: t.feedback[x.id] ?? 0, score,
-  }));
+  };
+}
+
+/** Үзэх жагсаалтын кинонууд, нэмсэн дарааллаар. Каталогт байхгүй (хуучин) ID-г алгасна. */
+export function watchlistMovies(catalog: Movie[], ids: string[], t: Taste): ScoredRec[] {
+  const byId = new Map(catalog.map(x => [x.id, x]));
+  const liked = genreAffinity(catalog, t.feedback);
+  return ids.flatMap(id => {
+    const x = byId.get(id);
+    return x ? [movieRec(x, t, scoreMovie(x, t, liked).hobby)] : [];
+  });
 }

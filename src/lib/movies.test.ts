@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { recommendMovies, type Movie } from './movies';
+import { recommendMovies, watchlistMovies, type Movie } from './movies';
 
 const mk = (id: string, g: string[], o: Partial<Movie> = {}): Movie => ({ id, t: id, y: 2010, r: 8, v: 500_000, m: 110, g, l: ['en'], p: 'x.jpg', d: 'plot', ...o });
 const catalog: Movie[] = [
@@ -49,5 +49,14 @@ describe('кино санал болгох', () => {
     expect(r.why).toContain('IMDb 8.0');
     expect(r.imdb).toBe('https://www.imdb.com/title/comedy/');
     expect(r.poster).toBe('https://upload.wikimedia.org/wikipedia/x.jpg');
+  });
+});
+
+describe('үзэх жагсаалт', () => {
+  it('жагсаалтыг нэмсэн дарааллаар, каталогт байхгүйг алгасаж гаргана', () => {
+    expect(watchlistMovies(catalog, ['doc', 'm1', 'comedy'], { ...base, mood: 'calm' }).map(r => r.id)).toEqual(['doc', 'comedy']);
+  });
+  it('жагсаалтад байгаа кино санал болгох хэсэгт давхардахгүй', () => {
+    expect(recommendMovies(catalog, { ...base, mood: 'sad', watchlist: ['comedy'] }).map(r => r.id)).not.toContain('comedy');
   });
 });

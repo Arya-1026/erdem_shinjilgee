@@ -10,6 +10,7 @@ import { ForYou, LikedSongs } from '@/components/music';
 import { MOODS, moodById } from '@/lib/data';
 import { scoredRecs } from '@/lib/recs';
 import { useMovieRecs } from '@/components/use-movies';
+import { Watchlist } from '@/components/watchlist';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { MoodId, RecType } from '@/lib/types';
@@ -60,6 +61,7 @@ export default function RecsPage() {
       <div className="mb-3.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(([k, l]) => <Chip key={k} on={tab === k} onClick={() => setTab(k)}>{tr(l)}</Chip>)}
       </div>
+      {(tab === 'all' || tab === 'movie') && <Watchlist mood={cm} showEmpty={tab === 'movie'} />}
       {(tab === 'all' || tab === 'movie') && (
         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
