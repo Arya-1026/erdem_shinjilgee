@@ -7,11 +7,12 @@ import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { ExerciseArt } from '@/components/exercise-art';
 import { DassHelpCard } from '@/components/dass-help';
+import { DassQuiz as Quiz } from '@/components/dass-quiz';
 import { LEVEL_COLOR } from '@/components/dass-history';
 import { Button } from '@/components/ui/button';
 import { RECS } from '@/lib/data';
 import {
-  DASS_CHOICES, DASS_COUNT, DASS_EXPLAIN, DASS_ITEMS, DASS_MAX, DASS_RECS, DASS_SCALES, dassDaysLeft, dassLevel, helpLevel, isDassIntervalError, LEVEL_LABEL,
+  DASS_COUNT, DASS_EXPLAIN, DASS_MAX, DASS_RECS, DASS_SCALES, dassDaysLeft, dassLevel, helpLevel, isDassIntervalError, LEVEL_LABEL,
   levelBand, SCALE_DESC, SCALE_LABEL, scoreDass, type DassLevel, type DassScale, type DassScores,
 } from '@/lib/dass';
 import { snoozeDass } from '@/lib/dass-client';
@@ -125,11 +126,13 @@ export default function DassPage() {
     if (pending && !(await save(pending))) return;
     router.push('/home');
   }
-  const back = () => { const a = answers.slice(0, -1); setAnswers(a); saveProgress(a); };
+  // Буцахад өмнөх хариултыг тэмдэглэж харуулна (дахин сонгоход хялбар)
+  const [undone, setUndone] = useState<number | null>(null);
+  const back = () => { setUndone(answers[answers.length - 1] ?? null); const a = answers.slice(0, -1); setAnswers(a); saveProgress(a); };
 
   if (stage === 'loading') return <p className="py-16 text-center text-muted-foreground">{tr('Ачаалж байна…')}</p>;
   if (stage === 'intro') return <Intro first={first} consent={consent} setConsent={setConsent} onStart={start} onLater={later} hasPrevious={history.length > 0} onBack={() => setStage('result')} daysLeft={daysLeft} />;
-  if (stage === 'quiz') return <Quiz answers={answers} saving={saving} onAnswer={a => void answer(a)} onBack={back} onExit={() => setStage(history.length ? 'result' : 'intro')} />;
+  if (stage === 'quiz') return <Quiz answers={answers} saving={saving} earlier={undone} onAnswer={a => { setUndone(null); void answer(a); }} onBack={back} onExit={() => setStage(history.length ? 'result' : 'intro')} />;
   return <ResultView history={history} saved={!pending} saving={saving} backHome={first || wasFirst} onSaveHome={() => void saveAndHome()} onRetake={() => setStage('intro')} daysLeft={daysLeft} />;
 }
 
@@ -160,37 +163,6 @@ function Intro({ first, consent, setConsent, onStart, onLater, hasPrevious, onBa
       <Button size="xl" className="mt-4 w-full" disabled={daysLeft > 0} onClick={onStart}>{daysLeft > 0 ? tr('{0} хоногийн дараа бөглөх боломжтой', daysLeft) : resume ? tr('▶ Үргэлжлүүлэх ({0}/21)', resume) : tr('▶ Эхлэх')}</Button>
       {hasPrevious ? <Button size="xl" variant="ghost" className="mt-2 w-full" onClick={onBack}>{tr('← Өмнөх үр дүн')}</Button>
         : <Button size="xl" variant="ghost" className="mt-2 w-full" onClick={onLater}>{tr('Дараа нь')}</Button>}
-    </section>
-  );
-}
-
-/* ---------- Асуулт: нэг дэлгэцэд нэг, дарахад шууд дараагийнх руу ---------- */
-function Quiz({ answers, saving, onAnswer, onBack, onExit }: { answers: number[]; saving: boolean; onAnswer: (v: number) => void; onBack: () => void; onExit: () => void }) {
-  const tr = useT();
-  const i = Math.min(answers.length, DASS_COUNT - 1);
-  return (
-    <section className="card-x mx-auto max-w-[620px]">
-      <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground">
-        <span>{tr('Асуулт {0} / {1}', i + 1, DASS_COUNT)}</span>
-        <button type="button" className="hover:text-foreground" onClick={onExit}>{tr('Түр гарах')}</button>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary" role="progressbar" aria-label={tr('Асуулгын явц')} aria-valuemin={0} aria-valuemax={DASS_COUNT} aria-valuenow={answers.length}>
-        <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${(answers.length / DASS_COUNT) * 100}%` }} />
-      </div>
-      <p className="mt-5 text-sm text-muted-foreground">{tr('Сүүлийн 7 хоногт…')}</p>
-      <h2 key={i} className="fade-up mt-1 min-h-[3.5em] text-[1.2rem] leading-snug font-bold">{tr(DASS_ITEMS[i].mn)}</h2>
-      <div className="mt-4 grid gap-2.5">
-        {DASS_CHOICES.map((c, v) => (
-          <button key={v} type="button" disabled={saving} onClick={() => onAnswer(v)}
-            className="flex min-h-14 items-center gap-3 rounded-2xl border-[1.5px] bg-background px-4 text-left font-semibold transition-colors hover:border-primary hover:bg-secondary disabled:opacity-60">
-            <span className="grid size-8 flex-none place-items-center rounded-full bg-secondary text-sm tabular-nums">{v}</span>{tr(c)}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <button type="button" className="font-semibold text-primary disabled:opacity-40" disabled={!answers.length || saving} onClick={onBack}>{tr('← Өмнөх асуулт')}</button>
-        <span className="text-muted-foreground">{tr('Зөв, буруу хариулт байхгүй')}</span>
-      </div>
     </section>
   );
 }

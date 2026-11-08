@@ -382,3 +382,7 @@ body.has-player .chat-panel { height: min(540px, calc(var(--chat-free) - 72px));
   .checkin::before, .checkin::after { animation: none; filter: blur(28px); }
   .topbar { background: color-mix(in srgb, var(--background) 96%, transparent); }
 }
+
+/* ---------- DASS-21: дараагийн асуулт баруун талаас гулсаж орж ирнэ ---------- */
+.dass-q { animation: dass-in .35s ease-out; }
+@keyframes dass-in { from { opacity: 0; transform: translateX(28px); } }
