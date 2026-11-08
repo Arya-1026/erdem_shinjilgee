@@ -13,7 +13,6 @@ import { CAT_ICON, GENRE_CAT, HOBBIES } from '@/lib/data';
 import { pickGenres } from '@/lib/mn-songs';
 import { tasteGenres } from '@/lib/music-taste';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
-import { demoEntries } from '@/lib/seed';
 import { createClient } from '@/lib/supabase/client';
 import { useLocale, useT } from '@/components/providers/locale-provider';
 
@@ -21,7 +20,7 @@ const YEAR = new Date().getFullYear();
 const validAge = (a: number) => a >= 10 && a <= 100;
 
 /* Анх орж ирэхэд: 1) апп-ын өнгө сонгох → 2) нас, хобби, дууны төрөл, дуртай дуучин. Профайлаас засах үед зөвхөн 2-р алхам. */
-export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBirthYear, initialArtists, editing, canSeed }: { initial: string[]; initialCats?: Record<string, string>; initialTheme: string; initialBirthYear: number | null; initialArtists: string[]; editing: boolean; canSeed: boolean }) {
+export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBirthYear, initialArtists, editing }: { initial: string[]; initialCats?: Record<string, string>; initialTheme: string; initialBirthYear: number | null; initialArtists: string[]; editing: boolean }) {
   const tr = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -29,7 +28,6 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const [step, setStep] = useState<'theme' | 'hobby'>(first ? 'theme' : 'hobby');
   const [theme, setPalette] = useState<PaletteId>(isPaletteId(initialTheme) ? initialTheme : DEFAULT_PALETTE);
   const [sel, setSel] = useState(() => new Set(initial));
-  const [seed, setSeed] = useState(true);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [age, setAge] = useState(initialBirthYear ? String(YEAR - initialBirthYear) : '');
@@ -87,7 +85,6 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
     const { error } = await supabase.from('profiles').update(first ? { ...taste, theme } : taste).eq('id', user.id);
     // Ангиллыг тусад нь хадгална: 0025 migration ороогүй DB дээр хобби хадгалахад саад болохгүй
     if (!error) await supabase.from('profiles').update({ hobby_cats: pickHobbyCats(hobbyCats, sel, Object.keys(HOBBIES)) }).eq('id', user.id);
-    if (!error && first && canSeed && seed) await supabase.from('mood_entries').insert(demoEntries());
     // Амт өөрчлөгдвөл хадгалсан дууны саналыг устгаж шинээр үүсгүүлнэ
     const genreKey = (hobbies: string[]) => tasteGenres(hobbies).map(t => t.genre).join();
     const changed = genreKey([...sel]) !== genreKey(initial) || artists.join() !== initialArtists.join() || birthYear !== initialBirthYear;
@@ -202,12 +199,6 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
           <div className="mt-2 flex flex-wrap gap-2">{artists.filter(a => !options.mongolian.includes(a) && !options.international.includes(a)).map(a => <Chip key={a} on onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
         )}
       </section>
-      {first && canSeed && (
-        <label className="mb-4 flex items-center gap-2.5 text-sm">
-          <input type="checkbox" className="size-5 accent-primary" checked={seed} onChange={e => setSeed(e.target.checked)} />
-          {tr('Туршилтын 5 долоо хоногийн өгөгдөл нэмэх')}
-        </label>
-      )}
       <div className="fixed inset-x-0 bottom-0 border-t bg-card px-4 pt-3 pb-[calc(12px+var(--safe-b))]">
         <Button size="xl" className="mx-auto flex w-full max-w-[760px]" disabled={!sel.size || busy || (first && !birthYear)} onClick={done}>
           {busy ? tr('Хадгалж байна…') : first && !birthYear ? tr('Насаа оруулна уу') : tr('Үргэлжлүүлэх ({0} сонгосон)', sel.size)}

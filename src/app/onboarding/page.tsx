@@ -22,11 +22,8 @@ async function Onboarding({ searchParams }: { searchParams: PageProps<'/onboardi
     throw e;
   }
   const [{ edit }, profile, { supabase }] = res;
-  const [{ count }, catsRes] = await Promise.all([
-    supabase.from('mood_entries').select('id', { count: 'exact', head: true }),
-    // 0025 migration ороогүй бол алдаа буцна: тэр үед ангилалгүй гэж үзнэ
-    supabase.from('profiles').select('hobby_cats').eq('id', profile.id).maybeSingle<{ hobby_cats: unknown }>(),
-  ]);
+  // 0025 migration ороогүй бол алдаа буцна: тэр үед ангилалгүй гэж үзнэ
+  const catsRes = await supabase.from('profiles').select('hobby_cats').eq('id', profile.id).maybeSingle<{ hobby_cats: unknown }>();
   const initialCats = pickHobbyCats(catsRes.data?.hobby_cats, profile.hobbies, Object.keys(HOBBIES));
-  return <HobbyPicker initial={profile.hobbies} initialCats={initialCats} initialTheme={profile.theme} initialBirthYear={profile.birth_year} initialArtists={profile.fav_artists} editing={edit === '1'} canSeed={!count} />;
+  return <HobbyPicker initial={profile.hobbies} initialCats={initialCats} initialTheme={profile.theme} initialBirthYear={profile.birth_year} initialArtists={profile.fav_artists} editing={edit === '1'} />;
 }

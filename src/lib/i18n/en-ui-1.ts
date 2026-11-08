@@ -363,7 +363,6 @@ export const EN_UI_1: Record<string, string> = {
   "Олон улсын": "International",
   "Өөр дуучин нэмэх": "Add another artist",
   "Дуучны нэр": "Artist name",
-  "Туршилтын 5 долоо хоногийн өгөгдөл нэмэх": "Add 5 weeks of sample data",
   "Насаа оруулна уу": "Please enter your age",
   "Үргэлжлүүлэх ({0} сонгосон)": "Continue ({0} selected)",
   "Шинэ нууц үг хуучнаасаа өөр байх ёстой": "The new password must be different from the old one",
