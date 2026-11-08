@@ -1,7 +1,7 @@
 /* ---------- Хэрэглэгчийн хобби, сонгосон төрлөөс дууны төрөл гаргах ----------
    Сонгосон төрөл хамгийн хүчтэй дохио. Бусад хобби нь эндхийн холбоосоор төрөл болж, дараа нь эрэмбэлэгдэнэ.
    Хэрэглэгчийн өөрөө нэмсэн хобби төрөлгүй: AI-д текстээр л очно. */
-import { GENRE_CAT, HOBBIES } from './data';
+import { GENRE_CAT, HOBBIES, LEGACY_HOBBIES } from './data';
 import { mnGenre, pickGenres, type Genre } from './mn-songs';
 
 /** Spotify-ийн `genre:` шүүлтүүрийн утга */
@@ -43,9 +43,12 @@ const HOBBY_GENRES: Record<string, Genre[]> = {
   'Морь': ['Ардын дуу', 'Рок'],
   'Шагай': ['Ардын дуу'],
   'Тоглоом': ['Электрон', 'Рок'],
+  'Тулаант тоглоом': ['Рок', 'Электрон'], 'Буудлагын тоглоом': ['Рок', 'Электрон'], 'Уралдааны тоглоом': ['Электрон', 'Хип хоп, рэп'],
+  'Стратеги тоглоом': ['Сонгодог хөгжим', 'Lo-fi'], 'RPG тоглоом': ['Сонгодог хөгжим', 'Электрон'], 'Оньсого тоглоом': ['Lo-fi'],
+  'Романтик кино': ['R&B', 'Поп'], 'Тулаант кино': ['Рок', 'Хип хоп, рэп'],
 };
 
-const CATEGORY_OF = new Map(Object.entries(HOBBIES).filter(([c]) => c !== GENRE_CAT).flatMap(([c, items]) => items.map(h => [h, c] as const)));
+const CATEGORY_OF = new Map([...Object.entries(HOBBIES).filter(([c]) => c !== GENRE_CAT).flatMap(([c, items]) => items.map(h => [h, c] as const)), ...Object.entries(LEGACY_HOBBIES)]);
 const genresOf = (hobby: string) => HOBBY_GENRES[hobby] ?? CATEGORY_GENRES[CATEGORY_OF.get(hobby) ?? ''] ?? [];
 
 /** hobby: энэ төрлийг гаргасан хобби. Байхгүй бол хэрэглэгч төрлийг өөрөө сонгосон. */

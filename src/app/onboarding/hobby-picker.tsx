@@ -9,7 +9,7 @@ import { Chip, Segmented } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
 import { ageGroup, artistOptions } from '@/lib/artists';
 import { canAddHobby, cleanHobby, pickHobbyCats } from '@/lib/custom-hobbies';
-import { CAT_ICON, GENRE_CAT, HOBBIES } from '@/lib/data';
+import { CAT_ICON, GENRE_CAT, HOBBIES, LEGACY_HOBBIES } from '@/lib/data';
 import { pickGenres } from '@/lib/mn-songs';
 import { tasteGenres } from '@/lib/music-taste';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
@@ -41,8 +41,8 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const ageNum = Number(age), birthYear = validAge(ageNum) ? YEAR - ageNum : null;
   const options = artistOptions(ageGroup(birthYear), pickGenres([...sel]));
-  const toggleArtist = (a: string) => setArtists(l => (l.includes(a) ? l.filter(x => x !== a) : [...l, a].slice(0, 12)));
-  const addCustom = () => { const a = custom.trim().slice(0, 60); if (a && !artists.includes(a)) setArtists(l => [...l, a].slice(0, 12)); setCustom(''); };
+  const toggleArtist = (a: string) => setArtists(l => (l.includes(a) ? l.filter(x => x !== a) : [...l, a]));
+  const addCustom = () => { const a = custom.trim().slice(0, 60); if (a && !artists.includes(a)) setArtists(l => [...l, a]); setCustom(''); };
 
   // Сонгосон өнгө бүх дэлгэцэд шууд харагдана
   useEffect(() => { applyPalette(theme); }, [theme]);
@@ -58,8 +58,10 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   // Жагсаалтад байхгүй, хэрэглэгч өөрөө нэмсэн хоббиуд. Ангилал сонгож нэмсэн нь тухайн ангилалдаа харагдана.
   const known = new Set(Object.values(HOBBIES).flat().flatMap(h => [h.toLowerCase(), tr(h).toLowerCase()]));
   const customs = [...sel].filter(h => !known.has(h.toLowerCase()));
-  const mine = customs.filter(h => !hobbyCats[h]);
-  const inCat = (cat: string) => customs.filter(h => hobbyCats[h] === cat);
+  // Хуучин ерөнхий сонголт («Кино» гэх мэт) сонгогдсон бол өмнөх ангилалдаа харагдана
+  const catOf = (h: string) => hobbyCats[h] ?? LEGACY_HOBBIES[h];
+  const mine = customs.filter(h => !catOf(h));
+  const inCat = (cat: string) => customs.filter(h => catOf(h) === cat);
   const cats = Object.entries(HOBBIES)
     .map(([cat, items]) => [cat, q && !match(cat) ? items.filter(match) : items, q && !match(cat) ? inCat(cat).filter(match) : inCat(cat)] as const)
     .filter(([, items, own]) => items.length || own.length);
@@ -165,7 +167,7 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
             {cat === GENRE_CAT && <p className="mb-2 text-sm text-muted-foreground">{tr('Сонгосон төрлөөр тань монгол болон олон улсын дуу санал болгоно.')}</p>}
             <div className="flex flex-wrap gap-2">
               {items.map(h => <Chip key={h} on={sel.has(h)} onClick={() => toggle(h)}>{tr(h)}</Chip>)}
-              {own.map(h => <Chip key={h} on onClick={() => toggle(h)} aria-label={tr('«{0}»-г хасах', h)}>{h} ✕</Chip>)}
+              {own.map(h => <Chip key={h} on onClick={() => toggle(h)} aria-label={tr('«{0}»-г хасах', tr(h))}>{tr(h)} ✕</Chip>)}
               <Chip aria-expanded={adding} onClick={() => openAdd(cat)} className="border-dashed text-primary">{adding ? tr('✕ Болих') : tr('＋ Өөрийнхөө нэмэх')}</Chip>
             </div>
             {adding && (

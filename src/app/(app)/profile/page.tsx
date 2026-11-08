@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { AvatarEditor } from '@/components/avatar';
+import { ShowMore } from '@/components/show-more';
 import { DassHistory } from '@/components/dass-history';
 import { FriendsTile } from '@/components/friends-tile';
 import { MoodHistory } from '@/components/mood-history';
@@ -126,10 +127,13 @@ function ProfileMain() {
             ))}
           </div>
           <Link href="/recs#watchlist" className="mb-2 flex items-center justify-between rounded-2xl border bg-card p-3.5 text-sm"><span>{tr('📌 Үзэх жагсаалт')}</span><b>{tr('{0} кино →', app.watchlist.filter(id => id.startsWith('tt')).length)}</b></Link>
-          {u.fav_artists.length > 0 && <p className="mb-2 text-sm"><b>{tr('Дуртай дуучид:')}</b> {u.fav_artists.join(', ')}</p>}
+          {u.fav_artists.length > 0 && (
+            <div className="mb-2 text-sm"><b className="mb-1.5 block">{tr('Дуртай дуучид:')}</b>
+              <ShowMore className="flex flex-wrap gap-1.5" items={u.fav_artists} limit={6} render={a => <span key={a} className="inline-flex min-h-[38px] items-center rounded-full bg-secondary px-3 text-secondary-foreground">{a}</span>} /></div>
+          )}
           <DassHistory />
           <h3 className="mb-2 font-semibold">{tr('Миний хобби')}</h3>
-          <div className="flex flex-wrap gap-2">{u.hobbies.map(h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-primary-foreground">{tr(h)}</span>)}</div>
+          <ShowMore className="flex flex-wrap gap-2" items={u.hobbies} limit={8} render={h => <span key={h} className="inline-flex min-h-[38px] items-center rounded-full bg-primary px-3.5 text-sm text-primary-foreground">{tr(h)}</span>} />
           <Link href="/onboarding?edit=1" className={cn(buttonVariants({ variant: 'secondary', size: 'xl' }), 'mt-4 h-auto min-h-11 max-w-full py-2 whitespace-normal')}>{tr('✏️ Хобби, нас, дуучин засах')}</Link>
         </section>
       </div>

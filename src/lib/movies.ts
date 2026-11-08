@@ -44,7 +44,13 @@ const HOBBY_FIT: Record<string, { g?: string[]; l?: string[] }> = {
   'Бүжиг': { g: ['Musical', 'Music'] }, 'Аялал': { g: ['Adventure'] }, 'Явган аялал': { g: ['Adventure'] }, 'Майхан': { g: ['Adventure'] }, 'Од ажиглах': { g: ['Sci-Fi'] },
   'Нохой': { g: ['Family'] }, 'Муур': { g: ['Family'] }, 'Гэр бүлтэйгээ': { g: ['Family'] }, 'Гэрэл зураг': { g: ['Biography', 'Adventure'] }, 'Зураг': { g: ['Animation', 'Biography'] },
   'Фитнесс': { g: ['Sport'] }, 'Гүйлт': { g: ['Sport'] }, 'Сагсан бөмбөг': { g: ['Sport'] }, 'Хөл бөмбөг': { g: ['Sport'] }, 'Бокс': { g: ['Sport'] }, 'Бөх, жүдо': { g: ['Sport', 'Action'] },
-  'Шатар': { g: ['Biography', 'Drama'] }, 'Хоол хийх': { g: ['Comedy', 'Family'] },
+  'Шатар': { g: ['Biography', 'Drama'] },
+  'Тулаант кино': { g: ['Action'] }, 'Адал явдалт кино': { g: ['Adventure'] }, 'Инээдмийн кино': { g: ['Comedy'] }, 'Драма': { g: ['Drama'] }, 'Романтик кино': { g: ['Romance'] },
+  'Шинжлэх ухааны уран зөгнөлт': { g: ['Sci-Fi'] }, 'Уран зөгнөлт кино': { g: ['Fantasy'] }, 'Триллер': { g: ['Thriller'] }, 'Мөрдөгч кино': { g: ['Mystery', 'Crime'] },
+  'Хүүхэлдэйн кино': { g: ['Animation'] }, 'Түүхэн кино': { g: ['History', 'War'] }, 'Гэр бүлийн кино': { g: ['Family'] },
+  'Тулаант тоглоом': { g: ['Action'] }, 'Буудлагын тоглоом': { g: ['Action', 'War'] }, 'Стратеги тоглоом': { g: ['War', 'History'] }, 'RPG тоглоом': { g: ['Fantasy', 'Adventure'] },
+  'Адал явдалт тоглоом': { g: ['Adventure'] }, 'Спорт тоглоом': { g: ['Sport'] }, 'Уралдааны тоглоом': { g: ['Action'] }, 'Оньсого тоглоом': { g: ['Mystery'] },
+  'Дотоод аялал': { g: ['Adventure'] }, 'Гадаад аялал': { g: ['Adventure'] }, 'Хотоор аялах': { g: ['Adventure', 'Comedy'] }, 'Машинаар аялах': { g: ['Adventure'] }, 'Уулын аялал': { g: ['Adventure'] }, 'Хоол хийх': { g: ['Comedy', 'Family'] },
 };
 const SCARY = new Set(['Horror', 'Thriller', 'War']);
 
