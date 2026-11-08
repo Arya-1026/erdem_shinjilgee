@@ -3,20 +3,21 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { ANIM_REGION, ANIMS, mixPose, type AnimId, type View } from '@/lib/exercise-moves';
+import type { Character } from './character';
 import { buildMannequin } from './mannequin';
 import { useT } from '@/components/providers/locale-provider';
 
 /** cycle: өөрчлөгдөхөд хөдөлгөөн эхнээсээ эхэлнэ (ижил анимацитай дараагийн алхамд ч) */
-export type StageProps = { anim: AnimId; period: number; running: boolean; cycle: number; view?: View; onFail?: () => void };
+export type StageProps = { anim: AnimId; period: number; running: boolean; cycle: number; view?: View; character?: Character; onFail?: () => void };
 
 // Камерын өнцөг, зай, харах өндөр. Шалан дээрх дасгалд ойртож намсна.
 const VIEWS: Record<View, { az: number; r: number; y: number }> = {
-  front: { az: 0.28, r: 4.7, y: 0.9 }, angle: { az: 0.8, r: 4.7, y: 0.9 }, side: { az: 1.5, r: 4.7, y: 0.9 }, floor: { az: 1.32, r: 3.7, y: 0.42 },
+  front: { az: 0.28, r: 5.2, y: 0.98 }, angle: { az: 0.8, r: 5.2, y: 0.98 }, side: { az: 1.5, r: 5.2, y: 0.98 }, floor: { az: 1.32, r: 3.7, y: 0.42 },
 };
 const BLEND_S = 0.7;
 
 /* 3D тайз: загвар анимацийг дагаж, камер дасгал бүрт тохирох өнцгөөс харуулна. Хуруугаар эргүүлж болно. */
-export default function ExerciseStage({ anim, period, running, cycle, view = 'front', onFail }: StageProps) {
+export default function ExerciseStage({ anim, period, running, cycle, view = 'front', character = 'human', onFail }: StageProps) {
   const tr = useT();
   const host = useRef<HTMLDivElement>(null);
   // Render loop нь нэг удаа үүсдэг тул сүүлийн утгуудыг ref-ээс уншина
@@ -65,7 +66,7 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     mat.receiveShadow = true;
     scene.add(mat);
 
-    const rig = buildMannequin();
+    const rig = buildMannequin(character);
     scene.add(rig.root);
 
     const size = () => {
@@ -146,7 +147,7 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [character]);
 
   return <div ref={host} className="size-full cursor-grab touch-pan-y active:cursor-grabbing" role="img" aria-label={tr('Дасгал үзүүлж буй 3D загвар. Чирж эргүүлнэ.')} />;
 }

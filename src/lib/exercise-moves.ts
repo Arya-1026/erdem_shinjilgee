@@ -45,6 +45,8 @@ export function mixPose(a: Pose, b: Pose, t: number): Pose {
 }
 
 const STAND = { ...both('shL', [0, 0, 7]), ...both('elL', [-10, 0, 0]) };
+/** Өвдөг сөхрөн өсгий дээрээ суух */
+const KNEEL = { ...both('hipL', [-86, 0, 0]), ...both('knL', [166, 0, 0]), ...both('anL', [62, 0, 0]), ...both('shL', [-6, 0, 5]), ...both('elL', [-38, 0, 0]), dz: -0.22 };
 /* Түлхэлт, планк: хөлийн хуруу, гар газарт бэхлэгдсэн тул биеийн налуу, гарын нугаралтыг геометрээр тооцно */
 const ARM_A = 0.29, ARM_B = 0.27, BODY = 1.38;
 function plankAt(h: number): Partial<Pose> {
@@ -118,6 +120,39 @@ export const ANIMS = {
   tenseArms: tense({ ...both('shL', [-38, 0, 16]), ...both('elL', [-132, 0, 0]), ...both('wrL', [-20, 0, 0]) }),
   tenseShoulders: tense({ shrug: 1.15, fwd: 0.2 }),
   tenseFace: tense({ neck: [8, 0, 0] }),
+  // Суугаад тайван амьсгалах
+  sitBreath: (p: number) => { const b = wave(p); return pose({ ...KNEEL, breath: b, shrug: b * 0.3, neck: [5 - 7 * b, 0, 0] }); },
+  // Хайрцаг амьсгал: 4 тоолж авах, барих, гаргах, хоосон барих (нэг давталт 16 секунд)
+  boxBreath: (p: number) => { const b = seg(p, 0, 0.25) * (1 - seg(p, 0.5, 0.75)); return pose({ ...KNEEL, breath: b, shrug: b * 0.35, neck: [5 - 8 * b, 0, 0] }); },
+  // Эргэн тойрноо ажиглах
+  lookAround: (p: number) => { const s = Math.sin(2 * Math.PI * p); return pose({ ...STAND, neck: [0, 45 * s, 0], chest: [0, 10 * s, 0], breath: wave(p) * 0.5 }); },
+  // Бүжиглэх: дүүжлэх, гараа өргөх, бага зэрэг үсрэх
+  dance: (p: number) => {
+    const s = Math.sin(2 * Math.PI * p);
+    return pose({
+      root: [0, 0, 6 * s], spine: [0, 0, -6 * s], neck: [0, 0, 8 * s], lift: 0.04 * Math.abs(Math.sin(4 * Math.PI * p)),
+      shL: [-20, 0, 120 + 40 * s], shR: [-20, 0, -(120 - 40 * s)], elL: [-40, 0, 0], elR: [-40, 0, 0],
+      ...both('hipL', [0, 0, 4]), knL: [10 + 18 * Math.max(0, s), 0, 0], knR: [10 + 18 * Math.max(0, -s), 0, 0],
+    });
+  },
+  // Гараа дээш сунгаж, хажуу тийш хазайх
+  stretchUp: (p: number) => { const s = Math.sin(2 * Math.PI * p); return pose({ ...both('shL', [-5, 0, 168]), ...both('elL', [-8, 0, 0]), chest: [0, 0, 10 * s], spine: [0, 0, 6 * s], breath: wave(p) }); },
+  // Суугаад бичих
+  write: (p: number) => pose({
+    ...KNEEL, spine: [18, 0, 0], chest: [10, 0, 0], neck: [22, 0, 0],
+    shR: [-58, 0, -8 + 5 * Math.cos(4 * Math.PI * p)], elR: [-62 + 6 * Math.sin(4 * Math.PI * p), 0, 0], wrR: [-10, 0, 0],
+    shL: [-48, 0, 12], elL: [-70, 0, 0],
+  }),
+  // Эргэцүүлэх: гараа эрүүндээ хүргэх
+  think: (p: number) => pose({ ...STAND, shR: [-38, 0, -18], elR: [-140, 0, 0], shL: [-28, 0, 18], elL: [-95, 0, 0], neck: [6 + 3 * Math.sin(2 * Math.PI * p), 0, -10], breath: wave(p) * 0.5 }),
+  // Ярилцах: гараараа дохих
+  talk: (p: number) => { const s = Math.sin(2 * Math.PI * p), c = Math.cos(2 * Math.PI * p); return pose({ ...STAND, shL: [-25, 0, 12], shR: [-25, 0, -12], elL: [-65 - 25 * s, 0, 0], elR: [-65 - 25 * c, 0, 0], neck: [4 * Math.sin(4 * Math.PI * p), 6 * s, 0] }); },
+  // Нүүрээ угаах
+  washFace: (p: number) => { const s = Math.sin(2 * Math.PI * p); return pose({ spine: [22, 0, 0], chest: [10, 0, 0], neck: [12, 0, 0], ...both('shL', [-110 + 12 * s, 0, 22]), ...both('elL', [-125, 0, 0]) }); },
+  // Гар даллах
+  wave: (p: number) => pose({ ...STAND, shR: [0, 0, -150], elR: [-25, 0, 25 * Math.sin(2 * Math.PI * p)], neck: [0, 0, 6], breath: wave(p) * 0.5 }),
+  // Баярлах: гараа өргөөд үсрэх
+  cheer: (p: number) => { const o = wave(p); return pose({ lift: 0.06 * Math.abs(Math.sin(2 * Math.PI * p)), ...both('shL', [0, 0, 120 + 30 * o]), ...both('elL', [-15, 0, 0]), neck: [-8, 0, 0] }); },
 } satisfies Record<string, (p: number) => Pose>;
 
 export type AnimId = keyof typeof ANIMS;

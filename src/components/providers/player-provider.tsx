@@ -23,14 +23,17 @@ export type Track = {
 export const mkTrack = (id: string, title: string, artist: string, mood: MoodId): Track =>
   ({ id, title, artist, mood, dur: 150 + (hashStr(title, 3) % 90), source: 'synth' });
 
+/** Spotify цомгийн зургийн 64px хувилбарыг 300px болгоно (жагсаалтад томруулахад бүдгэрдэг) */
+export const bigCover = (url: string | null | undefined) => url?.replace('ab67616d00004851', 'ab67616d00001e02') ?? null;
+
 export type SpotifyRow = { track_id: string; name: string; artists: string; uri: string; duration_ms: number; image: string | null };
 export const spTrack = (r: SpotifyRow, mood: MoodId, id = 'sp:' + r.track_id): Track =>
-  ({ id, title: r.name, artist: r.artists, mood, dur: r.duration_ms / 1000, source: 'spotify', uri: r.uri, image: r.image });
+  ({ id, title: r.name, artist: r.artists, mood, dur: r.duration_ms / 1000, source: 'spotify', uri: r.uri, image: bigCover(r.image) });
 
 /** AI-ийн санал, таалагдсан дуу (video_id нь Spotify track id) */
 export type SongRowLike = { video_id: string; title: string; artist: string; thumbnail: string | null; duration_s: number };
 export const songTrack = (r: SongRowLike, mood: MoodId): Track =>
-  ({ id: 'sp:' + r.video_id, title: r.title, artist: r.artist, mood, dur: r.duration_s, source: 'spotify', uri: 'spotify:track:' + r.video_id, image: r.thumbnail });
+  ({ id: 'sp:' + r.video_id, title: r.title, artist: r.artist, mood, dur: r.duration_s, source: 'spotify', uri: 'spotify:track:' + r.video_id, image: bigCover(r.thumbnail) });
 
 type PlayerCtx = {
   queue: Track[];

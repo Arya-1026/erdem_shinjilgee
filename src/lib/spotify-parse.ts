@@ -12,7 +12,8 @@ type RawTrack = {
 export function pickImage(images: Img[] | undefined) {
   if (!images?.length) return null;
   const sorted = [...images].sort((a, b) => (a.width ?? 0) - (b.width ?? 0));
-  return (sorted.find(i => (i.width ?? 0) >= 64) ?? sorted[sorted.length - 1]).url;
+  // 300px: жагсаалт, нүүрэнд 132px хүртэл томруулахад бүдгэрэхгүй
+  return (sorted.find(i => (i.width ?? 0) >= 300) ?? sorted[sorted.length - 1]).url;
 }
 
 export function toTrack(raw: unknown): SpotifyTrack | null {

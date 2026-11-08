@@ -1,11 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ExerciseArt } from '@/components/exercise-art';
+import dynamic from 'next/dynamic';
+import { CharacterPicker, useCharacter } from './character';
 import { Button } from '@/components/ui/button';
 import { cueAt, moveSeconds, PREP_SECONDS, totalSeconds, type Move } from '@/lib/exercise-moves';
 import { useT } from '@/components/providers/locale-provider';
 import { createNatureMusic, type NatureMusic } from '@/lib/nature-music';
+
+// three.js том тул зөвхөн дасгал нээхэд ачаална
+export const Stage = dynamic(() => import('./stage'), {
+  ssr: false,
+  loading: () => <div className="grid size-full place-items-center text-4xl" aria-hidden="true">🐾</div>,
+});
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -15,8 +22,8 @@ type Status = 'ready' | 'run' | 'pause' | 'done';
 const NATURE_MUSIC = new Set(['e4']);
 const SOUND_KEY = 'setgel-yoga-sound';
 
-/* Дасгалыг хөдөлгөөнт зурагтай хамт алхам алхмаар дагуулна. Хөдөлгөөн бүрийн өмнө 3 секунд бэлдэнэ.
-   (Өмнө нь three.js 3D загвар байсан: утсан дээр удаан байсан тул хөнгөн SVG анимациар сольсон.) */
+/* Дасгалыг 3D дүр (муур, туулай, хүн)-тэй хамт алхам алхмаар бодит цагт дагуулна. Хөдөлгөөн бүрийн өмнө 3 секунд бэлдэнэ.
+   Утсан дээр Stage нь нягтрал, сүүдрийг багасгаж ажилладаг. */
 export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves: Move[]; onFinish: () => void }) {
   const tr = useT();
   const [status, setStatus] = useState<Status>('ready');
@@ -26,6 +33,8 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
   const withMusic = NATURE_MUSIC.has(recId);
   const [sound, setSound] = useState(() => { try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; } });
   const music = useRef<NatureMusic | null>(null);
+  const character = useCharacter();
+  const [noWebGL, setNoWebGL] = useState(false);
 
   const go = (n: number) => {
     if (n >= moves.length) return setStatus('done');
@@ -92,7 +101,9 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
   return (
     <div className="mt-3 min-w-0">
       <div className="relative h-[min(44dvh,340px)] overflow-hidden rounded-[18px] bg-[linear-gradient(180deg,var(--secondary),color-mix(in_srgb,var(--secondary)_55%,var(--card)))]">
-        <ExerciseArt id={recId} className={`mx-auto size-full max-w-[340px] object-contain transition-opacity ${status === 'pause' ? 'opacity-60' : ''}`} />
+        {noWebGL ? <p className="grid size-full place-items-center p-6 text-center text-sm text-muted-foreground">{tr('Таны төхөөрөмж 3D дэмжихгүй байна. Доорх зааврыг дагаарай.')}</p>
+          : <Stage anim={done ? 'cheer' : m.anim} cycle={ready ? -1 : i} period={done ? 1.2 : m.period} running={status === 'run' ? !prep : ready || done} view={done ? 'front' : m.view} character={character} onFail={() => setNoWebGL(true)} />}
+        {(ready || done) && <CharacterPicker className="absolute top-2.5 right-2.5" />}
         {!ready && !done && (
           <div className="pointer-events-none absolute inset-x-0 top-2.5 flex items-start justify-between px-3 text-sm font-bold">
             <span className="rounded-full bg-background/80 px-2.5 py-1">{i + 1} / {moves.length}</span>
@@ -113,7 +124,7 @@ export function ExerciseCoach({ recId, moves, onFinish }: { recId: string; moves
         </>
       ) : ready ? (
         <>
-          <p className="mt-3 text-sm text-muted-foreground">{tr('Зургийг дагаад хамт хийгээрэй. Нийт {0} мин.', Math.ceil(total / 60))}</p>
+          <p className="mt-3 text-sm text-muted-foreground">{tr('Дүрээ сонгоод, түүнийг дагаж хамт хийгээрэй. Чирж өөр өнцгөөс харж болно. Нийт {0} мин.', Math.ceil(total / 60))}</p>
           <ol className="mt-2 list-decimal pl-5 text-sm">{[...new Set(moves.map(x => x.label))].map(l => <li key={l} className="mb-1">{tr(l)}</li>)}</ol>
           <Button size="xl" className="mt-3 w-full" onClick={begin}>{tr('▶ Дагаж эхлэх')}</Button>
         </>

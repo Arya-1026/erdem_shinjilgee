@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 import { SupportBody } from '@/components/daily-support';
 import { DayJournalForm } from '@/components/day-journal';
 import { ExerciseCoach } from '@/components/exercise/coach';
-import { PmrCoach } from '@/components/exercise/pmr';
 import { PLAYERS, PlayerFrame } from '@/components/exercise/player-frame';
 import { StepCoach } from '@/components/exercise/steps';
+import { BENEFITS } from '@/lib/exercise-benefits';
 import { MoodFace } from '@/components/mood-face';
 import { Poster } from '@/components/poster';
 import { useApp, type DialogState } from '@/components/providers/app-provider';
@@ -83,16 +83,41 @@ function Exercise({ recId }: { recId: string }) {
   const tr = useT();
   const { openDialog, bumpExercises } = useApp();
   const r = RECS.find(x => x.id === recId)!;
-  const finish = () => { bumpExercises(); openDialog(null); toast(tr('Сайн байна! Дасгал бүртгэгдлээ 🎉')); };
-  // Тоглуулагч өөрөө «дууслаа» гэж харуулдаг тул цонхыг хаахгүй, зөвхөн бүртгэнэ
-  const complete = () => { bumpExercises(); toast(tr('Сайн байна! Дасгал бүртгэгдлээ 🎉')); };
+  const [done, setDone] = useState(false);
+  // Дуусмагц бүртгээд «юу өөрчлөгдөх вэ» тайлбарыг харуулна
+  const finish = () => { if (!done) { bumpExercises(); toast(tr('Сайн байна! Дасгал бүртгэгдлээ 🎉')); } setDone(true); };
   return (
     <>
       <Title>{tr(r.title)}</Title>
       <DialogDescription>{tr(r.sub)}</DialogDescription>
-      {PLAYERS[r.id] ? <PlayerFrame src={PLAYERS[r.id]} title={tr(r.title)} onComplete={complete} onClose={() => openDialog(null)} />
-        : r.id === 'e6' ? <PmrCoach onFinish={finish} /> : r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} onFinish={finish} />}
+      {/* Тоглуулагч өөрөө «дууслаа» дэлгэцтэй тул түүнийг үлдээж, доор нь тайлбар нэмнэ */}
+      {PLAYERS[r.id] ? <>
+          <PlayerFrame src={PLAYERS[r.id]} title={tr(r.title)} onComplete={finish} onClose={() => openDialog(null)} />
+          {done && <Outcome id={r.id} />}
+        </>
+        : done ? <Outcome id={r.id} />
+        : r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} sub={r.sub} onFinish={finish} />}
     </>
+  );
+}
+
+/* Дасгалын төгсгөл: хийснээр сэтгэл зүйд юу өөрчлөгдөхийг тайлбарлана */
+function Outcome({ id }: { id: string }) {
+  const tr = useT();
+  const { openDialog } = useApp();
+  const text = BENEFITS[id];
+  return (
+    <div className="fade-up mt-3" role="status">
+      <div className="rounded-[18px] bg-secondary p-4">
+        <p className="text-lg font-bold">{tr('🌿 Дасгал дууслаа')}</p>
+        {text && <>
+          <p className="mt-2 text-sm font-semibold text-muted-foreground">{tr('Энэ дасгалыг хийснээр:')}</p>
+          <p className="mt-1">{tr(text)}</p>
+        </>}
+        <p className="mt-3 text-sm text-muted-foreground">{tr('Тогтмол давтах тусам үр нөлөө нь нэмэгддэг. Одоо биеэ, сэтгэлээ хэсэг ажиглаарай.')}</p>
+      </div>
+      <Button size="xl" className="mt-3 w-full" onClick={() => openDialog(null)}>{tr('✓ Хаах')}</Button>
+    </div>
   );
 }
 
@@ -168,6 +193,7 @@ function Breath() {
         </button>
       )}
       {!state && !prep && !done && <Button size="xl" className="mt-2 w-full" onClick={start}>{tr('Эхлэх')}</Button>}
+      {done && <Outcome id="e1" />}
     </>
   );
 }

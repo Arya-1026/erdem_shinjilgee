@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
    - өндрийг агуулгад нь тааруулна;
    - дуусахад (finish / show(3)) onComplete, «Хаах»-д (closeAll) onClose дуудна.
    iframe хаагдахад хуудас нь устаж, ая хамт зогсоно. */
-export const PLAYERS: Record<string, string> = { e3: '/players/walk.html', e5: '/players/gratitude.html', e7: '/players/energy.html' };
+// Алхалт, энергитэй дасгал 3D дүрээр (ExerciseCoach) явна. Талархлын тэмдэглэл бичих талбартай тул энд үлдсэн.
+export const PLAYERS: Record<string, string> = { e5: '/players/gratitude.html' };
 
 const EMBED_CSS = `
 html,body{background:transparent!important}

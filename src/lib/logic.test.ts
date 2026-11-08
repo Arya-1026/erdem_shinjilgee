@@ -62,7 +62,7 @@ describe('Spotify хариу задлах', () => {
   const raw = { type: 'track', id: 't1', name: 'Song', uri: 'spotify:track:t1', duration_ms: 200000, artists: [{ name: 'A' }, { name: 'B' }],
     album: { images: [{ url: 'big', width: 640 }, { url: 'mid', width: 300 }, { url: 'small', width: 64 }] } };
   it('track объектыг хөрвүүлнэ', () => {
-    expect(toTrack(raw)).toEqual({ id: 't1', name: 'Song', uri: 'spotify:track:t1', duration_ms: 200000, artists: 'A, B', image: 'small' });
+    expect(toTrack(raw)).toEqual({ id: 't1', name: 'Song', uri: 'spotify:track:t1', duration_ms: 200000, artists: 'A, B', image: 'mid' });
   });
   it('episode, local, id-гүйг алгасна', () => {
     expect(toTrack({ ...raw, type: 'episode' })).toBeNull();
