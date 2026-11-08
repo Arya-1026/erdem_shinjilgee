@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { PasswordReset } from '@/components/password-reset';
 import { Segmented } from '@/components/segmented';
 import { createClient } from '@/lib/supabase/client';
 import { LanguageSwitch, useT } from '@/components/providers/locale-provider';
+import { GoogleButton } from './google-button';
 
 export function LoginIntro() {
   const tr = useT();
@@ -56,6 +57,9 @@ export function LoginForm() {
     enter(reg ? '/onboarding' : '/home');
   }
 
+  // Шинэ хэрэглэгчийг /home нь өөрөө анхны тохиргоо руу шилжүүлнэ
+  const goHome = useCallback(() => { router.replace('/home'); router.refresh(); }, [router]);
+
   function enter(href: string) {
     router.replace(href);
     router.refresh();
@@ -90,7 +94,7 @@ export function LoginForm() {
       {!reg && <button type="button" className="-mt-1.5 mb-3 min-h-9 text-sm font-semibold text-primary" onClick={() => setForgot(true)}>{tr('Нууц үгээ мартсан уу?')}</button>}
       <Button type="submit" size="xl" className="w-full" disabled={busy}>{busy ? '…' : reg ? tr('Бүртгүүлэх') : tr('Нэвтрэх')}</Button>
       <div className="my-3.5 flex items-center gap-2.5 text-sm text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">{tr('эсвэл')}</div>
-      <Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b>{' '}{tr('Google-ээр үргэлжлүүлэх')}</Button>
+      <GoogleButton onSignedIn={goHome} fallback={<Button type="button" variant="outline" size="xl" className="w-full" onClick={google}><b className="text-[#4285F4]">G</b>{' '}{tr('Google-ээр үргэлжлүүлэх')}</Button>} />
       <p className="mt-4 text-center text-xs text-muted-foreground">{tr('Үргэлжлүүлснээр та үйлчилгээний нөхцөл болон нууцлалын бодлогыг зөвшөөрч байна.')}</p>
     </form>
   );
