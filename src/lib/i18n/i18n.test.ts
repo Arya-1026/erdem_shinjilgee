@@ -79,8 +79,8 @@ describe('англи орчуулга', () => {
     expect([...SOURCE_STRINGS].filter(k => !(k in EN))).toEqual([]);
   });
   it('дэлгэцийн шинэ бичвэр орчуулгагүй үлдээгүй', () => {
-    // Хөгжүүлэгчийн заавар, хоёр хэлтэй дэлгэц, статик metadata, серверийн мэдэгдлийг алгасна
-    const SKIP = /setup-needed|locale-provider|app[\\/]layout|manifest|app[\\/]api[\\/]/;
+    // Хөгжүүлэгчийн заавар, хоёр хэлтэй дэлгэц (нууцлал, нөхцөлийн хуудас ч хоёр хэлтэй), статик metadata, серверийн мэдэгдлийг алгасна
+    const SKIP = /setup-needed|locale-provider|app[\\/]layout|manifest|app[\\/]api[\\/]|app[\\/](privacy|terms)[\\/]/;
     const missing: string[] = [];
     for (const f of FILES.filter(x => /[\\/]src[\\/](app|components)[\\/]/.test(x) && !SKIP.test(x))) {
       const visit = (n: ts.Node): void => {

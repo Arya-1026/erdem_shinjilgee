@@ -4,7 +4,7 @@ import { AUTH_COOKIE_OPTIONS } from '@/lib/supabase/cookie-options';
 
 // Хүсэлт бүрт Supabase session-ийг шинэчилж, нэвтрээгүй хэрэглэгчийг /login руу шилжүүлнэ.
 // Энэ нь зөвхөн UX-ийн шалгалт. Өгөгдлийн жинхэнэ хамгаалалт бол RLS.
-const PUBLIC = ['/login', '/auth', '/setup'];
+const PUBLIC = ['/login', '/auth', '/setup', '/privacy', '/terms'];
 
 export async function proxy(request: NextRequest) {
   // Spotify localhost-ийг зөвшөөрдөггүй, session cookie ч хаяг бүрт тусдаа тул локалд нэг л хаягаар ажиллана

@@ -62,6 +62,10 @@ export function LoginForm() {
   }
 
   async function google() {
+    // Supabase дээр Google идэвхжээгүй бол түүхий JSON алдааны хуудас руу шилжүүлэхгүй
+    const settings = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY! } })
+      .then(r => r.json() as Promise<{ external?: { google?: boolean } }>).catch(() => null);
+    if (settings && !settings.external?.google) return void toast.error(tr('Google-ээр нэвтрэх тохиргоо хараахан хийгдээгүй байна. Одоохондоо имэйлээр бүртгүүлж нэвтэрнэ үү.'));
     const { error } = await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback('/home') } });
     if (error) toast.error(error.message);
   }
