@@ -35,7 +35,7 @@ const STEP_ANIMS: Record<string, AnimId[]> = {
   e18: ['shoulderRoll', 'neckTilt', 'stretchUp', 'idle', 'walk'], e19: ['think', 'write', 'write', 'wave'], e20: ['think', 'sitBreath', 'cheer', 'cheer'],
 };
 // Бичих, бодох дасгалд 3D дүр шаардлагагүй: зөвхөн тоолуур, дүрс
-const NO_STAGE = new Set(['e8', 'e14', 'e17']);
+const NO_STAGE = new Set(['e8', 'e9', 'e14', 'e15', 'e17']);
 const PERIOD: Partial<Record<AnimId, number>> = { walk: 1.2, dance: 1.6, cheer: 1.2, neckTilt: 8, shoulderRoll: 4, boxBreath: 16, lookAround: 6, washFace: 1.5, wave: 1, talk: 2, write: 2 };
 const animAt = (id: string, step: number, round: number): AnimId => {
   const list = STEP_ANIMS[id] ?? ['idle'];

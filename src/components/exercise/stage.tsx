@@ -66,7 +66,7 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
     mat.receiveShadow = true;
     scene.add(mat);
 
-    const rig = buildMannequin(character);
+    const rig = buildMannequin(character, lite);
     scene.add(rig.root);
 
     const size = () => {
@@ -123,8 +123,10 @@ export default function ExerciseStage({ anim, period, running, cycle, view = 'fr
       const v = VIEWS[curView], ease = Math.min(1, dt * 3);
       // Босоо нарийн дэлгэцэнд (утас) загвар, хэвтээ дасгал багтахаар камерыг холдуулна
       const fit = Math.max(1, (curView === 'floor' ? 1.3 : 0.62) / camera.aspect);
+      // Муур, туулай нь толгой томтой, шалан дээр урт тул бага зэрэг холоос харна
+      const zoom = character === 'human' ? 1 : curView === 'floor' ? 1.4 : 1.05;
       if (!cam.manual) cam.az += (v.az - cam.az) * ease;
-      cam.r += (v.r * fit - cam.r) * ease;
+      cam.r += (v.r * fit * zoom - cam.r) * ease;
       cam.y += (v.y - cam.y) * ease;
       camera.position.set(cam.r * Math.sin(cam.az) * Math.cos(cam.el), cam.y + cam.r * Math.sin(cam.el), cam.r * Math.cos(cam.az) * Math.cos(cam.el));
       camera.lookAt(0, cam.y, 0);
