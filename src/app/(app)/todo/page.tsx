@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRef, useState, useId } from 'react';
 import { toast } from 'sonner';
 import { type CalendarMark, MoodCalendar } from '@/components/charts';
 import { DayWriting } from '@/components/day-journal';
@@ -295,8 +295,13 @@ function TodoRow({ t, readOnly, onToggle, onRemove, onEdit }: { t: Todo; readOnl
 }
 
 // Шинэ ажил нэмэх, эсвэл initial өгвөл тухайн ажлыг засах форм
+// Талбар бүрийн дээр юу болохыг нь бичсэн жижиг гарчиг
+const LABEL = 'grid min-w-0 gap-1';
+const CAP = 'text-xs font-semibold text-muted-foreground';
+
 function TodoForm({ initial, submitLabel, onSubmit, onCancel }: { initial?: Todo; submitLabel: string; onSubmit: (t: NewTodo & { planned_date?: string }) => Promise<void>; onCancel?: () => void }) {
   const tr = useT();
+  const emojiId = useId();
   const [title, setTitle] = useState(initial?.title ?? '');
   const [category, setCategory] = useState(initial?.category ?? TODO_CATEGORIES[0]);
   const [effort, setEffort] = useState(initial?.effort ?? 2);
@@ -312,19 +317,19 @@ function TodoForm({ initial, submitLabel, onSubmit, onCancel }: { initial?: Todo
       void onSubmit({ title: title.trim(), category, effort, minutes: Math.min(600, Math.max(5, minutes || 30)), due_date: due || null, planned_time: time || null, emoji: emoji || null, ...(initial && date ? { planned_date: date } : {}) });
       if (!initial) { setTitle(''); setDue(''); setTime(''); setEmoji(''); }
     }}>
-      <input className={cn(FIELD, 'col-span-2 sm:col-span-4')} placeholder={tr('Шинэ ажил нэмэх')} aria-label={tr('Ажлын нэр')} value={title} maxLength={200} onChange={e => setTitle(e.target.value)} autoFocus={!!initial} />
-      <div className="col-span-2 flex flex-wrap gap-1.5 sm:col-span-4" role="group" aria-label={tr('Эможи')}>
+      <label className={cn(LABEL, 'col-span-2 sm:col-span-4')}><span className={CAP}>{tr('Ажлын нэр')}</span><input className={FIELD} placeholder={tr('Шинэ ажил нэмэх')} value={title} maxLength={200} onChange={e => setTitle(e.target.value)} autoFocus={!!initial} /></label>
+      <div className={cn(LABEL, 'col-span-2 sm:col-span-4')} role="group" aria-labelledby={emojiId}><span id={emojiId} className={CAP}>{tr('Эможи')}</span><div className="flex flex-wrap gap-1.5">
         {TODO_EMOJIS.map(em => (
           <button key={em} type="button" aria-pressed={emoji === em} aria-label={tr('Эможи {0}', em)} onClick={() => setEmoji(v => (v === em ? '' : em))}
             className={cn('grid size-10 place-items-center rounded-xl border-[1.5px] text-xl', emoji === em ? 'border-primary bg-secondary' : 'bg-background')}>{em}</button>
         ))}
-      </div>
-      <select className={FIELD} aria-label={tr('Ангилал')} value={category} onChange={e => setCategory(e.target.value)}>{TODO_CATEGORIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select>
-      <select className={FIELD} aria-label={tr('Хүндрэл')} value={effort} onChange={e => setEffort(+e.target.value)}>{EFFORT.map(([v, l]) => <option key={v} value={v}>{tr(l)}</option>)}</select>
-      <input className={FIELD} type="number" min={5} max={600} step={5} aria-label={tr('Хугацаа, минут')} value={minutes} onChange={e => setMinutes(+e.target.value)} />
-      <input className={FIELD} type="time" aria-label={tr('Эхлэх цаг')} title={tr('Эхлэх цаг')} value={time} onChange={e => setTime(e.target.value)} />
-      <label className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground sm:col-span-4">
-        <span className="flex-none">{tr('Эцсийн хугацаа')}</span>
+      </div></div>
+      <label className={LABEL}><span className={CAP}>{tr('Ангилал')}</span><select className={FIELD} value={category} onChange={e => setCategory(e.target.value)}>{TODO_CATEGORIES.map(c => <option key={c} value={c}>{tr(c)}</option>)}</select></label>
+      <label className={LABEL}><span className={CAP}>{tr('Хүндрэл')}</span><select className={FIELD} value={effort} onChange={e => setEffort(+e.target.value)}>{EFFORT.map(([v, l]) => <option key={v} value={v}>{tr(l)}</option>)}</select></label>
+      <label className={LABEL}><span className={CAP}>{tr('Хугацаа, минут')}</span><input className={FIELD} type="number" min={5} max={600} step={5} value={minutes} onChange={e => setMinutes(+e.target.value)} /></label>
+      <label className={LABEL}><span className={CAP}>{tr('Эхлэх цаг')}</span><input className={FIELD} type="time" value={time} onChange={e => setTime(e.target.value)} /></label>
+      <label className={cn(LABEL, 'col-span-2 sm:col-span-4')}>
+        <span className={CAP}>{tr('Эцсийн хугацаа')}</span>
         <input className={FIELD} type="date" value={due} onChange={e => setDue(e.target.value)} />
       </label>
       {initial && (
