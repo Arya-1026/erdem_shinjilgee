@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Avatar } from './avatar';
 import { ChatWidget } from './chat-widget';
 import { DialogHost } from './dialogs/dialog-host';
+import { InstallBanner } from './install-app';
 import { Logo } from './logo';
 import { NotificationBell } from './notification-bell';
 import { SantaHat, SeasonalNav } from './seasonal';
@@ -79,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
+        {active[0] === '/home' && <InstallBanner />}
         <main className="app-main">{children}</main>
       </div>
 

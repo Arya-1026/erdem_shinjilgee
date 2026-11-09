@@ -53,19 +53,23 @@ async function verifiedPool(p: { mood: MoodId; favs: string[]; age: AgeGroup | n
     return collect(() => artistSongs(a.name, a.aka ?? [], budget), { fav: false, intl, rank: tasteRank(t), reason: tasteReason(t) });
   };
 
-  for (const name of p.favs.slice(0, FAV_ARTISTS).filter(n => hardOk || !findArtist(n)?.hard)) {
-    const known = findArtist(name);
-    await collect(() => artistSongs(name, known?.aka ?? [], budget), { fav: true, intl: Boolean(known) && !MN_ARTISTS.includes(known!), rank: 0, reason: 'Таны дуртай дуучин' });
-  }
+  // Эх сурвалж бүрийг зэрэг хайна (ихэнх нь cache-ээс уншина). Дуртай дуучин, сонгосон төрөл эхний давалгаанд
+  // багтаж шинэ хайлтын эрхийг (budget) түрүүлж авна: эрх нь await-гүйгээр хасагддаг тул зэрэг ч хэтрэхгүй.
   // Сонгосон төрөл түрүүлж, амт тодорхойгүй бол поп. Хайлт 30 хоног хадгалагдах тул хэрэглэгчид өсөхөд Spotify-ийн дуудлага нэмэгдэхгүй.
   const pools: TasteGenre[] = [...shuffled(taste.filter(t => !t.hobby)), ...taste.filter(t => t.hobby)].slice(0, GENRE_POOLS);
-  for (const t of pools.length ? pools : [{ genre: 'Поп' as const }]) {
-    const own = pools.length ? t : undefined;
-    await collect(() => genreSongs(GENRE_QUERY[t.genre], budget), { fav: false, intl: true, rank: tasteRank(own), reason: tasteReason(own) });
-  }
-  for (const a of pickArtists(MN_ARTISTS, CATALOG_ARTISTS)) await collectArtist(a, false);
+  await Promise.all([
+    ...p.favs.slice(0, FAV_ARTISTS).filter(n => hardOk || !findArtist(n)?.hard).map(name => {
+      const known = findArtist(name);
+      return collect(() => artistSongs(name, known?.aka ?? [], budget), { fav: true, intl: Boolean(known) && !MN_ARTISTS.includes(known!), rank: 0, reason: 'Таны дуртай дуучин' });
+    }),
+    ...(pools.length ? pools : [{ genre: 'Поп' as const }]).map(t => {
+      const own = pools.length ? t : undefined;
+      return collect(() => genreSongs(GENRE_QUERY[t.genre], budget), { fav: false, intl: true, rank: tasteRank(own), reason: tasteReason(own) });
+    }),
+  ]);
+  await Promise.all(pickArtists(MN_ARTISTS, CATALOG_ARTISTS).map(a => collectArtist(a, false)));
   // Төрлийн хайлт хангалтгүй (genre шүүлтэд дуу цөөн) үед олон улсын дуучдаар нөхнө
-  if ([...songs.values()].filter(s => s.intl).length < COUNT) for (const a of pickArtists(INTL_ARTISTS, CATALOG_INTL)) await collectArtist(a, true);
+  if ([...songs.values()].filter(s => s.intl).length < COUNT) await Promise.all(pickArtists(INTL_ARTISTS, CATALOG_INTL).map(a => collectArtist(a, true)));
 
   const allowed = [...songs.values()].filter(({ v, fav, intl }) => {
     if (p.disliked.has(v.video_id)) return false;

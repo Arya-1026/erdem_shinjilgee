@@ -38,6 +38,10 @@ export function useSongRecs(moodId: MoodId, kind: MusicKind = 'song') {
   }, [load, music.discovery]);
   // mood солиход хуучин mood-ийн дуу харагдахгүй
   const fresh = state.mood === moodId && state.kind === kind;
+  // Дуу харагдмагц Spotify тоглуулагчийг урьдчилан ачаална: эхний товшилтоос дуу 10 гаруй биш 2-3 секундэд гарна
+  const { prime } = usePlayer();
+  const first = fresh ? state.recs?.[0]?.video_id : undefined;
+  useEffect(() => { if (first) prime('spotify:track:' + first); }, [first, prime]);
   return { recs: music.discovery ? (fresh ? state.recs : null) : [], loading: state.loading || (music.discovery && !fresh), reason: state.reason, refresh: () => load(true) };
 }
 

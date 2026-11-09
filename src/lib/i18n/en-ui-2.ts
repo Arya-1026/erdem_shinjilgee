@@ -588,4 +588,5 @@ export const EN_UI_2: Record<string, string> = {
   "Сонгосон төрлийн тань дуучид: {0}. Эдгээрийн дууг Spotify-аас хайж санал болгоно.": "Singers in your genres: {0}. We find their songs on Spotify for you.",
   "Дээрх «Дууны төрөл»-өөс сонговол тэр төрлийн дуучид гарна. Эдгээрийн дууг Spotify-аас хайж санал болгоно.": "Pick a genre under «Music genres» above to see its singers. We find their songs on Spotify for you.",
   "Энэ төрлийн монгол дуучин жагсаалтад алга. Доороос өөрөө нэмж болно.": "No Mongolian singers of this genre in the list. You can add one below.",
+  "Дуу эхлэхгүй байна уу? Доорх Spotify тоглуулагчийн ▶ товчийг дарна уу.": "Not playing? Tap ▶ on the Spotify player below.",
 };

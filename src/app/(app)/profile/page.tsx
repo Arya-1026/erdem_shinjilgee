@@ -22,6 +22,7 @@ import { usePlayer } from '@/components/providers/player-provider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { streak } from '@/lib/analytics';
+import { InstallHelp, useInstall } from '@/components/install-app';
 import { currentSubscription, pushSupported, showLocal, subscribePush, unsubscribePush } from '@/lib/push-client';
 import { isLocale, LOCALE_NAMES, LOCALES } from '@/lib/i18n';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, paletteColors, paletteLabel, type PaletteId } from '@/lib/palettes';
@@ -152,6 +153,7 @@ function ProfileMain() {
         <Setting title={tr('Push мэдэгдэл')} sub={!mounted ? '' : !pushSupported() ? tr('Энэ браузер дэмжихгүй') : pushOn ? <>{tr('Энэ төхөөрөмж дээр идэвхтэй ·')}{' '}<button className="text-primary" onClick={testPush}>{tr('Туршиж үзэх')}</button></> : tr('Энэ төхөөрөмж дээр')}>
           {mounted && pushSupported() && pushOn !== null && <Switch checked={pushOn} onCheckedChange={v => void togglePush(v)} aria-label={tr('Push мэдэгдэл')} />}
         </Setting>
+        <InstallSetting />
         <Setting title={tr('Харанхуй горим')} sub={tr('Гэрэлтэй горимд таны сонгосон өнгө хадгалагдана')}>
           {mounted && <Switch checked={resolvedTheme === 'dark'} onCheckedChange={v => setTheme(v ? 'dark' : 'light')} aria-label={tr('Харанхуй горим')} />}
         </Setting>
@@ -360,6 +362,22 @@ function SocialSection() {
       {pick('mood_visibility', tr('Сэтгэл санаагаа харуулах'), tr('Таны одоогийн сэтгэл санаа (Нүүр хуудасны бөмбөлөг) хэнд харагдах вэ'))}
       {pick('friends_visibility', tr('Найзуудаа харуулах'), tr('Таны найзуудын жагсаалтыг хэн харах вэ'))}
     </section>
+  );
+}
+
+// Аппыг энэ төхөөрөмжид суулгах: суулгасан бол харуулахгүй
+function InstallSetting() {
+  const tr = useT();
+  const state = useInstall();
+  if (state === 'installed') return null;
+  return (
+    <div className="border-b py-3">
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <div className="min-w-0"><b>{tr('Апп суулгах')}</b><div className="text-sm text-muted-foreground">{tr('Нүүр дэлгэцээс шууд нээгдэж, мэдэгдэл авна.')}</div></div>
+        {state === 'prompt' && <InstallHelp state={state} />}
+      </div>
+      {state !== 'prompt' && <InstallHelp state={state} className="mt-1.5 text-muted-foreground" />}
+    </div>
   );
 }
 

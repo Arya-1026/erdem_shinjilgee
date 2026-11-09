@@ -41,23 +41,24 @@ export async function api<T>(token: string, path: string, init?: RequestInit, re
 export async function classify(list: Pick<SpotifyTrack, 'id' | 'name' | 'artists'>[]) {
   const db = createServiceClient();
   const result = new Map<string, MoodId[]>();
-  for (let i = 0; i < list.length; i += 200) {
-    const { data } = await db.from('track_moods').select('track_id,moods').in('track_id', list.slice(i, i + 200).map(t => t.id));
+  const chunks = (a: typeof list, n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
+  // Cache-ийн уншилт, LLM-ийн багцуудыг зэрэг ажиллуулна
+  for (const { data } of await Promise.all(chunks(list, 200).map(c => db.from('track_moods').select('track_id,moods').in('track_id', c.map(t => t.id)))))
     data?.forEach(r => result.set(r.track_id, r.moods as MoodId[]));
-  }
   const todo = list.filter(t => !result.has(t.id));
   const rows: { track_id: string; moods: MoodId[]; source: 'llm' | 'heuristic' }[] = [];
-  for (let i = 0; i < todo.length; i += BATCH) {
-    const batch = todo.slice(i, i + BATCH);
-    const parsed = llmConfigured()
-      ? parseClassification((await llmChat(classifyPrompt(batch), { temperature: 0, maxTokens: 2500, timeoutMs: 40_000 }))?.text ?? '', batch.length)
-      : new Map<number, MoodId[]>();
+  const batches = chunks(todo, BATCH);
+  const replies = await Promise.all(batches.map(async batch => llmConfigured()
+    ? parseClassification((await llmChat(classifyPrompt(batch), { temperature: 0, maxTokens: 2500, timeoutMs: 40_000 }))?.text ?? '', batch.length)
+    : new Map<number, MoodId[]>()));
+  batches.forEach((batch, b) => {
+    const parsed = replies[b];
     batch.forEach((t, j) => {
       const m = parsed.get(j);
       rows.push({ track_id: t.id, moods: m ?? heuristicMoods(t), source: m ? 'llm' : 'heuristic' });
       result.set(t.id, m ?? heuristicMoods(t));
     });
-  }
+  });
   // Түлхүүр үгээр ангилсныг cache-д хадгалахгүй: дараа нь LLM тохируулахад дахин ангилагдана
   const llmRows = rows.filter(r => r.source === 'llm');
   if (llmRows.length) await db.from('track_moods').upsert(llmRows);

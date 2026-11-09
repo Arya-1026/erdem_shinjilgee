@@ -4,7 +4,7 @@ import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef
 import { toast } from 'sonner';
 import { hashStr, startMusic, stopMusic } from '@/lib/music';
 import { spotifyTrackUrl } from '@/lib/spotify-parse';
-import { embed, embedPlay, type SpState } from '@/lib/spotify-playback';
+import { embed, embedPlay, initEmbed, type SpState } from '@/lib/spotify-playback';
 import { cn } from '@/lib/utils';
 import type { MoodId } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
@@ -44,6 +44,8 @@ type PlayerCtx = {
   nowId: string | undefined;
   /** Spotify Embed харагдаж байгаа бол mini player нуугдана */
   usesEmbed: boolean;
+  /** Spotify тоглуулагчийг урьдчилан ачаална: эхний дуу хурдан эхэлнэ */
+  prime: (uri: string) => void;
   elapsed: () => number;
   duration: () => number;
   play: (tracks: Track[], i: number) => void;
@@ -56,6 +58,8 @@ type PlayerCtx = {
 };
 
 const Ctx = createContext<PlayerCtx | null>(null);
+/** Ачаалсан embed ихэвчлэн 2-3 секундэд дуугарна. Үүнээс удвал хэрэглэгчийн өөрийн товшилт хэрэгтэй гэж үзнэ. */
+const STALL_MS = 8000;
 export function usePlayer() {
   const c = use(Ctx);
   if (!c) throw new Error('usePlayer must be used within PlayerProvider');
@@ -75,6 +79,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [full, setFull] = useState(false);
+  // Тоглуулах хүсэлтийн дараа дуу эхлээгүй (зарим утас автоматаар тоглуулахыг хориглодог): embed-ийн ▶-г дарахыг санал болгоно
+  const [stalled, setStalled] = useState(false);
+  const watchdog = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const live = useRef({ queue, idx, playing });
   useEffect(() => { live.current = { queue, idx, playing }; });
@@ -108,9 +115,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (t?.source === 'spotify') embed.pause();
   }, []);
 
+  const prime = useCallback((uri: string) => {
+    if (embedWrap.current) void initEmbed(hostIn(embedWrap, embedHost), uri, onSpState).catch(() => {});
+  }, [onSpState, hostIn]);
+
   const playSpotify = useCallback((t: Track, at: number) => {
     // Embed тоглож эхэлснээ playback_update-ээр мэдэгдэнэ: дуу гараагүй байхад явцын мөр гүйхгүй
     sp.current = { position: at, duration: t.dur, paused: true, at: performance.now() };
+    setStalled(false);
+    clearTimeout(watchdog.current);
+    watchdog.current = setTimeout(() => setStalled(true), STALL_MS);
     embedPlay(hostIn(embedWrap, embedHost), t.uri!, at, onSpState).catch(() => toast.error(tr('Spotify тоглуулагч ачаалагдсангүй')));
   }, [onSpState, hostIn, tr]);
 
@@ -165,6 +179,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [cur, startAt]);
 
   const stop = useCallback(() => {
+    clearTimeout(watchdog.current); setStalled(false);
     stopMusic(); pauseExternal(cur());
     synth.current.pos = 0;
     live.current = { ...live.current, queue: [], idx: 0, playing: false };
@@ -182,6 +197,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       // Дуу дуусахад Spotify байрлалыг 0 болгож зогсоодог → дараагийнх руу шилжинэ
       const ended = !prev.paused && prev.duration > 0 && prev.position >= prev.duration - 3 && s.position < 1 && s.paused;
       sp.current = { ...s, at: performance.now() };
+      // Дуу бодитоор урагшилж эхэлсэн: анхааруулга хэрэггүй
+      if (!s.paused && s.position > prev.position + 0.1) { clearTimeout(watchdog.current); setStalled(false); }
       if (ended) return skip(1);
       if (cur()?.source === 'spotify') syncPlaying(!s.paused);
     };
@@ -203,18 +220,23 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.body.classList.toggle('has-player', queue.length > 0);
   }, [queue.length]);
-  useEffect(() => () => { stopMusic(); document.body.classList.remove('has-player'); }, []);
+  useEffect(() => () => { stopMusic(); clearTimeout(watchdog.current); document.body.classList.remove('has-player'); }, []);
 
   const value = useMemo<PlayerCtx>(() => ({
-    queue, idx, current, playing, full, nowId: current?.id, usesEmbed: usesSpEmbed, elapsed, duration, play, toggle, skip, jump, seek, setFull, stop,
-  }), [queue, idx, current, playing, full, usesSpEmbed, elapsed, duration, play, toggle, skip, jump, seek, stop]);
+    queue, idx, current, playing, full, nowId: current?.id, usesEmbed: usesSpEmbed, prime, elapsed, duration, play, toggle, skip, jump, seek, setFull, stop,
+  }), [queue, idx, current, playing, full, usesSpEmbed, prime, elapsed, duration, play, toggle, skip, jump, seek, stop]);
 
   return (
     <Ctx value={value}>
       {children}
       {/* Spotify Embed: DOM-д байнга байна (iframe дахин ачаалагдахгүй), шаардлагагүй үед дэлгэцээс гадна */}
       <div className={cn('embed-bar fixed z-36 flex items-center gap-1 rounded-2xl bg-[#121212] p-1 shadow-[0_10px_30px_rgba(0,0,0,.3)]', !usesSpEmbed && 'embed-off', full && 'z-56')}
-        aria-hidden={!usesSpEmbed} role="region" aria-label={tr('Spotify тоглуулагч')}>
+        aria-hidden={!usesSpEmbed} inert={!usesSpEmbed} role="region" aria-label={tr('Spotify тоглуулагч')}>
+        {usesSpEmbed && stalled && (
+          <p role="status" className="absolute inset-x-1 bottom-full mb-1.5 rounded-xl bg-[#121212] px-3 py-2 text-sm text-white shadow-[0_6px_20px_rgba(0,0,0,.3)]">
+            {tr('Дуу эхлэхгүй байна уу? Доорх Spotify тоглуулагчийн ▶ товчийг дарна уу.')}
+          </p>
+        )}
         <div ref={embedWrap} className="h-20 min-w-0 flex-1 overflow-hidden rounded-xl" />
         <div className="flex flex-col">
           <button className="grid size-9 place-items-center text-white" aria-label={tr('Дараах')} onClick={() => skip(1)}>⏭</button>
