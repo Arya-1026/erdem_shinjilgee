@@ -28,6 +28,13 @@ const getCtor = (): SRCtor | null => {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 };
 const INFO_KEY = 'setgel-voice-info';
+const STOP_EVENT = 'setgel:voice-stop';
+
+/** Хадгалах/илгээх үед дуудна: сонсолтыг шууд таслаж, үлдсэн (хараахан бичигдээгүй) яриаг хаяна.
+    Ингэхгүй бол «Хадгалах» дарсны дараа хэлсэн үг ч талбарт орж ирдэг. */
+export function stopVoice() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(STOP_EVENT));
+}
 const noop = () => () => {};
 
 /** compact: зөвхөн 🎤 дүрс товч (чатын илгээх товчны хажууд). onInterim: ярьж байх үеийн түр текст (талбарт харуулахад). */
@@ -43,6 +50,13 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
   const cb = useRef(onText), cbInterim = useRef(onInterim);
   useEffect(() => { cb.current = onText; cbInterim.current = onInterim; });
   useEffect(() => () => rec.current?.abort(), []);
+  // stopVoice(): abort() нь хүлээгдэж буй үр дүнг хаядаг (stop() бол сүүлийн хэллэгийг бичсээр байдаг)
+  const killed = useRef(false);
+  useEffect(() => {
+    const kill = () => { if (rec.current) { killed.current = true; rec.current.abort(); } };
+    window.addEventListener(STOP_EVENT, kill);
+    return () => window.removeEventListener(STOP_EVENT, kill);
+  }, []);
   const startRef = useRef<() => void>(() => {});
   // Зөвшөөрөл өгөгдмөгц цонхыг хааж, шууд сонсож эхэлнэ
   const onGranted = useCallback(() => { setPerm(null); startRef.current(); }, []);
@@ -71,7 +85,9 @@ export function VoiceInput({ onText, onInterim, compact, className }: { onText: 
     r.continuous = true;
     r.interimResults = true;
     const fresh = speechFilter();
+    killed.current = false;
     r.onresult = e => {
+      if (killed.current) return;
       const fin: string[] = [];
       let mid = '';
       // resultIndex-д найдаж болохгүй (Android дээр 0 хэвээр үлддэг) тул бүгдийг шалгаж, шүүлтүүрээр давхардлыг хасна

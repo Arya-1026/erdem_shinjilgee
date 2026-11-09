@@ -6,7 +6,7 @@ import { Botgo3D } from '@/components/botgo-3d';
 import { DassReminder } from '@/components/dass-reminder';
 import { FriendsMoods } from '@/components/friends-moods';
 import { JournalButton } from '@/components/day-journal';
-import { VoiceInput } from '@/components/voice-input';
+import { stopVoice, VoiceInput } from '@/components/voice-input';
 import { DailySupportCard } from '@/components/daily-support';
 import { MoodCarousel } from '@/components/mood-carousel';
 import { MoodFace } from '@/components/mood-face';
@@ -146,6 +146,7 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
   }
 
   async function save() {
+    stopVoice();
     setSaving(true);
     // Гар утасны гарууд бичвэрийг state-д оруулж амжаагүй байж болох тул талбарын утгыг шууд уншина
     const e = await addEntry({ mood: m.id, intensity, tags, sleep, note: (noteBox.current?.value ?? note).trim() });

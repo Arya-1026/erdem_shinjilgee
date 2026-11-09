@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useApp } from '@/components/providers/app-provider';
 import { useT } from '@/components/providers/locale-provider';
 import { Button } from '@/components/ui/button';
-import { VoiceInput } from '@/components/voice-input';
+import { stopVoice, VoiceInput } from '@/components/voice-input';
 import { MOODS, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import type { DayJournal, DayNote, MoodId } from '@/lib/types';
@@ -62,6 +62,7 @@ export function DayJournalForm({ date, onDone }: { date: string; onDone: () => v
   const [busy, setBusy] = useState(false);
 
   async function submit() {
+    stopVoice();
     setBusy(true);
     const ok = await saveJournal(date, mood, body.trim());
     setBusy(false);

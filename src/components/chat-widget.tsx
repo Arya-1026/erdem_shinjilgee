@@ -17,7 +17,7 @@ import { QUICK, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import type { ChatMessage, ChatMode, SongRec } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
-import { VoiceInput } from '@/components/voice-input';
+import { stopVoice, VoiceInput } from '@/components/voice-input';
 
 const MODES: [ChatMode, string][] = [['calm', '🌊 Тайван'], ['motivate', '💪 Урам'], ['listen', '👂 Сонсох']];
 
@@ -75,6 +75,7 @@ function ChatBody() {
   useEffect(() => { box.current?.scrollTo({ top: box.current.scrollHeight }); }, [msgs, typing, chatOpen]);
 
   async function send(raw: string) {
+    stopVoice();
     const t = raw.trim(); if (!t || typing) return;
     setMsgs(m => [...(m ?? []), { id: 'u' + Date.now(), role: 'user', content: t, crisis: false }]);
     setText(''); if (input.current) input.current.style.height = '';

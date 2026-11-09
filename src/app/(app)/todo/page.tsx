@@ -18,7 +18,7 @@ import { dayCapacity, EFFORT, effortLabel, FIXED, hhmm, recentState, supportHint
 import { cn } from '@/lib/utils';
 import type { Todo } from '@/lib/types';
 import { useLocale, useT } from '@/components/providers/locale-provider';
-import { VoiceInput } from '@/components/voice-input';
+import { stopVoice, VoiceInput } from '@/components/voice-input';
 import { translateReason, type Translate } from '@/lib/i18n';
 
 const FIELD = 'min-h-11 w-full min-w-0 rounded-xl border-[1.5px] bg-background px-3 focus:border-primary focus:outline-none';
@@ -58,6 +58,7 @@ export default function TodoPage() {
   const hints = supportHints(todos, stats, today, tr);
 
   async function plan(mode?: 'replan' | 'gentle') {
+    stopVoice();
     setBusy(true);
     try {
       const res = await fetch('/api/todos/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, today, replan: mode === 'replan', gentle: mode === 'gentle' }) });
