@@ -88,6 +88,31 @@ export const INTL_ARTISTS: Artist[] = [
   { name: 'Louis Armstrong', genres: ['Жазз'], ages: ['mature', 'senior'] },
   { name: 'Norah Jones', genres: ['Жазз'], ages: ['adult', 'mature'] },
   { name: 'Ludovico Einaudi', genres: ['Сонгодог хөгжим'], ages: ['young', 'adult', 'mature', 'senior'] },
+  { name: 'Yiruma', genres: ['Сонгодог хөгжим'], ages: ['teen', 'young', 'adult', 'mature'] },
+  { name: 'Hans Zimmer', genres: ['Сонгодог хөгжим'], ages: ['young', 'adult', 'mature'] },
+  { name: 'TWICE', genres: ['K-pop'], ages: ['teen', 'young'] },
+  { name: 'NewJeans', genres: ['K-pop'], ages: ['teen', 'young'] },
+  { name: 'SEVENTEEN', genres: ['K-pop'], ages: ['teen', 'young'] },
+  { name: 'aespa', genres: ['K-pop'], ages: ['teen', 'young'] },
+  { name: 'IU', genres: ['K-pop', 'Поп'], ages: ['teen', 'young', 'adult'] },
+  { name: 'BIGBANG', genres: ['K-pop'], ages: ['young', 'adult'] },
+  { name: 'Frank Ocean', genres: ['R&B'], ages: ['young', 'adult'] },
+  { name: 'Daniel Caesar', genres: ['R&B'], ages: ['young', 'adult'] },
+  { name: 'H.E.R.', genres: ['R&B'], ages: ['young', 'adult'] },
+  { name: 'Beyoncé', genres: ['R&B', 'Поп'], ages: ['young', 'adult', 'mature'] },
+  { name: 'Usher', genres: ['R&B'], ages: ['adult', 'mature'] },
+  { name: 'Joji', genres: ['R&B', 'Lo-fi'], ages: ['teen', 'young'] },
+  { name: 'Nujabes', genres: ['Lo-fi', 'Хип хоп, рэп'], ages: ['young', 'adult'] },
+  { name: 'Lofi Girl', genres: ['Lo-fi'], ages: ['teen', 'young', 'adult'] },
+  { name: 'Calvin Harris', genres: ['Электрон', 'Поп'], ages: ['young', 'adult'] },
+  { name: 'Martin Garrix', genres: ['Электрон'], ages: ['teen', 'young'] },
+  { name: 'Marshmello', genres: ['Электрон'], ages: ['teen', 'young'] },
+  { name: 'Lana Del Rey', genres: ['Инди', 'Поп'], ages: ['young', 'adult'] },
+  { name: 'Tame Impala', genres: ['Инди', 'Рок'], ages: ['young', 'adult'] },
+  { name: 'Mumford & Sons', genres: ['Ардын дуу', 'Инди'], ages: ['young', 'adult', 'mature'] },
+  { name: 'Chet Baker', genres: ['Жазз'], ages: ['adult', 'mature', 'senior'] },
+  { name: 'Frank Sinatra', genres: ['Жазз', 'Поп'], ages: ['mature', 'senior'] },
+  { name: 'Slipknot', genres: ['Метал'], ages: ['young', 'adult'], hard: true },
 ];
 
 /** Метал ба түүнтэй ижил хатуу хөгжимд тохирох mood. Бусад үед санал болгохгүй. */
@@ -103,6 +128,17 @@ const fit = (a: Artist, age: AgeGroup | null, genres: Genre[]) =>
 /** Нас, төрөлд хамгийн ойрыг нь эхэнд. Юу ч таараагүй бол 0 оноотой ч жагсаалтад үлдэнэ. */
 export function rankArtists(list: Artist[], age: AgeGroup | null, genres: Genre[], rand: () => number = () => 0.5) {
   return list.map(a => ({ a, k: fit(a, age, genres) + rand() })).sort((x, y) => y.k - x.k).map(x => x.a);
+}
+
+/**
+ * Анх орохдоо сонгох дуучид. Дууны төрөл сонгосон бол зөвхөн тэр төрлийн дуучид (K-pop → K-pop-ын дуучид), насаар эрэмбэлнэ.
+ * Төрөл сонгоогүй бол насанд тохирохыг эхэнд нь n хүртэл.
+ */
+export function artistsForGenres(age: AgeGroup | null, genres: Genre[], n = 14) {
+  const pick = (list: Artist[]) => genres.length
+    ? rankArtists(list.filter(a => a.genres.some(g => genres.includes(g))), age, genres).map(a => a.name)
+    : rankArtists(list, age, genres).slice(0, n).map(a => a.name);
+  return { mongolian: pick(MN_ARTISTS), international: pick(INTL_ARTISTS) };
 }
 
 /** Анх орохдоо сонгох дуучдын сонголт */

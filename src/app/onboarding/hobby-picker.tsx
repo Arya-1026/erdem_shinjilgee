@@ -7,25 +7,33 @@ import { toast } from 'sonner';
 import { PalettePicker } from '@/components/palette-picker';
 import { Chip, Segmented } from '@/components/segmented';
 import { Button } from '@/components/ui/button';
-import { ageGroup, artistOptions } from '@/lib/artists';
+import { ageGroup, artistsForGenres } from '@/lib/artists';
 import { canAddHobby, cleanHobby, pickHobbyCats } from '@/lib/custom-hobbies';
 import { CAT_ICON, GENRE_CAT, HOBBIES, LEGACY_HOBBIES } from '@/lib/data';
 import { pickGenres } from '@/lib/mn-songs';
 import { tasteGenres } from '@/lib/music-taste';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 import { useLocale, useT } from '@/components/providers/locale-provider';
 
 const YEAR = new Date().getFullYear();
 const validAge = (a: number) => a >= 10 && a <= 100;
 
-/* Анх орж ирэхэд: 1) апп-ын өнгө сонгох → 2) нас, хобби, дууны төрөл, дуртай дуучин. Профайлаас засах үед зөвхөн 2-р алхам. */
+// Эхний алхамд сонгох ерөнхий ангиллууд. Дууны төрөл нь «Хөгжим»-ийн дотор харагдана.
+const MUSIC = 'Хөгжим';
+const TOP_CATS = Object.keys(HOBBIES).filter(c => c !== GENRE_CAT);
+const topOf = (cat: string) => (cat === GENRE_CAT ? MUSIC : cat);
+const catOfHobby = (h: string, own: Record<string, string>) => Object.entries(HOBBIES).find(([, items]) => items.includes(h))?.[0] ?? own[h] ?? LEGACY_HOBBIES[h];
+
+/* Анх орж ирэхэд: 1) апп-ын өнгө → 2) ерөнхий ангилал (кино, аялал, хөгжим…) → 3) сонгосон ангиллын хобби, дууны төрөл,
+   тэр төрлийн дуучид, нас. Профайлаас засах үед 3-р алхмаас эхэлж, ангиллаа буцаж өөрчилж болно. */
 export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBirthYear, initialArtists, editing }: { initial: string[]; initialCats?: Record<string, string>; initialTheme: string; initialBirthYear: number | null; initialArtists: string[]; editing: boolean }) {
   const tr = useT();
   const { locale } = useLocale();
   const router = useRouter();
   const first = !editing && !initial.length;
-  const [step, setStep] = useState<'theme' | 'hobby'>(first ? 'theme' : 'hobby');
+  const [step, setStep] = useState<'theme' | 'cats' | 'hobby'>(first ? 'theme' : 'hobby');
   const [theme, setPalette] = useState<PaletteId>(isPaletteId(initialTheme) ? initialTheme : DEFAULT_PALETTE);
   const [sel, setSel] = useState(() => new Set(initial));
   const [busy, setBusy] = useState(false);
@@ -34,13 +42,16 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const [artists, setArtists] = useState(initialArtists);
   const [custom, setCustom] = useState('');
   const [hobbyCats, setHobbyCats] = useState(initialCats);
+  // Сонгосон ерөнхий ангиллууд: засах үед өмнө сонгосон хоббиудын ангиллаас
+  const [chosen, setChosen] = useState(() => new Set(initial.flatMap(h => { const c = catOfHobby(h, initialCats); return c ? [topOf(c)] : []; })));
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [catDraft, setCatDraft] = useState('');
   const { resolvedTheme, setTheme } = useTheme();
   // Сервер theme мэдэхгүй тул hydration дуустал гэрэлтэй гэж харуулна
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const ageNum = Number(age), birthYear = validAge(ageNum) ? YEAR - ageNum : null;
-  const options = artistOptions(ageGroup(birthYear), pickGenres([...sel]));
+  const genres = pickGenres([...sel]);
+  const options = artistsForGenres(ageGroup(birthYear), genres);
   const toggleArtist = (a: string) => setArtists(l => (l.includes(a) ? l.filter(x => x !== a) : [...l, a]));
   const addCustom = () => { const a = custom.trim().slice(0, 60); if (a && !artists.includes(a)) setArtists(l => [...l, a]); setCustom(''); };
 
@@ -48,6 +59,13 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   useEffect(() => { applyPalette(theme); }, [theme]);
 
   // Өөрөө нэмсэн хоббиг (✕) хасвал ангиллаас нь ч хасна
+  // Ангиллыг хасвал түүний доторх сонголтуудыг ч хасна
+  const toggleCat = (c: string) => {
+    if (!chosen.has(c)) return setChosen(x => new Set(x).add(c));
+    setChosen(x => { const n = new Set(x); n.delete(c); return n; });
+    const inside = new Set([...sel].filter(h => { const hc = catOfHobby(h, hobbyCats); return hc && topOf(hc) === c; }));
+    setSel(x => new Set([...x].filter(h => !inside.has(h))));
+  };
   const toggle = (h: string) => {
     setSel(s => { const n = new Set(s); if (n.has(h)) n.delete(h); else n.add(h); return n; });
     if (hobbyCats[h]) setHobbyCats(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== h)));
@@ -62,7 +80,9 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const catOf = (h: string) => hobbyCats[h] ?? LEGACY_HOBBIES[h];
   const mine = customs.filter(h => !catOf(h));
   const inCat = (cat: string) => customs.filter(h => catOf(h) === cat);
+  // Хайлт хийвэл бүх ангиллаас, үгүй бол зөвхөн сонгосон ангиллуудыг харуулна
   const cats = Object.entries(HOBBIES)
+    .filter(([cat]) => q || chosen.has(topOf(cat)))
     .map(([cat, items]) => [cat, q && !match(cat) ? items.filter(match) : items, q && !match(cat) ? inCat(cat).filter(match) : inCat(cat)] as const)
     .filter(([, items, own]) => items.length || own.length);
   const newHobby = cleanHobby(query);
@@ -110,7 +130,7 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="grad-dawn mb-5 rounded-3xl p-5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold opacity-80">{tr('Алхам 1 / 2')}</p>
+          <p className="text-sm font-semibold opacity-80">{tr('Алхам 1 / 3')}</p>
           <button type="button" className="min-h-9 text-sm font-semibold underline" onClick={() => void switchAccount()}>{tr('← Нэвтрэх хуудас руу')}</button>
         </div>
         <h1 className="my-1 text-[28px] leading-9 font-bold">{tr('Тавтай морил 🌙')}</h1>
@@ -121,7 +141,36 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
       <h2 className="mt-5 mb-2 font-semibold">{tr('Горим')}</h2>
       <Segmented full label={tr('Гэрэлтэй эсвэл харанхуй')} value={mounted && resolvedTheme === 'dark' ? 'dark' : 'light'} onChange={setTheme} options={[['light', tr('☀️ Гэрэлтэй')], ['dark', tr('🌙 Харанхуй')]]} />
       <div className="fixed inset-x-0 bottom-0 border-t bg-card px-4 pt-3 pb-[calc(12px+var(--safe-b))]">
-        <Button size="xl" className="mx-auto flex w-full max-w-[760px]" onClick={() => { setStep('hobby'); scrollTo(0, 0); }}>{tr('Үргэлжлүүлэх')}</Button>
+        <Button size="xl" className="mx-auto flex w-full max-w-[760px]" onClick={() => { setStep('cats'); scrollTo(0, 0); }}>{tr('Үргэлжлүүлэх')}</Button>
+      </div>
+    </div>
+  );
+
+  if (step === 'cats') return (
+    <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 2 / 3')}</p>
+        {first && <button className="text-sm font-semibold text-primary" onClick={() => setStep('theme')}>{tr('← Өнгө')}</button>}
+      </div>
+      <h1 className="my-2 text-[28px] leading-9 font-bold">{tr('Юу сонирхдог вэ?')}</h1>
+      <p className="mb-4 text-muted-foreground">{tr('Эхлээд ерөнхий ангиллаа сонгоорой. Дараагийн алхамд сонгосон ангилал бүрээсээ дэлгэрэнгүй сонгоно.')}</p>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] gap-2.5" role="group" aria-label={tr('Сонирхлын ангилал')}>
+        {TOP_CATS.map(c => {
+          const on = chosen.has(c);
+          return (
+            <button key={c} type="button" aria-pressed={on} onClick={() => toggleCat(c)}
+              className={cn('flex min-h-[92px] flex-col items-start gap-1 rounded-2xl border-[1.5px] bg-card p-3 text-left transition-colors hover:border-primary', on && 'border-primary bg-secondary')}>
+              <span className="flex w-full items-center justify-between text-2xl" aria-hidden="true">{CAT_ICON[c]}{on && <span className="grid size-6 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>}</span>
+              <b className="leading-tight">{tr(c)}</b>
+              <span className="line-clamp-1 text-xs text-muted-foreground">{HOBBIES[c].slice(0, 3).map(h => tr(h)).join(', ')}…</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="fixed inset-x-0 bottom-0 border-t bg-card px-4 pt-3 pb-[calc(12px+var(--safe-b))]">
+        <Button size="xl" className="mx-auto flex w-full max-w-[760px]" disabled={!chosen.size} onClick={() => { setStep('hobby'); scrollTo(0, 0); }}>
+          {chosen.size ? tr('Үргэлжлүүлэх ({0} ангилал)', chosen.size) : tr('Дор хаяж 1 ангилал сонгоно уу')}
+        </Button>
       </div>
     </div>
   );
@@ -129,8 +178,8 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   return (
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 2 / 2')}</p>
-        {first && <button className="text-sm font-semibold text-primary" onClick={() => setStep('theme')}>{tr('← Өнгө')}</button>}
+        <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 3 / 3')}</p>
+        <button className="text-sm font-semibold text-primary" onClick={() => { setQuery(''); setStep('cats'); scrollTo(0, 0); }}>{tr('← Ангилал')}</button>
       </div>
       <h1 className="my-2 text-[28px] leading-9 font-bold">{tr('Таны тухай')}</h1>
       <div className="mb-5">
@@ -140,7 +189,7 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
           className="h-12 w-32 rounded-xl border-[1.5px] bg-card px-3.5 focus:border-primary focus:outline-none" />
       </div>
       <h2 className="mb-1 text-[22px] leading-[30px] font-semibold">{tr('Таны сонирхол юу вэ?')}</h2>
-      <p className="mb-4 text-muted-foreground">{tr('Хоббид тань тулгуурлан тохирох дасгал, дуу, ая, кино санал болгоно. Дор хаяж 1-ийг сонгоно уу.')}</p>
+      <p className="mb-4 text-muted-foreground">{tr('Сонгосон ангилал бүрээсээ дуртайгаа сонгоорой. Үүнд тулгуурлан дасгал, дуу, кино санал болгоно.')}</p>
       <div className="mb-5 flex gap-2">
         <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder={tr('🔍 Хайх эсвэл өөрийн хобби бичих')} aria-label={tr('Хобби хайх эсвэл нэмэх')} maxLength={40}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addHobby(); } }}
@@ -184,13 +233,18 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
         );
       })}
       {!cats.length && !canAdd && <p className="mb-5 text-sm text-muted-foreground">{tr('«{0}» олдсонгүй.', query)}</p>}
-      <section className="mb-5">
+      {chosen.has(MUSIC) && <section className="mb-5">
         <h3 className="mb-1 font-semibold">{tr('🎤 Дуртай дуучин')}{artists.length > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{artists.length}</span>}</h3>
-        <p className="mb-2 text-sm text-muted-foreground">{tr('Эдгээрийн дууг Spotify-аас хайж санал болгоно. Жагсаалт таны нас, төрлөөр өөрчлөгдөнө.')}</p>
-        <div className="mb-1.5 text-sm font-semibold">{tr('Монгол')}</div>
-        <div className="mb-3 flex flex-wrap gap-2">{options.mongolian.map(a => <Chip key={a} on={artists.includes(a)} onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
-        <div className="mb-1.5 text-sm font-semibold">{tr('Олон улсын')}</div>
-        <div className="mb-3 flex flex-wrap gap-2">{options.international.map(a => <Chip key={a} on={artists.includes(a)} onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
+        <p className="mb-2 text-sm text-muted-foreground">{genres.length ? tr('Сонгосон төрлийн тань дуучид: {0}. Эдгээрийн дууг Spotify-аас хайж санал болгоно.', genres.map(g => tr(g)).join(', ')) : tr('Дээрх «Дууны төрөл»-өөс сонговол тэр төрлийн дуучид гарна. Эдгээрийн дууг Spotify-аас хайж санал болгоно.')}</p>
+        {options.mongolian.length > 0 && <>
+          <div className="mb-1.5 text-sm font-semibold">{tr('Монгол')}</div>
+          <div className="mb-3 flex flex-wrap gap-2">{options.mongolian.map(a => <Chip key={a} on={artists.includes(a)} onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
+        </>}
+        {options.international.length > 0 && <>
+          <div className="mb-1.5 text-sm font-semibold">{tr('Олон улсын')}</div>
+          <div className="mb-3 flex flex-wrap gap-2">{options.international.map(a => <Chip key={a} on={artists.includes(a)} onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
+        </>}
+        {genres.length > 0 && !options.mongolian.length && <p className="mb-3 text-sm text-muted-foreground">{tr('Энэ төрлийн монгол дуучин жагсаалтад алга. Доороос өөрөө нэмж болно.')}</p>}
         <div className="flex gap-2">
           <input value={custom} onChange={e => setCustom(e.target.value)} placeholder={tr('Өөр дуучин нэмэх')} aria-label={tr('Дуучны нэр')} maxLength={60}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
@@ -200,7 +254,7 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
         {artists.some(a => !options.mongolian.includes(a) && !options.international.includes(a)) && (
           <div className="mt-2 flex flex-wrap gap-2">{artists.filter(a => !options.mongolian.includes(a) && !options.international.includes(a)).map(a => <Chip key={a} on onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
         )}
-      </section>
+      </section>}
       <div className="fixed inset-x-0 bottom-0 border-t bg-card px-4 pt-3 pb-[calc(12px+var(--safe-b))]">
         <Button size="xl" className="mx-auto flex w-full max-w-[760px]" disabled={!sel.size || busy || (first && !birthYear)} onClick={done}>
           {busy ? tr('Хадгалж байна…') : first && !birthYear ? tr('Насаа оруулна уу') : tr('Үргэлжлүүлэх ({0} сонгосон)', sel.size)}
