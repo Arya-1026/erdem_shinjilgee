@@ -179,7 +179,6 @@ export const EN_UI_1: Record<string, string> = {
   "Захиалгууд, үйлчлүүлэгчийн тайлан": "Bookings and client reports",
   "Нууцлал ба өгөгдөл": "Privacy and data",
   "Таны өгөгдөл Supabase дээр хадгалагдаж, Row Level Security-ээр зөвхөн танд харагдана. Таны зөвшөөрөлгүйгээр хэнтэй ч хуваалцахгүй.": "Your data is stored on Supabase and, through Row Level Security, is visible only to you. It is never shared without your permission.",
-  "⬇ Өгөгдлөө татах (JSON)": "⬇ Download my data (JSON)",
   "↩ Гарах": "↩ Log out",
   "🗑 Бүртгэл, бүх өгөгдлөө устгах": "🗑 Delete my account and all data",
   "⚠️ Энэхүү апп нь мэргэжлийн оношилгоо, эмчилгээг орлохгүй. Яаралтай тусламж хэрэгтэй бол 103 руу залгана уу.": "⚠️ This app doesn't replace professional diagnosis or treatment. If you need urgent help in Mongolia, call 103. Elsewhere, call your local emergency number.",

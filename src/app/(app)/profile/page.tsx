@@ -63,14 +63,6 @@ function ProfileMain() {
   const [pushOn, setPushOn] = useState<boolean | null>(null);
   useEffect(() => { currentSubscription().then(s => setPushOn(Boolean(s))).catch(() => setPushOn(false)); }, []);
 
-  async function exportData() {
-    const { data: chat } = await supabase.from('chat_messages').select('role,content,crisis,created_at').order('created_at');
-    const { profile, entries, feedback, watchlist, bookings, journals, dayNotes } = app;
-    const blob = new Blob([JSON.stringify({ profile, entries, journals, dayNotes, feedback, watchlist, bookings, chat }, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'setgel-data.json'; a.click(); URL.revokeObjectURL(a.href);
-  }
-
   async function logout() {
     player.stop();
     await unsubscribePush(supabase).catch(() => {});
@@ -189,7 +181,6 @@ function ProfileMain() {
         <h3 className="font-semibold">{tr('Нууцлал ба өгөгдөл')}</h3>
         <p className="text-sm text-muted-foreground">{tr('Таны өгөгдөл Supabase дээр хадгалагдаж, Row Level Security-ээр зөвхөн танд харагдана. Таны зөвшөөрөлгүйгээр хэнтэй ч хуваалцахгүй.')}</p>
         <div className="mt-2 flex max-w-[420px] flex-col gap-2.5">
-          <Button variant="outline" size="xl" onClick={exportData}>{tr('⬇ Өгөгдлөө татах (JSON)')}</Button>
           <Button variant="outline" size="xl" onClick={logout}>{tr('↩ Гарах')}</Button>
           <Button variant="destructive" size="xl" onClick={() => app.openDialog({ kind: 'wipe' })}>{tr('🗑 Бүртгэл, бүх өгөгдлөө устгах')}</Button>
         </div>
