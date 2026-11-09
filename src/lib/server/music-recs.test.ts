@@ -198,8 +198,10 @@ describe('songRecs', () => {
       const budgets: number[] = [];
       vi.mocked(artistSongs).mockImplementation(async (_n, _a, budget) => { budgets.push(budget.left); return quota(); });
       await songRecs(fakeDb([], { fav_artists: ['Хурд', 'Нисванис', 'Харанга'] }).db, 'u', 'sad', false);
-      expect(budgets[0]).toBe(5);
-      expect(budgets.slice(1).every(b => b === 0)).toBe(true);
+      // Дуртай дуучид эхний давалгаанд зэрэг хайгдана, квот дууссаны дараах давалгаа (каталогийн дуучид) эрхгүй
+      expect(budgets.slice(0, 3)).toEqual([5, 5, 5]);
+      expect(budgets.length).toBeGreaterThan(3);
+      expect(budgets.slice(3).every(b => b === 0)).toBe(true);
     });
 
     it('хуучин сайн жагсаалтыг дарж бичихгүй, LLM дуудахгүй', async () => {

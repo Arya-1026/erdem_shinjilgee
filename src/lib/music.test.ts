@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampOffset, nearestCorner } from '@/components/use-drag';
-import { ageGroup, artistOptions, hardAllowed, MN_ARTISTS, rankArtists } from './artists';
+import { ageGroup, artistOptions, artistsForGenres, hardAllowed, INTL_ARTISTS, MN_ARTISTS, rankArtists } from './artists';
 import { interleave, MN_SONGS, pickGenres, pickMongolian, SONG_GENRES } from './mn-songs';
 import { balanceByGoal, MOOD_GOALS, parsePicks, parseSuggestions, suggestPrompt, topArtists } from './music-suggest';
 import { CATEGORY_GENRES, GENRE_QUERY, tasteGenres, tasteRank, tasteReason } from './music-taste';
@@ -196,5 +196,27 @@ describe('mood-ийн зорилго', () => {
   it('зорилгыг задлана', () => {
     expect(parsePicks('{"picks":[{"i":0,"goal":"uplift","why":"x"}]}', 1)).toEqual([{ i: 0, goal: 'uplift', why: 'x' }]);
     expect(parseSuggestions('{"s":[{"t":"A","a":"B","goal":"comfort","why":""}]}', 3)[0].goal).toBe('comfort');
+  });
+});
+
+describe('дуучдыг дууны төрлөөр шүүх', () => {
+  it('сонгосон төрлийн дуучид л гарна', () => {
+    const kpop = artistsForGenres('young', ['K-pop']);
+    expect(kpop.international).toEqual(expect.arrayContaining(['BTS', 'BLACKPINK', 'TWICE']));
+    expect(kpop.international.every(n => INTL_ARTISTS.find(a => a.name === n)!.genres.includes('K-pop'))).toBe(true);
+    expect(kpop.mongolian).toEqual([]);
+    const rnb = artistsForGenres('adult', ['R&B']);
+    expect(rnb.international).toContain('SZA');
+    expect([...rnb.mongolian, ...rnb.international].every(n => [...MN_ARTISTS, ...INTL_ARTISTS].find(a => a.name === n)!.genres.includes('R&B'))).toBe(true);
+  });
+  it('олон төрөл сонговол аль нэгэнд нь таарах бүх дуучин', () => {
+    const o = artistsForGenres('young', ['K-pop', 'Хип хоп, рэп']);
+    expect(o.international).toEqual(expect.arrayContaining(['BTS', 'Drake']));
+    expect(o.mongolian).toContain('Rokit Bay');
+  });
+  it('төрөлгүй үед насаар эрэмбэлж 14 хүртэл', () => {
+    const o = artistsForGenres('senior', []);
+    expect(o.mongolian.length).toBe(14);
+    expect(MN_ARTISTS.find(a => a.name === o.mongolian[0])!.ages).toContain('senior');
   });
 });

@@ -16,7 +16,9 @@ function loadScript(src: string) {
 
 let embedCtl: Promise<SpotifyEmbedController> | null = null;
 
-/** `host` элементийг Spotify embed-ээр солино. Энэ элемент DOM-д байнга байх ёстой. */
+/** `host` элементийг Spotify embed-ээр солино. Энэ элемент DOM-д байнга байх ёстой.
+ *  Анх ачаалахад 10 гаруй секунд зарцуулдаг тул санал болгосон дуу харагдмагц урьдчилан дуудна (prime).
+ *  Нуусан (visibility: hidden, дэлгэцээс гадна) элемент бэлэн болдоггүй тул ил тод бус байдлаар дэлгэцэн дээр байлгана. */
 export function initEmbed(host: HTMLElement, firstUri: string, onState: OnState) {
   if (embedCtl) return embedCtl;
   embedCtl = new Promise(resolve => {

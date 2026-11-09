@@ -62,7 +62,7 @@ export default function RecsPage() {
       <div className="mb-3.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(([k, l]) => <Chip key={k} on={tab === k} onClick={() => setTab(k)}>{tr(l)}</Chip>)}
       </div>
-      {/* «Бүгд» дээр дасгал, кино тус тусдаа хэсэгт: киноны тайлбар, «Өөр кинонууд» зөвхөн кинон дээр */}
+      {/* «Бүгд» дээр дасгал, кино тус тусдаа хэсэгт */}
       {(tab === 'all' || tab === 'exercise') && (
         <section>
           {tab === 'all' && <h2 className="mb-2 text-[1.15rem] font-bold">{tr('🧘 Дасгал')}</h2>}
@@ -73,10 +73,13 @@ export default function RecsPage() {
         <section className={cn(tab === 'all' && 'mt-5')}>
           {tab === 'all' && <h2 className="mb-2 text-[1.15rem] font-bold">{tr('🎬 Кино')}</h2>}
           <Watchlist mood={cm} showEmpty={tab === 'movie'} />
-          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
-            <Button size="xl" variant="outline" className="h-10" disabled={!movies} onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</Button>
-          </div>
+          {/* IMDb тайлбар, «Өөр кинонууд» зөвхөн «Кино» таб дээр */}
+          {tab === 'movie' && (
+            <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
+              <Button size="xl" variant="outline" className="h-10" disabled={!movies} onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</Button>
+            </div>
+          )}
           <RecGrid list={movieList} m={cm} onFeedback={onFeedback} />
         </section>
       )}

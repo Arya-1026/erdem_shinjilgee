@@ -231,7 +231,8 @@ body.has-player .app-main { padding-bottom: calc(var(--nav-h) + var(--safe-b) + 
 @media (min-width: 900px) { .mini { left: 256px; right: 16px; bottom: 16px; } }
 /* Spotify Embed: mini player-ийн байрлалд. Ашиглахгүй үед дэлгэцээс гадна (iframe устахгүй) */
 .embed-bar { left: 8px; right: 8px; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); }
-.embed-bar.embed-off { left: -10000px; right: auto; width: 360px; visibility: hidden; }
+/* Нуух үед ч дэлгэцэн дээр ил тод бусаар үлдэнэ: нуусан, дэлгэцээс гадуурх Spotify embed ачаалагдахгүй тул урьдчилан бэлдэж чадахгүй */
+.embed-bar.embed-off { left: auto; right: 0; width: 320px; opacity: 0; pointer-events: none; z-index: -1; }
 @media (min-width: 900px) { .embed-bar { left: 256px; right: 16px; bottom: 16px; } }
 body.has-player .fp { padding-bottom: 110px; }
 .fp { padding: calc(10px + env(safe-area-inset-top)) 22px calc(22px + var(--safe-b));
