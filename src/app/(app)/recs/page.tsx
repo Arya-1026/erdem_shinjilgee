@@ -13,7 +13,7 @@ import { useMovieRecs } from '@/components/use-movies';
 import { Watchlist } from '@/components/watchlist';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { MoodId, RecType } from '@/lib/types';
+import type { Mood, MoodId, RecType, ScoredRec } from '@/lib/types';
 import { useT } from '@/components/providers/locale-provider';
 
 type Tab = 'all' | RecType | 'song';
@@ -28,7 +28,8 @@ export default function RecsPage() {
   const preview = cm.id !== saved.id;
   const [tab, setTab] = useState<Tab>('all');
   const { recs: movies, refresh: moreMovies } = useMovieRecs(cm.id, 12);
-  const list = [...scoredRecs(cm, profile.hobbies, feedback), ...(movies ?? [])].filter(x => tab === 'all' || x.type === tab);
+  const list = [...scoredRecs(cm, profile.hobbies, feedback), ...(movies ?? [])];
+  const exercises = list.filter(x => x.type !== 'movie'), movieList = list.filter(x => x.type === 'movie');
 
   const onFeedback = (id: string, v: number) => {
     setFeedback(id, feedback[id] === v ? 0 : v);
@@ -61,17 +62,23 @@ export default function RecsPage() {
       <div className="mb-3.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {TABS.map(([k, l]) => <Chip key={k} on={tab === k} onClick={() => setTab(k)}>{tr(l)}</Chip>)}
       </div>
-      {(tab === 'all' || tab === 'movie') && <Watchlist mood={cm} showEmpty={tab === 'movie'} />}
-      {(tab === 'all' || tab === 'movie') && (
-        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
-          <Button size="xl" variant="outline" className="h-10" disabled={!movies} onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</Button>
-        </div>
+      {/* «Бүгд» дээр дасгал, кино тус тусдаа хэсэгт: киноны тайлбар, «Өөр кинонууд» зөвхөн кинон дээр */}
+      {(tab === 'all' || tab === 'exercise') && (
+        <section>
+          {tab === 'all' && <h2 className="mb-2 text-[1.15rem] font-bold">{tr('🧘 Дасгал')}</h2>}
+          <RecGrid list={exercises} m={cm} onFeedback={onFeedback} />
+        </section>
       )}
-      {tab !== 'song' && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
-          {list.length ? list.map(x => <RecCard key={x.id} r={x} m={cm} onFeedback={onFeedback} />) : <p className="text-muted-foreground">{tr('Энэ төрөлд зөвлөмж олдсонгүй.')}</p>}
-        </div>
+      {(tab === 'all' || tab === 'movie') && (
+        <section className={cn(tab === 'all' && 'mt-5')}>
+          {tab === 'all' && <h2 className="mb-2 text-[1.15rem] font-bold">{tr('🎬 Кино')}</h2>}
+          <Watchlist mood={cm} showEmpty={tab === 'movie'} />
+          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm text-muted-foreground">{tr('🎬 Кинонуудыг IMDb-ийн өндөр үнэлгээтэй кинонуудаас танд тааруулж сонгосон')}</span>
+            <Button size="xl" variant="outline" className="h-10" disabled={!movies} onClick={moreMovies}>{tr('↻ Өөр кинонууд')}</Button>
+          </div>
+          <RecGrid list={movieList} m={cm} onFeedback={onFeedback} />
+        </section>
       )}
 
       {(tab === 'all' || tab === 'song') && (
@@ -84,5 +91,14 @@ export default function RecsPage() {
         </>
       )}
     </>
+  );
+}
+
+function RecGrid({ list, m, onFeedback }: { list: ScoredRec[]; m: Mood; onFeedback: (id: string, v: number) => void }) {
+  const tr = useT();
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
+      {list.length ? list.map(x => <RecCard key={x.id} r={x} m={m} onFeedback={onFeedback} />) : <p className="text-muted-foreground">{tr('Энэ төрөлд зөвлөмж олдсонгүй.')}</p>}
+    </div>
   );
 }
