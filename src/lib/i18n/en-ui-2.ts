@@ -588,5 +588,11 @@ export const EN_UI_2: Record<string, string> = {
   "Сонгосон төрлийн тань дуучид: {0}. Эдгээрийн дууг Spotify-аас хайж санал болгоно.": "Singers in your genres: {0}. We find their songs on Spotify for you.",
   "Дээрх «Дууны төрөл»-өөс сонговол тэр төрлийн дуучид гарна. Эдгээрийн дууг Spotify-аас хайж санал болгоно.": "Pick a genre under «Music genres» above to see its singers. We find their songs on Spotify for you.",
   "Энэ төрлийн монгол дуучин жагсаалтад алга. Доороос өөрөө нэмж болно.": "No Mongolian singers of this genre in the list. You can add one below.",
+  "Апп суулгах": "Install the app",
+  "Нүүр дэлгэцээс шууд нээгдэж, мэдэгдэл авна.": "Open it straight from your home screen and get notifications.",
+  "📲 Суулгах": "📲 Install",
+  "Safari-ийн доод хэсгийн Хуваалцах ⬆️ товчийг дараад «Нүүр дэлгэцэнд нэмэх»-ийг сонгоно уу.": "In Safari, tap the Share ⬆️ button and choose «Add to Home Screen».",
+  "Браузерын ⋮ цэснээс «Апп суулгах» эсвэл «Нүүр дэлгэцэнд нэмэх»-ийг сонгоно уу.": "Open the browser ⋮ menu and choose «Install app» or «Add to Home screen».",
+  "Сэтгэлийг утсандаа апп болгон суулгаарай": "Install Setgel as an app on your phone",
   "Дуу эхлэхгүй байна уу? Доорх Spotify тоглуулагчийн ▶ товчийг дарна уу.": "Not playing? Tap ▶ on the Spotify player below.",
 };
