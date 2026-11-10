@@ -413,6 +413,7 @@ export const EN_UI_2: Record<string, string> = {
   "Сонсож байна… зогсоох": "Listening… stop",
   "Ярина уу…": "Speak now…",
   "← Буцах": "← Back",
+  "Буцах": "Back",
   "Сэтгэл зүйн асуулга": "Wellbeing questionnaire",
   // DASS-21: хадгалах, Нүүр рүү шилжих
   "✅ Үр дүн хадгалагдлаа": "✅ Results saved",
@@ -540,6 +541,7 @@ export const EN_UI_2: Record<string, string> = {
   "Асуулгыг 14 хоногт нэг удаа бөглөнө. {0} хоногийн дараа дахин бөглөөд өөрчлөлтөө хараарай.": "The questionnaire can be taken once every 14 days. Retake it in {0} days to see how things changed.",
   "🌿 Дасгал дууслаа": "🌿 Exercise complete",
   "Энэ дасгалыг хийснээр:": "What this exercise does for you:",
+  "🌿 Энэ дасгалыг хийснээр:": "🌿 What this exercise does for you:",
   "Тогтмол давтах тусам үр нөлөө нь нэмэгддэг. Одоо биеэ, сэтгэлээ хэсэг ажиглаарай.": "The more regularly you repeat it, the stronger the effect. Take a moment to notice how your body and mind feel now.",
   "✓ Хаах": "✓ Close",
   "Алхам бүр тоолууртай. Хугацаа дуусахад дохио өгч дараагийнх руу автоматаар шилжинэ. Нийт {0} мин.": "Each step has a timer. When time is up you hear a chime and move to the next step automatically. {0} min in total.",
@@ -564,6 +566,7 @@ export const EN_UI_2: Record<string, string> = {
   "Удаан суусны дараах сунгалт цусны эргэлтийг сайжруулж, хүзүү, нурууны хурцадмалыг сулруулдаг. Ингэснээр ядаргаа буурч, анхаарал сэргэнэ.": "Stretching after sitting for a long time improves circulation and eases tension in your neck and back. Tiredness drops and your focus comes back.",
   "Ойр дотны хүнтэйгээ холбогдох нь ганцаардлыг багасгаж, хайр холбооны даавар ялгаруулдаг. Ингэснээр та дэмжлэгтэй гэдгээ мэдэрнэ.": "Reaching out to someone close reduces loneliness and releases the bonding hormone. You feel that you are supported.",
   "Сайхан мөчөө дахин эргэцүүлэх нь эерэг мэдрэмжийг уртасгадаг. Ингэснээр баяр баясгалан тань удаан хадгалагдаж, хэцүү үед нөөц болно.": "Revisiting a good moment makes positive feelings last longer. Your joy stays with you and becomes a resource for hard times.",
+  "Шинэ жор туршиж хоол хийх нь анхаарлыг одоо цагт төвлөрүүлж, санаа зовнилоос түр хөндийрүүлдэг. Ингэснээр та гараар бүтээсэн зүйлдээ баярлаж, өөртөө итгэх итгэл нэмэгдэнэ.": "Cooking a new recipe pulls your attention into the present and gives your mind a break from worries. You also get to enjoy something you made with your own hands, which builds confidence.",
   "✓ Хариулт бүртгэгдлээ": "✓ Answer saved",
   "Дараагийн асуулт руу шилжиж байна…": "Moving to the next question…",
   "Өмнө сонгосон": "Your earlier answer",

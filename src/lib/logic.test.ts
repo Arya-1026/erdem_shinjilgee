@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rateLimited } from './server/recovery';
 import { fallbackReply } from './chat-fallback';
 import { isCrisisText } from './crisis';
-import { moodById } from './data';
+import { moodById, RECS } from './data';
 import { groupSlots, normalizeEntry } from './db';
 import { classifyPrompt, heuristicMoods, parseClassification } from './mood-classify';
 import { scoredRecs } from './recs';
@@ -22,6 +22,18 @@ describe('scoredRecs', () => {
     const top = scoredRecs(sad, ['Зураг'], {})[0];
     expect(top.id).toBe('e8');
     expect(top.hob).toBe(true);
+  });
+  it('хоббид тохирохыг л гаргана: бүх дасгал харагдахгүй', () => {
+    const recs = scoredRecs(sad, ['Зураг', 'Хоол хийх'], {});
+    expect(recs.length).toBeLessThan(RECS.length / 2);
+    expect(recs.every(r => r.hob)).toBe(true);
+    expect(recs.map(r => r.id)).toEqual(expect.arrayContaining(['e8', 'e21']));
+  });
+  it('тохирох дасгал цөөн бол mood-д тохирохоор 3 хүртэл нөхнө', () => {
+    const recs = scoredRecs(sad, ['Хоолны видео үзэх'], {});
+    expect(recs[0]).toMatchObject({ id: 'e21', hob: true });
+    expect(recs).toHaveLength(3);
+    expect(recs.slice(1).every(r => !r.hob && r.moods.includes('sad'))).toBe(true);
   });
   it('👎 дарсныг хасна', () => {
     expect(scoredRecs(sad, [], { s3: -1 }).some(r => r.id === 's3')).toBe(false);

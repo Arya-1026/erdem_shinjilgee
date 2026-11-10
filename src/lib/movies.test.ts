@@ -29,6 +29,17 @@ describe('кино санал болгох', () => {
     expect(recommendMovies(catalog, { ...base, mood: 'calm', hobbies: ['Анимэ'] })[0].id).toBe('anime');
     expect(recommendMovies(catalog, { ...base, mood: 'calm', hobbies: ['K-драма'] })[0]).toMatchObject({ id: 'kdrama', hob: true });
   });
+  it('хоббид тохирох кино эхэнд, бусад нь зөвхөн нөхөж гарна', () => {
+    // «Гүйлт» → Спорт ангилал → Sport/Action; «Хоол хийх» → Comedy/Family
+    const ids = recommendMovies(catalog, { ...base, mood: 'calm', hobbies: ['Гүйлт', 'Хоол хийх'] }, 3).map(r => r.id);
+    expect(ids.slice(0, 2).sort()).toEqual(['comedy', 'sport']);
+  });
+  it('тусгай холбоосгүй хобби ангиллаараа кинонд нөлөөлнө', () => {
+    // «Йог» → Бясалгал ангилал → Documentary/Drama
+    const recs = recommendMovies(catalog, { ...base, mood: 'neutral', hobbies: ['Йог'] }, 3);
+    expect(recs.every(r => r.hob)).toBe(true);
+    expect(recs.every(r => r.sub.includes('Баримтат') || r.sub.includes('Драм'))).toBe(true);
+  });
   it('аймшгийн кинонд дуртай ч сэтгэл санаа сайн үед л гарна', () => {
     expect(recommendMovies(catalog, { ...base, mood: 'happy', hobbies: ['Аймшгийн кино'] }).map(r => r.id)).toContain('horror');
     expect(recommendMovies(catalog, { ...base, mood: 'anxious', hobbies: ['Аймшгийн кино'] }).map(r => r.id)).not.toContain('horror');

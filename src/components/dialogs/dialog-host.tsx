@@ -90,6 +90,7 @@ function Exercise({ recId }: { recId: string }) {
     <>
       <Title>{tr(r.title)}</Title>
       <DialogDescription>{tr(r.sub)}</DialogDescription>
+      {!done && <Benefit id={r.id} />}
       {/* Тоглуулагч өөрөө «дууслаа» дэлгэцтэй тул түүнийг үлдээж, доор нь тайлбар нэмнэ */}
       {PLAYERS[r.id] ? <>
           <PlayerFrame src={PLAYERS[r.id]} title={tr(r.title)} onComplete={finish} onClose={() => openDialog(null)} />
@@ -98,6 +99,19 @@ function Exercise({ recId }: { recId: string }) {
         : done ? <Outcome id={r.id} />
         : r.moves ? <ExerciseCoach recId={r.id} moves={r.moves} onFinish={finish} /> : <StepCoach recId={r.id} steps={r.steps ?? []} sub={r.sub} onFinish={finish} />}
     </>
+  );
+}
+
+/* Дасгалын эхэнд: хийснээр юу өөрчлөгдөхийг урьдчилан хэлж, хийх урам өгнө (дуусахад Outcome-д дахин гарна) */
+function Benefit({ id }: { id: string }) {
+  const tr = useT();
+  const text = BENEFITS[id];
+  if (!text) return null;
+  return (
+    <div className="mt-2 mb-1 rounded-[18px] bg-secondary/60 p-3.5">
+      <p className="text-sm font-semibold text-muted-foreground">{tr('🌿 Энэ дасгалыг хийснээр:')}</p>
+      <p className="mt-1 text-sm leading-relaxed">{tr(text)}</p>
+    </div>
   );
 }
 
@@ -171,6 +185,7 @@ function Breath() {
     <>
       <Title>{tr('4-7-8 амьсгал')}</Title>
       <DialogDescription>{tr('Тав тухтай суугаад цагирагийг дагаарай: 4 сек амьсгал авч, 7 сек барьж, 8 сек гаргана.')}</DialogDescription>
+      {!state && !prep && !done && <Benefit id="e1" />}
       <div className="breath-wrap">
         <svg viewBox="0 0 120 120" className="breath-ring" aria-hidden="true">
           <circle cx="60" cy="60" r="55" className="breath-track" />
