@@ -19,6 +19,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BREATH_LEAD, startBreathMusic } from '@/lib/calm-audio';
 import { RECS, WD_SHORT, moodById } from '@/lib/data';
+import { snoozeDass } from '@/lib/dass-client';
+import { signOutAndReload } from '@/lib/user-storage';
+import type { MoodId } from '@/lib/types';
 import { shownMovie } from '@/components/use-movies';
 import { addDays, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
@@ -38,6 +41,7 @@ export function DialogHost() {
     <Dialog open={Boolean(dialog)} onOpenChange={o => { if (!o) openDialog(null); }}>
       <DialogContent className={SHEET}>
         {d?.kind === 'saved' && <Saved mood={d.mood} />}
+        {d?.kind === 'dass' && <DassOffer mood={d.mood} />}
         {d?.kind === 'exercise' && <Exercise recId={d.recId} />}
         {d?.kind === 'breath' && <Breath />}
         {d?.kind === 'wipe' && <Wipe />}
@@ -74,6 +78,38 @@ function Saved({ mood }: { mood: Parameters<typeof moodById>[0] }) {
         <Button size="xl" className="bg-spotify hover:bg-spotify/85" onClick={() => { openDialog(null); play.mood(m.id); }}>{tr('▶ Тохирох дуу сонсох')}</Button>
         <Button size="xl" variant="secondary" onClick={() => go('/recs')}>{tr('✨ Зөвлөмж харах')}</Button>
         <Button size="xl" variant="outline" onClick={() => { openDialog(null); setChatOpen(true); }}>{tr('💬 AI-тай ярилцах')}</Button>
+      </div>
+    </>
+  );
+}
+
+/* Анхны сэтгэл санааны бүртгэлийн дараа: DASS-21-ийг одоо эхлэх эсвэл дараа нь бөглөх */
+function DassOffer({ mood }: { mood: MoodId }) {
+  const tr = useT();
+  const { openDialog } = useApp();
+  const router = useRouter();
+  const m = moodById(mood);
+  const start = () => { openDialog(null); router.push('/dass?first=1'); };
+  // Хойшлуулбал 3 хоног сануулахгүй, бүртгэлийн ердийн цонх руу шилжинэ
+  const later = () => { snoozeDass(); openDialog({ kind: 'saved', mood }); };
+  return (
+    <>
+      <div className="text-center">
+        <MoodFace m={m} className="mx-auto mb-2.5 size-22 text-[4rem]" />
+        <Title className="pr-0">{tr('Анхны бүртгэл хийгдлээ! 🎉')}</Title>
+        <DialogDescription className="text-sm">{tr('Сүүлийн 7 хоногт ямар байсныг чинь мэдвэл илүү тохирсон зөвлөгөө өгч чадна. 21 богино асуулт, 3 минут орчим.')}</DialogDescription>
+      </div>
+      <div className="mt-3 rounded-2xl bg-secondary/60 p-3.5 text-sm">
+        <b className="mb-1.5 flex items-center gap-2"><span className="text-2xl" aria-hidden="true">🐫</span>{tr('Сэтгэл зүйн асуулга (DASS-21)')}</b>
+        <ul className="grid gap-1">
+          <li>📊 {tr('Гутрал, түгшүүр, стресс гурвыг тус тусад нь харуулна.')}</li>
+          <li>🔒 {tr('Хариулт тань зөвхөн танд харагдана. Найзуудад харагдахгүй.')}</li>
+          <li>🩺 {tr('Энэ бол скрининг, эмчийн онош биш.')}</li>
+        </ul>
+      </div>
+      <div className="mt-4 flex flex-col gap-2.5">
+        <Button size="xl" onClick={start}>{tr('▶ Одоо эхлэх')}</Button>
+        <Button size="xl" variant="ghost" onClick={later}>{tr('Дараа нь бөглөх')}</Button>
       </div>
     </>
   );
@@ -218,7 +254,6 @@ function Wipe() {
   const tr = useT();
   const { supabase, profile, openDialog } = useApp();
   const { stop } = usePlayer();
-  const router = useRouter();
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
@@ -234,10 +269,8 @@ function Wipe() {
     const res = await fetch('/api/account', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(hasPassword ? { password: secret } : { email: secret }) });
     if (!res.ok) { setBusy(false); return void toast.error(res.status === 403 ? (hasPassword ? tr('Нууц үг буруу байна') : tr('Имэйл таарахгүй байна')) : tr('Устгаж чадсангүй')); }
     stop();
-    await supabase.auth.signOut();
-    openDialog(null);
-    toast(tr('Бүртгэл 30 хоногийн дараа бүрмөсөн устгагдана. Энэ хугацаанд нэвтэрвэл сэргээгдэнэ.'));
-    router.replace('/login'); router.refresh();
+    // Бүтэн дахин ачаалах тул мэдэгдлийг нэвтрэх хуудас ?deleted=1-ээр харуулна
+    await signOutAndReload(supabase, '/login?deleted=1');
   }
 
   return (

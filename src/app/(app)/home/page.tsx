@@ -18,6 +18,7 @@ import { Eq } from '@/components/player';
 import { usePlayer, songTrack } from '@/components/providers/player-provider';
 import { usePlay, useSongRecs } from '@/components/use-play';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { offerDassAfterEntry } from '@/lib/dass-client';
 import { ymd } from '@/lib/date';
 import { needsExpert, prediction, todaysEntries } from '@/lib/analytics';
 import { MOOD_CAP, MOODS, TAGS, WD, moodById } from '@/lib/data';
@@ -114,7 +115,7 @@ function TodayStatus({ entries }: { entries: Entry[] }) {
 
 function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i: number) => void }) {
   const tr = useT();
-  const { profile, updateProfile, addEntry, setTint, openDialog } = useApp();
+  const { profile, entries, supabase, updateProfile, addEntry, setTint, openDialog } = useApp();
   const [touched, setTouched] = useState(false);
   const [intensity, setIntensity] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
@@ -148,12 +149,19 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
   async function save() {
     stopVoice();
     setSaving(true);
+    const prevEntries = entries.length;
     // Гар утасны гарууд бичвэрийг state-д оруулж амжаагүй байж болох тул талбарын утгыг шууд уншина
     const e = await addEntry({ mood: m.id, intensity, tags, sleep, note: (noteBox.current?.value ?? note).trim() });
     setSaving(false);
     if (!e) return;
     setIntensity(3); setTags([]); setNote(''); setSleep(7);
-    openDialog({ kind: 'saved', mood: e.mood });
+    // Анхны бүртгэл бөгөөд DASS-21 бөглөөгүй бол эхлээд асуулгыг санал болгоно («Дараа нь» → ердийн «Бүртгэгдлээ» цонх)
+    let dassCount: number | null = null;
+    if (prevEntries === 0) {
+      const { count, error } = await supabase.from('dass_results').select('id', { count: 'exact', head: true });
+      dassCount = error ? null : count;
+    }
+    openDialog(offerDassAfterEntry(prevEntries, dassCount) ? { kind: 'dass', mood: e.mood } : { kind: 'saved', mood: e.mood });
   }
 
   return (
