@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,12 @@ export function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
   const reg = tab === 'register';
+  // Бүртгэл устгасны дараа бүтэн дахин ачаалж энд ирдэг тул мэдэгдлийг эндээс харуулна
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has('deleted')) return;
+    toast(tr('Бүртгэл 30 хоногийн дараа бүрмөсөн устгагдана. Энэ хугацаанд нэвтэрвэл сэргээгдэнэ.'));
+    history.replaceState(null, '', '/login');
+  }, [tr]);
   const callback = (next: string) => `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {

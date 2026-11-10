@@ -14,6 +14,7 @@ import { pickGenres } from '@/lib/mn-songs';
 import { tasteGenres } from '@/lib/music-taste';
 import { applyPalette, DEFAULT_PALETTE, isPaletteId, type PaletteId } from '@/lib/palettes';
 import { createClient } from '@/lib/supabase/client';
+import { signOutAndReload } from '@/lib/user-storage';
 import { cn } from '@/lib/utils';
 import { useLocale, useT } from '@/components/providers/locale-provider';
 
@@ -114,16 +115,14 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
     setBusy(false);
     if (error) return toast.error(tr('Хадгалж чадсангүй: ') + error.message);
     if (editing) toast(tr('Шинэчлэгдлээ'));
-    // Анх бүртгүүлсний дараа DASS-21 асуулга бөглөх эсэхийг асууна (заавал биш)
-    router.replace(editing ? '/profile' : '/dass?first=1');
+    // Анх бүртгүүлсний дараа эхлээд сэтгэл санаагаа бүртгэнэ. DASS-21-ийг анхны бүртгэлийн дараа popup-аар санал болгоно.
+    router.replace(editing ? '/profile' : '/home');
     router.refresh();
   }
 
   // Дуусаагүй бүртгэлийн session үлдсэн бол нэвтрэх хуудас руу буцах зам
   async function switchAccount() {
-    await createClient().auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    await signOutAndReload(createClient());
   }
 
   // Профайлаас засахаар орсон үед зүүн дээд буланд буцах сум

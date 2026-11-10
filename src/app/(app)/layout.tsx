@@ -24,8 +24,10 @@ async function AppData({ children }: { children: React.ReactNode }) {
     if (e instanceof SetupError) return <SetupNeeded kind="db" detail={e.message} />;
     throw e;
   }
+  // key: Cache Components горимд гарсан хуудас <Activity>-оор нуугдаж state нь үлддэг.
+  // Өөр хэрэглэгч нэвтэрвэл бүх client state-ийг шинээр үүсгэнэ (өмнөх акаунтын өгөгдөл харагдахгүй).
   return (
-    <AppProvider initial={data}>
+    <AppProvider key={data.profile.id} initial={data}>
       <PlayerProvider>
         <AppShell>{children}</AppShell>
       </PlayerProvider>

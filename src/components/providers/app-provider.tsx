@@ -15,6 +15,7 @@ import { useLocale, useT } from '@/components/providers/locale-provider';
 // Нээгдэх цонхнууд (хуучин showModal-ын оронд)
 export type DialogState =
   | { kind: 'saved'; mood: MoodId }
+  | { kind: 'dass'; mood: MoodId }
   | { kind: 'exercise'; recId: string }
   | { kind: 'breath' }
   | { kind: 'movie'; recId: string; mood: MoodId }

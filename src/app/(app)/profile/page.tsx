@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
@@ -29,6 +28,7 @@ import { applyPalette, DEFAULT_PALETTE, isPaletteId, paletteColors, paletteLabel
 import { AUDIENCE, shortId } from '@/lib/social';
 import type { Audience } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { signOutAndReload } from '@/lib/user-storage';
 import { useT } from '@/components/providers/locale-provider';
 
 // Сервер дээр theme тодорхойгүй тул hydration-ий дараа л switch-ийг харуулна
@@ -56,7 +56,6 @@ function ProfileMain() {
   const app = useApp();
   const { profile: u, entries, updateProfile, supabase } = app;
   const player = usePlayer();
-  const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
   const seasonPref = useSeasonPref();
@@ -67,8 +66,7 @@ function ProfileMain() {
   async function logout() {
     player.stop();
     await unsubscribePush(supabase).catch(() => {});
-    await supabase.auth.signOut();
-    router.replace('/login'); router.refresh();
+    await signOutAndReload(supabase);
   }
 
   async function togglePush(on: boolean) {

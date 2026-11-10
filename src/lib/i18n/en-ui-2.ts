@@ -414,6 +414,10 @@ export const EN_UI_2: Record<string, string> = {
   "Ярина уу…": "Speak now…",
   "← Буцах": "← Back",
   "Буцах": "Back",
+  // Анхны бүртгэлийн дараах DASS-21 popup
+  "Анхны бүртгэл хийгдлээ! 🎉": "Your first check-in is saved! 🎉",
+  "▶ Одоо эхлэх": "▶ Start now",
+  "Дараа нь бөглөх": "Fill it in later",
   "Сэтгэл зүйн асуулга": "Wellbeing questionnaire",
   // DASS-21: хадгалах, Нүүр рүү шилжих
   "✅ Үр дүн хадгалагдлаа": "✅ Results saved",

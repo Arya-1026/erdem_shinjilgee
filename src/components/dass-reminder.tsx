@@ -7,13 +7,15 @@ import { useT } from '@/components/providers/locale-provider';
 import { DassHelpCard } from '@/components/dass-help';
 import { buttonVariants } from '@/components/ui/button';
 import { DASS_RETAKE_DAYS, helpLevel, type DassScores } from '@/lib/dass';
-import { dassReminder, snoozeDass } from '@/lib/dass-client';
+import { dassReminder, snoozeDass, visibleDassCard } from '@/lib/dass-client';
 
 /* Нүүр хуудас: DASS-21 бөглөөгүй, эсвэл 2 долоо хоног өнгөрсөн бол зөөлөн сануулна. «Дараа нь» → 3 хоног хойшилно. */
 export function DassReminder() {
   const tr = useT();
-  const { supabase } = useApp();
-  const [kind, setKind] = useState<'first' | 'retake' | null>(null);
+  // entries, dialog өөрчлөгдөхөд дахин render хийгдэж харагдах эсэхийг шинээр шалгана
+  const { supabase, entries } = useApp();
+  const [loaded, setKind] = useState<'first' | 'retake' | null>(null);
+  const kind = visibleDassCard(loaded, entries.length);
   // Сүүлийн 14 хоногийн үр дүн босго давсан бол Нүүрт ч яаралтай холбогдох картыг харуулна
   const [urgent, setUrgent] = useState<DassScores | null>(null);
 
