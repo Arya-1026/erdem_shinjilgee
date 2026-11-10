@@ -114,7 +114,8 @@ function DassOffer() {
       </div>
       <div className="mt-4 flex flex-col gap-2.5">
         <Button size="xl" onClick={start}>{tr('▶ Одоо эхлэх')}</Button>
-        <Button size="xl" variant="ghost" onClick={later}>{tr('Дараа нь бөглөх')}</Button>
+        {/* Үндсэн товчноос ялгарах бүдэг саарал */}
+        <Button size="xl" variant="ghost" className="bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] text-muted-foreground hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_12%)] hover:text-foreground dark:hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_12%)]" onClick={later}>{tr('Дараа нь бөглөх')}</Button>
       </div>
     </>
   );
