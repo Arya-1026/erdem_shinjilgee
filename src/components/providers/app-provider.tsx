@@ -15,7 +15,7 @@ import { useLocale, useT } from '@/components/providers/locale-provider';
 // Нээгдэх цонхнууд (хуучин showModal-ын оронд)
 export type DialogState =
   | { kind: 'saved'; mood: MoodId }
-  | { kind: 'dass'; mood: MoodId }
+  | { kind: 'dass' }
   | { kind: 'exercise'; recId: string }
   | { kind: 'breath' }
   | { kind: 'movie'; recId: string; mood: MoodId }
@@ -51,6 +51,9 @@ type AppCtx = Omit<AppData, 'restored'> & {
   /** Хөвөгч чатын самбар */
   chatOpen: boolean;
   setChatOpen: (b: boolean) => void;
+  /** Анхны бүртгэлийн дараа DASS-21 popup хүлээгдэж байна («Бүртгэгдлээ» цонх хаагдахад гарна) */
+  dassPending: boolean;
+  setDassPending: (b: boolean) => void;
 };
 
 
@@ -78,6 +81,7 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
   const [bookings, setBookings] = useState(initial.bookings);
   const [dialog, openDialog] = useState<DialogState>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [dassPending, setDassPending] = useState(false);
   const [likedSongs, setLiked] = useState(initial.likedSongs);
   const [journals, setJournals] = useState(initial.journals);
   const [dayNotes, setDayNotes] = useState(initial.dayNotes);
@@ -181,10 +185,10 @@ export function AppProvider({ initial, children }: { initial: AppData; children:
     experts: initial.experts, slots: initial.slots, isExpert: initial.isExpert, music: initial.music, likedSongs, todos, journals, dayNotes, setTodos, toggleLike,
     activeMood: lastMood(entries),
     setTint, updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    dialog, openDialog, chatOpen, setChatOpen,
+    dialog, openDialog, chatOpen, setChatOpen, dassPending, setDassPending,
   }), [supabase, profile, entries, feedback, watchlist, bookings, initial.experts, initial.slots, initial.isExpert, initial.music, likedSongs, todos, journals, dayNotes, toggleLike,
     updateProfile, addEntry, addDayNote, saveJournal, setFeedback, toggleWatch, addBooking, cancelBooking, bumpExercises,
-    dialog, chatOpen]);
+    dialog, chatOpen, dassPending]);
 
   return <Ctx value={value}>{children}</Ctx>;
 }

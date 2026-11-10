@@ -19,9 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BREATH_LEAD, startBreathMusic } from '@/lib/calm-audio';
 import { RECS, WD_SHORT, moodById } from '@/lib/data';
-import { snoozeDass } from '@/lib/dass-client';
+import { dassPopupReady, snoozeDass } from '@/lib/dass-client';
 import { signOutAndReload } from '@/lib/user-storage';
-import type { MoodId } from '@/lib/types';
 import { shownMovie } from '@/components/use-movies';
 import { addDays, ymd } from '@/lib/date';
 import { cn } from '@/lib/utils';
@@ -32,7 +31,14 @@ export const SHEET = 'top-auto bottom-0 left-0 max-h-[92dvh] max-w-full grid-col
 
 export function DialogHost() {
   const tr = useT();
-  const { dialog, openDialog } = useApp();
+  const { dialog, openDialog, chatOpen, dassPending, setDassPending } = useApp();
+  // Анхны бүртгэлийн дараах DASS-21 popup: «Бүртгэгдлээ» цонх (түүнээс нээсэн дасгал, чат) хаагдсаны дараа,
+  // хаах animation, дараагийн хуудас руу шилжилт дуусахыг хүлээж гаргана
+  useEffect(() => {
+    if (!dassPopupReady(dassPending, Boolean(dialog), chatOpen)) return;
+    const t = setTimeout(() => { setDassPending(false); openDialog({ kind: 'dass' }); }, 700);
+    return () => clearTimeout(t);
+  }, [dassPending, dialog, chatOpen, openDialog, setDassPending]);
   // Хаах animation дуусах хүртэл сүүлийн агуулгыг хадгална
   const [shown, setShown] = useState<DialogState>(dialog);
   if (dialog && dialog !== shown) setShown(dialog);
@@ -41,7 +47,7 @@ export function DialogHost() {
     <Dialog open={Boolean(dialog)} onOpenChange={o => { if (!o) openDialog(null); }}>
       <DialogContent className={SHEET}>
         {d?.kind === 'saved' && <Saved mood={d.mood} />}
-        {d?.kind === 'dass' && <DassOffer mood={d.mood} />}
+        {d?.kind === 'dass' && <DassOffer />}
         {d?.kind === 'exercise' && <Exercise recId={d.recId} />}
         {d?.kind === 'breath' && <Breath />}
         {d?.kind === 'wipe' && <Wipe />}
@@ -84,23 +90,22 @@ function Saved({ mood }: { mood: Parameters<typeof moodById>[0] }) {
 }
 
 /* Анхны сэтгэл санааны бүртгэлийн дараа: DASS-21-ийг одоо эхлэх эсвэл дараа нь бөглөх */
-function DassOffer({ mood }: { mood: MoodId }) {
+function DassOffer() {
   const tr = useT();
   const { openDialog } = useApp();
   const router = useRouter();
-  const m = moodById(mood);
   const start = () => { openDialog(null); router.push('/dass?first=1'); };
-  // Хойшлуулбал 3 хоног сануулахгүй, бүртгэлийн ердийн цонх руу шилжинэ
-  const later = () => { snoozeDass(); openDialog({ kind: 'saved', mood }); };
+  // Хойшлуулбал 3 хоног сануулахгүй
+  const later = () => { snoozeDass(); openDialog(null); };
   return (
     <>
       <div className="text-center">
-        <MoodFace m={m} className="mx-auto mb-2.5 size-22 text-[4rem]" />
-        <Title className="pr-0">{tr('Анхны бүртгэл хийгдлээ! 🎉')}</Title>
+        <div className="mb-2 text-[4rem] leading-none" aria-hidden="true">🐫</div>
+        <Title className="pr-0">{tr('Сэтгэл зүйн богино асуулга бөглөх үү?')}</Title>
         <DialogDescription className="text-sm">{tr('Сүүлийн 7 хоногт ямар байсныг чинь мэдвэл илүү тохирсон зөвлөгөө өгч чадна. 21 богино асуулт, 3 минут орчим.')}</DialogDescription>
       </div>
       <div className="mt-3 rounded-2xl bg-secondary/60 p-3.5 text-sm">
-        <b className="mb-1.5 flex items-center gap-2"><span className="text-2xl" aria-hidden="true">🐫</span>{tr('Сэтгэл зүйн асуулга (DASS-21)')}</b>
+        <b className="mb-1.5 block">{tr('Сэтгэл зүйн асуулга (DASS-21)')}</b>
         <ul className="grid gap-1">
           <li>📊 {tr('Гутрал, түгшүүр, стресс гурвыг тус тусад нь харуулна.')}</li>
           <li>🔒 {tr('Хариулт тань зөвхөн танд харагдана. Найзуудад харагдахгүй.')}</li>
@@ -109,7 +114,8 @@ function DassOffer({ mood }: { mood: MoodId }) {
       </div>
       <div className="mt-4 flex flex-col gap-2.5">
         <Button size="xl" onClick={start}>{tr('▶ Одоо эхлэх')}</Button>
-        <Button size="xl" variant="ghost" onClick={later}>{tr('Дараа нь бөглөх')}</Button>
+        {/* Үндсэн товчноос ялгарах бүдэг саарал */}
+        <Button size="xl" variant="ghost" className="bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] text-muted-foreground hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_12%)] hover:text-foreground dark:hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_12%)]" onClick={later}>{tr('Дараа нь бөглөх')}</Button>
       </div>
     </>
   );

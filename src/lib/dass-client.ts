@@ -31,3 +31,9 @@ export function visibleDassCard(kind: 'first' | 'retake' | null, entryCount: num
 export function offerDassAfterEntry(prevEntries: number, dassCount: number | null): boolean {
   return prevEntries === 0 && dassCount === 0 && !snoozed();
 }
+
+/** Хүлээгдэж буй DASS-21 popup-ийг одоо гаргах эсэх: «Бүртгэгдлээ» цонх (болон түүнээс нээсэн амьсгалын дасгал г.м.)
+    хаагдсан, AI чат хаалттай үед л гаргана. Ингэснээр хэрэглэгч эхлээд зөвлөмж, дуу зэргээ сонгож амжина. */
+export function dassPopupReady(pending: boolean, dialogOpen: boolean, chatOpen: boolean): boolean {
+  return pending && !dialogOpen && !chatOpen;
+}

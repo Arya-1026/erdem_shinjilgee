@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { offerDassAfterEntry, snoozeDass, visibleDassCard } from './dass-client';
+import { dassPopupReady, offerDassAfterEntry, snoozeDass, visibleDassCard } from './dass-client';
 
 // Node орчинд localStorage байхгүй тул энгийн санах ойн хувилбар
 function fakeStorage() {
@@ -36,6 +36,15 @@ describe('Анхны бүртгэлийн дараах DASS-21 popup', () => {
     expect(visibleDassCard('first', 1)).toBe('first');
     snoozeDass();
     expect(visibleDassCard('first', 1)).toBeNull();
+  });
+
+  it('popup-ийг «Бүртгэгдлээ» цонх хаагдаж, чат хаалттай үед л гаргана', () => {
+    expect(dassPopupReady(true, false, false)).toBe(true);
+    // «Бүртгэгдлээ» эсвэл амьсгалын дасгал зэрэг өөр цонх нээлттэй байна
+    expect(dassPopupReady(true, true, false)).toBe(false);
+    // «AI-тай ярилцах» сонгосон: чатаа хаах хүртэл хүлээнэ
+    expect(dassPopupReady(true, false, true)).toBe(false);
+    expect(dassPopupReady(false, false, false)).toBe(false);
   });
 
   it('«Дараа нь бөглөх» дарсан бол дахин гаргахгүй', () => {
