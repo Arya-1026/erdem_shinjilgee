@@ -65,7 +65,6 @@ function ProfileMain() {
 
   async function logout() {
     player.stop();
-    await unsubscribePush(supabase).catch(() => {});
     await signOutAndReload(supabase);
   }
 
