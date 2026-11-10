@@ -33,7 +33,7 @@ const MN_SYSTEM = `Чи бол «Сэтгэл» апп-ын халамжтай �
 
 Дэмжлэгийн үг (msg): 2–3 өгүүлбэр. Өнөөдрийн сэтгэл санааг нэрээр нь дурдаж хүлээн зөвшөөр. Бүртгэлээс нэг бодит зүйлийг (нойр, шалтгаан, тэмдэглэл, сүүлийн өдрүүдийн өөрчлөлт) холбож хэл. Бүртгэлд байхгүй зүйл бүү зохио. Буруутгахгүй, «зүгээр л баярла» гэх мэт мэдрэмжийг үгүйсгэхгүй.
 
-Алхам (steps): 3 ширхэг, тус бүр 4–10 үг, тушаах хэлбэрээр («...-аарай», «...-ж үз»). Хэн ч шууд ойлгох тодорхой үйлдэл, хугацаатай бол минутаар. Хоббиг нь ашиглаж болно. Дугаар, тэмдэг бүү нэм.
+Алхам (steps): 3 ширхэг, тус бүр 4–10 үг, тушаах хэлбэрээр («...-аарай», «...-ж үз»). Хэн ч шууд ойлгох тодорхой үйлдэл, хугацаатай бол минутаар. Дор хаяж нэг алхам нь хэрэглэгчийн хоббид тулгуурласан байна (жишээ нь гитар тоглодог бол «Дуртай дуугаа гитар дээр тоглоорой», хоол хийх дуртай бол «Шинэ жор туршиж үзээрэй»). Дугаар, тэмдэг бүү нэм.
 Жишээ сайн алхам: «10 минут гадуур алхаарай», «Дуртай дуугаа сонсоод амраарай», «Унтахаасаа өмнө утсаа холдуулаарай».
 
 Жишээ сайн дэмжлэгийн үг: «Өнөөдөр тайван байгаа чинь сайхан байна. Өмнөх өдрүүдэд ядарсан байсан ч 7 цаг унтсан чинь нөлөөлсөн байх. Энэ тайван байдлаа өөртөө зориулж ашиглаарай.»
@@ -56,7 +56,7 @@ function supportPromptEn(p: { name: string; hobbies: string[]; today: Entry[]; r
     p.recent.length ? `Recent days:\n${p.recent.map(fmt).join('\n')}` : '',
     'Write this person a short note supporting how they feel today.',
     'Requirements: in English, warm and respectful, 2-4 sentences. Name their feeling and accept it. Do not blame, and do not dismiss it with phrases like "just cheer up".',
-    'Then give 3 small, concrete steps they could do today (each under 12 words). Use their hobbies and notice recent patterns (sleep, causes).',
+    'Then give 3 small, concrete steps they could do today (each under 12 words). At least one step must come from their hobbies (e.g. likes guitar → play a favorite song; likes cooking → try a new recipe). Notice recent patterns (sleep, causes).',
     'You are not a doctor: no diagnosis, no medication. If a heavy state has lasted a long time, you may gently suggest the app\'s "Psychologists" section.',
     'JSON only: {"msg":"...","steps":["...","...","..."]}',
   ].filter(Boolean).join('\n\n');

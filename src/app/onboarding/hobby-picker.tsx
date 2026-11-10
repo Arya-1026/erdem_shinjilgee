@@ -126,6 +126,13 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
     router.refresh();
   }
 
+  // Профайлаас засахаар орсон үед зүүн дээд буланд буцах сум
+  const backArrow = (onClick: () => void) => (
+    <button type="button" onClick={onClick} aria-label={tr('Буцах')} title={tr('Буцах')}
+      className="grid size-10 flex-none place-items-center rounded-full border bg-card text-xl transition-colors hover:border-primary">←</button>
+  );
+  const backToProfile = () => (window.history.length > 1 ? router.back() : router.push('/profile'));
+
   if (step === 'theme') return (
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="grad-dawn mb-5 rounded-3xl p-5">
@@ -149,7 +156,10 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   if (step === 'cats') return (
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 2 / 3')}</p>
+        <div className="flex items-center gap-2">
+          {editing && backArrow(() => { setStep('hobby'); scrollTo(0, 0); })}
+          <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 2 / 3')}</p>
+        </div>
         {first && <button className="text-sm font-semibold text-primary" onClick={() => setStep('theme')}>{tr('← Өнгө')}</button>}
       </div>
       <h1 className="my-2 text-[28px] leading-9 font-bold">{tr('Юу сонирхдог вэ?')}</h1>
@@ -178,7 +188,10 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   return (
     <div className="mx-auto max-w-[760px] px-4 pt-[calc(24px+env(safe-area-inset-top))] pb-32">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 3 / 3')}</p>
+        <div className="flex items-center gap-2">
+          {editing && backArrow(backToProfile)}
+          <p className="text-sm text-muted-foreground">{editing ? tr('Профайл засах') : tr('Алхам 3 / 3')}</p>
+        </div>
         <button className="text-sm font-semibold text-primary" onClick={() => { setQuery(''); setStep('cats'); scrollTo(0, 0); }}>{tr('← Ангилал')}</button>
       </div>
       <h1 className="my-2 text-[28px] leading-9 font-bold">{tr('Таны тухай')}</h1>

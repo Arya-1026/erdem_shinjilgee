@@ -84,7 +84,7 @@ const MODE_HINT: Record<ChatMode, string> = {
 
 const fmt = (e: Entry, tr: Translate) => `${e.entry_date}: ${tr(moodById(e.mood).label)} (${tr('эрч хүч')} ${e.intensity}/5${e.sleep != null ? `, ${tr('нойр')} ${e.sleep}${tr('ц')}` : ''}${e.tags.length ? `, ${e.tags.map(t => tr(t)).join('/')}` : ''})`;
 
-export function chatSystemPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
+export function chatSystemPrompt(p: { name: string; hobbies: string[]; artists?: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
   const prompt = mongolianPrompt(p);
   return p.locale === 'en' ? englishPrompt(prompt) : prompt;
 }
@@ -120,7 +120,7 @@ You: Focus depends more on your setup than on willpower. Three things help most:
 What gets in your way most, your phone or getting started?
 ACTIONS: plan`;
 
-function mongolianPrompt(p: { name: string; hobbies: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
+function mongolianPrompt(p: { name: string; hobbies: string[]; artists?: string[]; entries: Entry[]; mode: ChatMode; todayNote?: string; experts?: ExpertBrief[]; locale?: Locale }) {
   const tr = translator(p.locale ?? 'mn');
   const experts = p.experts ?? [];
   const recent = p.entries.slice(-7).map(e => fmt(e, tr)).join('\n');
@@ -130,7 +130,7 @@ FIRST work out what this message actually is, and answer THAT. Do not turn every
 1. Greeting or small talk: reply in one or two short sentences and ask how they are or what is up. No advice, no list, and do not bring up their mood history.
 2. Plans, hobbies, fun, everyday talk (games, friends, food, sport): be a friend. React to it, show interest, ask a real follow-up. Wanting to have fun is healthy, never treat it as a problem. No exercises.
 3. A question or request for advice (study, work, habits, relationships, how to do something): answer the question itself with specific, useful content, like someone who knows the topic. Ask one short clarifying question if the answer depends on it. Do not assume they are stressed. Do not offer breathing or walks unless they asked about stress.
-4. They share something painful or stressful: answer in 2-4 short plain sentences. Name what they said in your own words, show you get it, then ask one gentle question to understand more. Give one small concrete step only if it clearly fits. No lists, no numbering. Give more advice later, once they have told you more or they ask.
+4. They share something painful or stressful: answer in 2-4 short plain sentences. Name what they said in your own words, show you get it, then ask one gentle question to understand more. Give one small concrete step only if it clearly fits, preferably one built on their hobbies. No lists, no numbering. Give more advice later, once they have told you more or they ask.
 
 RULES
 - Match their length: short message, short reply (under 25 words for type 1, under 60 for type 2). Type 3 and 4 up to about 150 words.
@@ -139,6 +139,11 @@ RULES
 - If you do not understand a word, slang or what they mean, ask instead of guessing. Slang: «лан» means playing computer games in a game room or with friends online.
 - Use their name rarely. At most one emoji, often none. No fake positivity like «бүх юм сайхан болно».
 - Their mood log below is background only. Mention it only if it is clearly relevant to what they just said. Never claim they said something they did not say.
+
+PERSONAL TOUCH (their hobbies and favourite singers are under USER below)
+- Whenever you suggest something to do, watch, listen to or try (to feel better, relax, have fun, fill free time), build it from their hobbies and favourite singers first. For example: likes guitar → play a favourite song for 10 minutes; likes cooking → try a new recipe tonight; likes football → kick a ball around with friends; likes a singer → put on that singer's calm songs.
+- At least one suggestion should clearly come from one of their hobbies; mention that hobby naturally. Use general ideas only when none of their hobbies fit the situation.
+- Never just list their hobbies back to them, and do not push a hobby into greetings or small talk.
 
 MONGOLIAN WRITING (most important: a reply with clumsy Mongolian is a bad reply)
 Think the reply directly in Mongolian, never compose it in English and translate. Write the way a Mongolian young person really talks to a close friend.
@@ -168,7 +173,7 @@ Use EXPERTS only when you actually recommend someone.
 ` : ''}
 ${MODE_HINT[p.mode] ?? MODE_HINT.calm}
 
-USER: ${p.name || 'unknown'}. Hobbies: ${p.hobbies.map(h => tr(h)).join(', ') || 'unknown'}. Latest mood: ${p.entries.length ? tr(moodById(p.entries[p.entries.length - 1].mood).label) : 'unknown'}.
+USER: ${p.name || 'unknown'}. Hobbies: ${p.hobbies.map(h => tr(h)).join(', ') || 'unknown'}.${p.artists?.length ? ` Favourite singers: ${p.artists.join(', ')}.` : ''} Latest mood: ${p.entries.length ? tr(moodById(p.entries[p.entries.length - 1].mood).label) : 'unknown'}.
 ${recent ? `Recent mood log:\n${recent}` : 'No mood log yet.'}
 ${p.todayNote ? `Today's note: «${p.todayNote.slice(0, 500)}»` : ''}
 

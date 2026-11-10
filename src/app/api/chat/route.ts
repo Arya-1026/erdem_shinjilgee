@@ -19,13 +19,13 @@ export async function POST(req: Request) {
   if (!message) return NextResponse.json({ error: 'empty' }, { status: 400 });
 
   const [profileRes, entriesRes, historyRes, fbRes, expertsRes] = await Promise.all([
-    supabase.from('profiles').select('name,hobbies,chat_mode').eq('id', user.id).single(),
+    supabase.from('profiles').select('name,hobbies,fav_artists,chat_mode').eq('id', user.id).single(),
     supabase.from('mood_entries').select(ENTRY_COLS).order('entry_date', { ascending: false }).order('entry_time', { ascending: false }).limit(14).returns<Entry[]>(),
     supabase.from('chat_messages').select('role,content,crisis').order('created_at', { ascending: false }).limit(12),
     supabase.from('rec_feedback').select('rec_id,value'),
     supabase.from('experts').select(EXPERT_COLS).order('id'),
   ]);
-  const profile = profileRes.data ?? { name: '', hobbies: [], chat_mode: 'calm' };
+  const profile = profileRes.data ?? { name: '', hobbies: [], fav_artists: [], chat_mode: 'calm' };
   const entries = (entriesRes.data ?? []).map(normalizeEntry).reverse();
   // Сүүлийн хэдэн мессеж л: олон хуучин хариулт өгвөл загвар тэр хэв маягийг дууриаж давтагддаг
   const history = (historyRes.data ?? []).reverse().filter(m => !m.crisis).slice(-6);
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   const todayStr = entries.length ? entries[entries.length - 1].entry_date : '';
   const todayNote = entries.filter(e => e.entry_date === todayStr).map(e => e.note).filter(Boolean).join(' / ');
   const experts = (expertsRes.data ?? []).map(toExpert);
-  const system = chatSystemPrompt({ name: profile.name, hobbies: profile.hobbies, entries, mode, todayNote, experts, locale });
+  const system = chatSystemPrompt({ name: profile.name, hobbies: profile.hobbies, artists: profile.fav_artists ?? [], entries, mode, todayNote, experts, locale });
 
   const llm = await llmReply([
     { role: 'system', content: system },

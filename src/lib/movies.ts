@@ -1,6 +1,7 @@
 /* ---------- Кино: IMDb-ийн үнэлгээтэй каталогоос хүн бүрт тохирохыг сонгох ----------
    Каталог: public/movies.json (`npm run movies`, IMDb 7.2+ үнэлгээтэй, 80,000+ хүн үнэлсэн кинонууд).
    Оноо = IMDb чанар + тухайн mood-д тохирох төрөл + хобби + нас + 👍/👎-ын түүх. Цэвэр функц тул тестлэгдэнэ. */
+import { CATEGORY_OF } from './recs';
 import type { MoodId, ScoredRec } from './types';
 
 export type Movie = {
@@ -51,7 +52,17 @@ const HOBBY_FIT: Record<string, { g?: string[]; l?: string[] }> = {
   'Тулаант тоглоом': { g: ['Action'] }, 'Буудлагын тоглоом': { g: ['Action', 'War'] }, 'Стратеги тоглоом': { g: ['War', 'History'] }, 'RPG тоглоом': { g: ['Fantasy', 'Adventure'] },
   'Адал явдалт тоглоом': { g: ['Adventure'] }, 'Спорт тоглоом': { g: ['Sport'] }, 'Уралдааны тоглоом': { g: ['Action'] }, 'Оньсого тоглоом': { g: ['Mystery'] },
   'Дотоод аялал': { g: ['Adventure'] }, 'Гадаад аялал': { g: ['Adventure'] }, 'Хотоор аялах': { g: ['Adventure', 'Comedy'] }, 'Машинаар аялах': { g: ['Adventure'] }, 'Уулын аялал': { g: ['Adventure'] }, 'Хоол хийх': { g: ['Comedy', 'Family'] },
+  'Шинэ жор турших': { g: ['Comedy', 'Family'] }, 'Нарийн боов хийх': { g: ['Comedy', 'Family'] }, 'Үндэсний хоол хийх': { g: ['Family', 'Documentary'] },
+  'Эрүүл хооллолт': { g: ['Documentary'] }, 'Хоолны видео үзэх': { g: ['Comedy', 'Documentary'] }, 'Хоолны гэрэл зураг': { g: ['Documentary', 'Biography'] },
 };
+// Тусгай холбоосгүй хобби ангиллаараа кинонд холбогдоно (бүх хобби кинонд нөлөөлнө)
+const CATEGORY_FIT: Record<string, { g?: string[]; l?: string[] }> = {
+  'Спорт': { g: ['Sport', 'Action'] }, 'Бясалгал, эрүүл мэнд': { g: ['Documentary', 'Drama'] }, 'Урлаг': { g: ['Biography', 'Animation', 'Drama'] },
+  'Хөгжим': { g: ['Music', 'Musical'] }, 'Уншлага, суралцах': { g: ['Drama', 'Biography', 'History'] }, 'Байгаль, аялал': { g: ['Adventure', 'Documentary'] },
+  'Технологи, тоглоом': { g: ['Sci-Fi', 'Action', 'Fantasy'] }, 'Хоол': { g: ['Comedy', 'Family'] }, 'Гар урлал': { g: ['Animation', 'Family', 'Biography'] },
+  'Нийгэм, харилцаа': { g: ['Comedy', 'Family', 'Drama'] }, 'Загвар, гоо сайхан': { g: ['Romance', 'Comedy'] },
+};
+const fitOf = (h: string) => HOBBY_FIT[h] ?? CATEGORY_FIT[CATEGORY_OF.get(h) ?? ''] ?? {};
 const SCARY = new Set(['Horror', 'Thriller', 'War']);
 
 /** exclude: «Өөр кинонууд» дарахад өмнө нь харуулсныг хасна */
@@ -72,13 +83,13 @@ export function scoreMovie(x: Movie, t: Taste, liked: Record<string, number>) {
   const scary = x.g.some(g => SCARY.has(g));
   const quality = (x.r - 7.2) * 2.2 + Math.log10(x.v / 80_000) * 1.2;
   const moodFit = x.g.reduce((s, g) => s + (mood[g] ?? 0), 0);
-  const hobbyGenres = t.hobbies.flatMap(h => HOBBY_FIT[h]?.g ?? []), hobbyLangs = t.hobbies.flatMap(h => HOBBY_FIT[h]?.l ?? []);
+  const hobbyGenres = t.hobbies.flatMap(h => fitOf(h).g ?? []), hobbyLangs = t.hobbies.flatMap(h => fitOf(h).l ?? []);
   // Аймшгийн киног зөвхөн дуртай нь, бас сэтгэл санаа сайн үед
   const hobbyHit = x.g.filter(g => hobbyGenres.includes(g) && (!SCARY.has(g) || ['happy', 'neutral', 'calm'].includes(t.mood))).length + (x.l.some(l => hobbyLangs.includes(l)) ? 2 : 0);
   const taste = x.g.reduce((s, g) => s + (liked[g] ?? 0), 0);
   const age = t.birthYear && x.y >= t.birthYear + 10 && x.y <= t.birthYear + 30 ? 0.8 : 0;
   const long = ['tired', 'anxious'].includes(t.mood) && x.m > 150 ? -1.5 : 0;
-  return { score: quality + moodFit + hobbyHit * 1.6 + taste + age + long + hash(x.id + (t.seed ?? '')) * 1.5, hobby: hobbyHit > 0, scary };
+  return { score: quality + moodFit + hobbyHit * 2.5 + taste + age + long + hash(x.id + (t.seed ?? '')) * 1.5, hobby: hobbyHit > 0, scary };
 }
 
 /** 👍/👎 дарсан кинонуудын төрлөөс амтыг тооцно */
@@ -114,14 +125,23 @@ export function recommendMovies(catalog: Movie[], t: Taste, n = 12): ScoredRec[]
     return [{ x, ...s }];
   }).sort((a, b) => b.score - a.score);
 
+  // Зөвхөн хоббид тохирох кино: эхлээд төрлөөр олон янз, дараа нь үлдсэн тохирохууд.
+  // Тохирох кино хүрэлцэхгүй бол л бусад киногоор нөхнө.
   const perGenre: Record<string, number> = {}, picked: typeof ranked = [];
-  for (const c of ranked) {
-    if (picked.length >= n) break;
-    const main = c.x.g[0];
-    if ((perGenre[main] ?? 0) >= Math.ceil(n / 3)) continue;
-    perGenre[main] = (perGenre[main] ?? 0) + 1;
-    picked.push(c);
-  }
+  const take = (list: typeof ranked, cap: boolean) => {
+    for (const c of list) {
+      if (picked.length >= n) return;
+      if (picked.includes(c)) continue;
+      const main = c.x.g[0];
+      if (cap && (perGenre[main] ?? 0) >= Math.ceil(n / 3)) continue;
+      perGenre[main] = (perGenre[main] ?? 0) + 1;
+      picked.push(c);
+    }
+  };
+  const fit = ranked.filter(c => c.hobby);
+  take(fit, true);
+  take(fit, false);
+  take(ranked, true);
   return picked.map(({ x, score, hobby }) => movieRec(x, t, hobby, score));
 }
 
