@@ -21,10 +21,8 @@ import { useLocale, useT } from '@/components/providers/locale-provider';
 const YEAR = new Date().getFullYear();
 const validAge = (a: number) => a >= 10 && a <= 100;
 
-// Эхний алхамд сонгох ерөнхий ангиллууд. Дууны төрөл нь «Хөгжим»-ийн дотор харагдана.
-const MUSIC = 'Хөгжим';
+// Эхний алхамд сонгох ерөнхий ангиллууд. Дууны төрөл, дуртай дуучин ангиллаас үл хамааран 3-р алхамд үргэлж асуугдана.
 const TOP_CATS = Object.keys(HOBBIES).filter(c => c !== GENRE_CAT);
-const topOf = (cat: string) => (cat === GENRE_CAT ? MUSIC : cat);
 const catOfHobby = (h: string, own: Record<string, string>) => Object.entries(HOBBIES).find(([, items]) => items.includes(h))?.[0] ?? own[h] ?? LEGACY_HOBBIES[h];
 
 /* Анх орж ирэхэд: 1) апп-ын өнгө → 2) ерөнхий ангилал (кино, аялал, хөгжим…) → 3) сонгосон ангиллын хобби, дууны төрөл,
@@ -44,7 +42,8 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const [custom, setCustom] = useState('');
   const [hobbyCats, setHobbyCats] = useState(initialCats);
   // Сонгосон ерөнхий ангиллууд: засах үед өмнө сонгосон хоббиудын ангиллаас
-  const [chosen, setChosen] = useState(() => new Set(initial.flatMap(h => { const c = catOfHobby(h, initialCats); return c ? [topOf(c)] : []; })));
+  // Дууны төрөл ангилал биш (үргэлж харагдана) тул «Хөгжим»-ийг автоматаар сонгуулахгүй
+  const [chosen, setChosen] = useState(() => new Set(initial.flatMap(h => { const c = catOfHobby(h, initialCats); return c && c !== GENRE_CAT ? [c] : []; })));
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [catDraft, setCatDraft] = useState('');
   const { resolvedTheme, setTheme } = useTheme();
@@ -64,7 +63,8 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const toggleCat = (c: string) => {
     if (!chosen.has(c)) return setChosen(x => new Set(x).add(c));
     setChosen(x => { const n = new Set(x); n.delete(c); return n; });
-    const inside = new Set([...sel].filter(h => { const hc = catOfHobby(h, hobbyCats); return hc && topOf(hc) === c; }));
+    // «Хөгжим»-ийг хассан ч сонгосон дууны төрөл үлдэнэ
+    const inside = new Set([...sel].filter(h => catOfHobby(h, hobbyCats) === c));
     setSel(x => new Set([...x].filter(h => !inside.has(h))));
   };
   const toggle = (h: string) => {
@@ -82,8 +82,10 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
   const mine = customs.filter(h => !catOf(h));
   const inCat = (cat: string) => customs.filter(h => catOf(h) === cat);
   // Хайлт хийвэл бүх ангиллаас, үгүй бол зөвхөн сонгосон ангиллуудыг харуулна
+  // Дууны төрөл ямар ч ангилал сонгосон үргэлж харагдана (дуу санал болгоход хэрэгтэй), дуучны хэсгийн яг дээр сүүлд нь
   const cats = Object.entries(HOBBIES)
-    .filter(([cat]) => q || chosen.has(topOf(cat)))
+    .filter(([cat]) => q || cat === GENRE_CAT || chosen.has(cat))
+    .sort(([a], [b]) => Number(a === GENRE_CAT) - Number(b === GENRE_CAT))
     .map(([cat, items]) => [cat, q && !match(cat) ? items.filter(match) : items, q && !match(cat) ? inCat(cat).filter(match) : inCat(cat)] as const)
     .filter(([, items, own]) => items.length || own.length);
   const newHobby = cleanHobby(query);
@@ -245,7 +247,8 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
         );
       })}
       {!cats.length && !canAdd && <p className="mb-5 text-sm text-muted-foreground">{tr('«{0}» олдсонгүй.', query)}</p>}
-      {chosen.has(MUSIC) && <section className="mb-5">
+      {/* Дуртай дуучин: ангиллаас үл хамааран үргэлж асууна */}
+      <section className="mb-5">
         <h3 className="mb-1 font-semibold">{tr('🎤 Дуртай дуучин')}{artists.length > 0 && <span className="ml-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{artists.length}</span>}</h3>
         <p className="mb-2 text-sm text-muted-foreground">{genres.length ? tr('Сонгосон төрлийн тань дуучид: {0}. Эдгээрийн дууг Spotify-аас хайж санал болгоно.', genres.map(g => tr(g)).join(', ')) : tr('Дээрх «Дууны төрөл»-өөс сонговол тэр төрлийн дуучид гарна. Эдгээрийн дууг Spotify-аас хайж санал болгоно.')}</p>
         {options.mongolian.length > 0 && <>
@@ -266,10 +269,11 @@ export function HobbyPicker({ initial, initialCats = {}, initialTheme, initialBi
         {artists.some(a => !options.mongolian.includes(a) && !options.international.includes(a)) && (
           <div className="mt-2 flex flex-wrap gap-2">{artists.filter(a => !options.mongolian.includes(a) && !options.international.includes(a)).map(a => <Chip key={a} on onClick={() => toggleArtist(a)}>{a}</Chip>)}</div>
         )}
-      </section>}
+      </section>
       <div className="fixed inset-x-0 bottom-0 border-t bg-card px-4 pt-3 pb-[calc(12px+var(--safe-b))]">
-        <Button size="xl" className="mx-auto flex w-full max-w-[760px]" disabled={!sel.size || busy || (first && !birthYear)} onClick={done}>
-          {busy ? tr('Хадгалж байна…') : first && !birthYear ? tr('Насаа оруулна уу') : tr('Үргэлжлүүлэх ({0} сонгосон)', sel.size)}
+        {/* Анх бүртгүүлэхэд нас, дууны төрөл заавал (дуу санал болгоход хэрэгтэй). Дуучин заавал биш. */}
+        <Button size="xl" className="mx-auto flex w-full max-w-[760px]" disabled={!sel.size || busy || (first && (!birthYear || !genres.length))} onClick={done}>
+          {busy ? tr('Хадгалж байна…') : first && !birthYear ? tr('Насаа оруулна уу') : first && !genres.length ? tr('Дууны төрлөө сонгоно уу') : tr('Үргэлжлүүлэх ({0} сонгосон)', sel.size)}
         </Button>
       </div>
     </div>

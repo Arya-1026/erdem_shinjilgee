@@ -115,7 +115,7 @@ function TodayStatus({ entries }: { entries: Entry[] }) {
 
 function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i: number) => void }) {
   const tr = useT();
-  const { profile, entries, supabase, updateProfile, addEntry, setTint, openDialog } = useApp();
+  const { profile, entries, supabase, updateProfile, addEntry, setTint, openDialog, setDassPending } = useApp();
   const [touched, setTouched] = useState(false);
   const [intensity, setIntensity] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
@@ -154,13 +154,15 @@ function CheckinCard({ moodIdx, setMoodIdx }: { moodIdx: number; setMoodIdx: (i:
     setSaving(false);
     if (!e) return;
     setIntensity(3); setTags([]); setNote(''); setSleep(7);
-    // Анхны бүртгэл бөгөөд DASS-21 бөглөөгүй бол эхлээд асуулгыг санал болгоно («Дараа нь» → ердийн «Бүртгэгдлээ» цонх)
+    // Анхны бүртгэл бөгөөд DASS-21 бөглөөгүй бол асуулгыг санал болгоно. Эхлээд «Бүртгэгдлээ» цонх гарч,
+    // хэрэглэгч зөвлөмж, дуу зэргээ сонгож эсвэл цонхоо хаасны дараа popup гарна (DialogHost).
     let dassCount: number | null = null;
     if (prevEntries === 0) {
       const { count, error } = await supabase.from('dass_results').select('id', { count: 'exact', head: true });
       dassCount = error ? null : count;
     }
-    openDialog(offerDassAfterEntry(prevEntries, dassCount) ? { kind: 'dass', mood: e.mood } : { kind: 'saved', mood: e.mood });
+    if (offerDassAfterEntry(prevEntries, dassCount)) setDassPending(true);
+    openDialog({ kind: 'saved', mood: e.mood });
   }
 
   return (
