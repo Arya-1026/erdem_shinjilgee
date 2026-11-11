@@ -1,3 +1,5 @@
+import type { Locale } from './i18n';
+
 /* Хямралын түлхүүр үгийн шүүлтүүр. LLM болон Moderation API унасан ч ажиллана (клиент, сервер хоёуланд).
    Монголчууд кирилл, албан бус латин (uhmeer, xorlomoor, yhmeer, qqriigqq) аль алинаар бичдэг бөгөөд
    о/ө/у/ү-г латинд ялгадаггүй. Тиймээс текстийг нэг "араг" хэлбэрт буулгаад дараа нь хэв маягаар хайна. */
@@ -115,3 +117,38 @@ export function parseCrisisVerdict(reply: string | null | undefined) {
   if (!r) return null;
   return !/^\W*safe\b/i.test(r);
 }
+
+/* ---------- Хямрал илэрсэн үеийн хариулт ----------
+   Зөвхөн тусламжийн утас харуулбал хэрэглэгч бичих бүрт ижил карт давтагдаж, ярилцлага тасардаг байсан.
+   Одоо эхлээд товч, халуун хариулт өгч (аюулгүй эсэхийг асууж, ярилцлагыг үргэлжлүүлнэ), доор нь тусламжийн сануулга гарна. */
+
+/** AI хариулт бичиж чадаагүй үед хэлэх тогтмол хариулт (tr()-ээр орчуулагдана) */
+export const CRISIS_FALLBACK = 'Энэ тухай надад хэлсэнд баярлалаа. Ийм хүнд мэдрэмжийг ганцаараа тээх амаргүй. Яг одоо та аюулгүй байна уу? Юу болсныг ярих уу, би сонсож байна.';
+
+export function crisisReplyPrompt(locale: Locale, name: string) {
+  const lang = locale === 'en' ? 'plain, everyday English' : 'natural, everyday Mongolian (Cyrillic)';
+  return `You are a warm, calm companion inside a mood-tracking app. The user's latest message may mean they are thinking about suicide or self-harm. Reply in ${lang} only.
+Write 2-4 short sentences, at most 60 words:
+1. Thank them for telling you and name the feeling kindly, without judging or minimizing it.
+2. Ask gently and directly whether they are safe right now.
+3. Encourage them to reach out today to one person they trust or to a helpline. Helpline buttons are shown right under your message, so do not write phone numbers.
+   Buttons for a short grounding exercise, calming music and a gentle film also appear under your message: you may say in a few words that something below might help a little right now, but do not name them.
+4. End with one short, open question that invites them to keep talking to you.
+Never: describe or discuss methods, give medical or medication advice, promise to keep secrets, tell them to calm down or that it is not a big deal, blame them, use clinical words, or add lists, emoji or an ACTIONS line.
+Use simple, common words and short, grammatical sentences; never use a word you are unsure of.${name ? `\nTheir name is ${name}.` : ''}
+Example of the tone (do not copy it word for word):
+${locale === 'en'
+    ? "Thank you for telling me, that sounds really heavy. Are you safe right now? Please let someone you trust know how you feel today. What has been hardest for you lately?"
+    : 'Надад хэлсэнд баярлалаа, их хэцүү байгаа нь мэдрэгдэж байна. Яг одоо та аюулгүй байна уу? Өнөөдөр итгэдэг хүндээ ямар байгаагаа хэлээрэй. Сүүлийн үед юу хамгийн хүнд байна вэ?'}`;
+}
+
+/** Ойрын мессежүүдэд бүтэн тусламжийн карт аль хэдийн гарсан бол дахин бүтнээр нь биш, жижиг сануулга харуулна */
+export const CRISIS_REPEAT_WINDOW = 10;
+export function crisisReminderKind(msgs: readonly { crisis: boolean }[], i: number): 'full' | 'compact' {
+  return msgs.slice(Math.max(0, i - CRISIS_REPEAT_WINDOW), i).some(m => m.crisis) ? 'compact' : 'full';
+}
+
+/** Хямралын хариултын доор үргэлж санал болгох зөөлөн туслах зүйлс (AI сонгохгүй, тогтмол):
+    5-4-3-2-1 газардуулах дасгал, тайвшруулах ая, сэтгэл дулаацуулах кино. Тусламжийн утасны сануулга тэдгээрийн доор гарна. */
+export const CRISIS_ACTIONS = ['grounding', 'ambient', 'movie_rec'] as const;
+export const withCrisisActions = (text: string) => `${text}\nACTIONS: ${CRISIS_ACTIONS.join(', ')}`;
