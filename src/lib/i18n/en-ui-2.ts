@@ -418,6 +418,11 @@ export const EN_UI_2: Record<string, string> = {
   "▶ Одоо эхлэх": "▶ Start now",
   "Дараа нь бөглөх": "Fill it in later",
   "Дууны төрлөө сонгоно уу": "Pick your music genres",
+  // AI чат: хямрал илэрсэн үеийн хариулт ба жижиг сануулга
+  "Энэ тухай надад хэлсэнд баярлалаа. Ийм хүнд мэдрэмжийг ганцаараа тээх амаргүй. Яг одоо та аюулгүй байна уу? Юу болсныг ярих уу, би сонсож байна.": "Thank you for telling me this. Carrying feelings this heavy on your own is hard. Are you safe right now? Would you like to tell me what happened? I'm listening.",
+  "💜 Хэцүү байвал одоо залгаарай:": "💜 If it's hard, call now:",
+  "🎬 Тохирох кино": "🎬 A film for you",
+  "ганцаардах, уйтгарлах, амрах": "loneliness, boredom, unwinding",
   "Сэтгэл зүйн асуулга": "Wellbeing questionnaire",
   // DASS-21: хадгалах, Нүүр рүү шилжих
   "✅ Үр дүн хадгалагдлаа": "✅ Results saved",

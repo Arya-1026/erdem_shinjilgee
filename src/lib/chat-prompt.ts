@@ -15,6 +15,8 @@ export const CHAT_ACTIONS = {
   journal:  { label: '📝 Талархлын тэмдэглэл', hint: 'гуниг, урам хугарах' },
   ambient:  { label: '🎼 Тайвшруулах ая', hint: 'тайвшрах, төвлөрөх, унтах' },
   music:    { label: '🎵 Сэтгэл өргөх дуу', hint: 'гуниг, урам хэрэгтэй' },
+  // Код нь энгийн англи үг биш: текст доторх «movie» гэх мэт үгийг товч болгож хувиргахгүй
+  movie_rec:{ label: '🎬 Тохирох кино', hint: 'ганцаардах, уйтгарлах, амрах' },
   experts:  { label: '🧑‍⚕️ Сэтгэл зүйчтэй ярих', hint: '2+ долоо хоног үргэлжилсэн хүнд байдал' },
 } as const;
 export type ChatAction = keyof typeof CHAT_ACTIONS;

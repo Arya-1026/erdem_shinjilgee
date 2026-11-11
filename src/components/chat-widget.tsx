@@ -13,9 +13,11 @@ import { usePlay } from './use-play';
 import { todaysEntries } from '@/lib/analytics';
 import { greeting } from '@/lib/chat-fallback';
 import { CHAT_ACTIONS, extractInlineActions, splitActions, type ChatAction } from '@/lib/chat-prompt';
+import { crisisReminderKind } from '@/lib/crisis';
 import { QUICK, moodById } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import type { ChatMessage, ChatMode, SongRec } from '@/lib/types';
+import type { ChatMessage, ChatMode, MoodId, SongRec } from '@/lib/types';
+import { useMovieRecs } from './use-movies';
 import { useT } from '@/components/providers/locale-provider';
 import { stopVoice, VoiceInput } from '@/components/voice-input';
 
@@ -99,18 +101,29 @@ function ChatBody() {
   }
 
   // AI-ийн санал болгосон үйлдэл: дасгалын цонх нээх, дуу/ая тоглуулах, хуудас руу шилжих
-  function runAction(a: ChatAction) {
+  // mood: дуу, киног аль сэтгэл санаанд тааруулах (хямралын үед «гунигтай», бусад үед сүүлийн бүртгэл)
+  function runAction(a: ChatAction, mood: MoodId = activeMood.id) {
     const EX: Partial<Record<ChatAction, string>> = { grounding: 'e2', walk: 'e3', journal: 'e5', relax: 'e6', plan: 'e9', partner: 'e10' };
     if (a === 'breath') return openDialog({ kind: 'breath' });
     if (EX[a]) return openDialog({ kind: 'exercise', recId: EX[a]! });
     if (a === 'experts') { setChatOpen(false); return router.push('/experts'); }
-    if (a === 'music') return void play.mood(activeMood.id);
+    if (a === 'music') return void play.mood(mood);
     if (a === 'ambient') {
-      fetch(`/api/music/recs?mood=${activeMood.id}&kind=ambient`).then(r => r.json())
-        .then((j: { recs?: SongRec[] }) => j.recs?.length ? play.list(j.recs.map(r => songTrack(r, activeMood.id)), 0) : play.mood(activeMood.id))
-        .catch(() => play.mood(activeMood.id));
+      fetch(`/api/music/recs?mood=${mood}&kind=ambient`).then(r => r.json())
+        .then((j: { recs?: SongRec[] }) => j.recs?.length ? play.list(j.recs.map(r => songTrack(r, mood)), 0) : play.mood(mood))
+        .catch(() => play.mood(mood));
     }
   }
+
+  // AI-ийн санал болгосон дасгал, дуу, кино: товч бүр нэг товшилтоор нээгдэнэ. Кино товч дээр тохирох киноны нэр гарна.
+  const actionButtons = (actions: ChatAction[], mood: MoodId = activeMood.id) => actions.length > 0 && (
+    // max-w-full: киноны урт нэр чатын өргөнөөс хэтэрч хэвтээ гүйлгэх зурвас гаргахгүй (товч дотроо «…» болж тасарна)
+    <div className="flex max-w-full flex-wrap gap-1.5">
+      {actions.map(a => a === 'movie_rec'
+        ? <MovieAction key={a} mood={mood} className={ACTION_BTN} />
+        : <button key={a} onClick={() => runAction(a, mood)} className={ACTION_BTN}>{tr(CHAT_ACTIONS[a].label)}</button>)}
+    </div>
+  );
 
   const todayMood = todaysEntries(entries)[0];
   const hello: ChatMessage = { id: 'hello', role: 'assistant', crisis: false, content: greeting(profile.name, todayMood && tr(moodById(todayMood.mood).label), tr) };
@@ -120,8 +133,20 @@ function ChatBody() {
       <Segmented full label={tr('Хариултын горим')} className="text-xs" value={profile.chat_mode} onChange={v => updateProfile({ chat_mode: v })} options={MODES.map(([v, l]) => [v, tr(l)])} />
       <button className="mt-1 self-end text-xs text-muted-foreground" onClick={clear}>{tr('Цэвэрлэх')}</button>
       <div ref={box} className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain px-0.5 py-2" aria-live="polite">
-        {msgs && [hello, ...msgs].map(m => {
-          if (m.crisis) return <Crisis key={m.id} />;
+        {msgs && [hello, ...msgs].map((m, i, all) => {
+          // Хямрал: эхлээд AI-ийн товч хариулт, доор нь тусламжийн сануулга (саяхан бүтэн карт гарсан бол жижиг хувилбар).
+          // Хуучин хоосон хямралын мөрөнд зөвхөн карт.
+          // Дараалал: хариулт → дасгал, ая, кино → тусламжийн утас
+          if (m.crisis) {
+            const c = splitActions(m.content);
+            return (
+              <div key={m.id} className="flex flex-col items-start gap-1.5 self-stretch">
+                {c.text.trim() && <div className="max-w-[90%] rounded-[18px] rounded-bl-md border bg-card px-3.5 py-2.5 whitespace-pre-wrap [overflow-wrap:anywhere]">{c.text}</div>}
+                {actionButtons(c.actions, 'sad')}
+                <Crisis compact={crisisReminderKind(all, i) === 'compact'} />
+              </div>
+            );
+          }
           const split = m.role === 'assistant' ? splitActions(m.content) : { text: m.content, actions: [], experts: [] };
           // Хуучин хариултуудад текст дотор үлдсэн кодыг («partner») ч товч болгоно
           const inline = m.role === 'assistant' ? extractInlineActions(split.text) : { text: split.text, actions: [] };
@@ -143,16 +168,7 @@ function ChatBody() {
                   <Button size="sm" className="flex-none" onClick={() => openDialog({ kind: 'book', expertId: e.id })}>{tr('Цаг захиалах')}</Button>
                 </div>
               ))}
-              {actions.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {actions.map(a => (
-                    <button key={a} onClick={() => runAction(a)}
-                      className="rounded-full border border-primary/40 bg-secondary px-3 py-1.5 text-sm font-semibold text-secondary-foreground transition active:scale-95">
-                      {tr(CHAT_ACTIONS[a].label)}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {actionButtons(actions)}
             </div>
           );
         })}
@@ -176,9 +192,33 @@ function ChatBody() {
   );
 }
 
-function Crisis() {
+const ACTION_BTN = 'rounded-full border border-primary/40 bg-secondary px-3 py-1.5 text-sm font-semibold text-secondary-foreground transition active:scale-95';
+
+/** Хэрэглэгчийн хобби, сэтгэл санаанд тохирох нэг кино. Каталог зөвхөн энэ товч гарсан үед ачаалагдана. */
+function MovieAction({ mood, className }: { mood: MoodId; className: string }) {
+  const tr = useT();
+  const { openDialog } = useApp();
+  const { recs } = useMovieRecs(mood, 3);
+  const r = recs?.[0];
+  return (
+    <button type="button" className={cn(className, 'max-w-full truncate')} disabled={!r} onClick={() => r && openDialog({ kind: 'movie', recId: r.id, mood })}>
+      {r ? `🎬 ${tr(r.title)}` : tr(CHAT_ACTIONS.movie_rec.label)}
+    </button>
+  );
+}
+
+function Crisis({ compact }: { compact: boolean }) {
   const tr = useT();
   const { setChatOpen } = useApp();
+  // Дахин илэрсэн үед: ярилцлагыг дарахгүй жижиг сануулга, гэхдээ тусламжийн утас үргэлж нэг товшилтын зайд
+  if (compact) return (
+    <div role="note" className="flex flex-wrap items-center gap-1.5 self-stretch rounded-xl border border-red-200 bg-red-50/70 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
+      <span className="mr-0.5">{tr('💜 Хэцүү байвал одоо залгаарай:')}</span>
+      <a className={buttonVariants({ variant: 'destructive', size: 'sm' })} href="tel:108">📞 108</a>
+      <a className={buttonVariants({ variant: 'destructive', size: 'sm' })} href="tel:103">📞 103</a>
+      <Link className={buttonVariants({ size: 'sm', variant: 'outline' })} href="/experts" onClick={() => setChatOpen(false)}>{tr('Сэтгэл зүйч')}</Link>
+    </div>
+  );
   return (
     <div role="alert" className="self-stretch rounded-2xl border border-red-300 bg-red-50 p-4 text-red-900 dark:border-red-900 dark:bg-red-950/50 dark:text-red-100">
       <b>{tr('Та ганцаараа биш 💜')}</b>

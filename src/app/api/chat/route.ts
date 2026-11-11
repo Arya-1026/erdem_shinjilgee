@@ -3,6 +3,8 @@ import { fallbackReply } from '@/lib/chat-fallback';
 import { asksForExercise, asksForExpert, chatSystemPrompt, extractInlineActions, guessActions, REPLY_LANGUAGE_REMINDER, splitActions } from '@/lib/chat-prompt';
 import { ENTRY_COLS, EXPERT_COLS, normalizeEntry, toExpert } from '@/lib/db';
 import { detectCrisis } from '@/lib/server/crisis-check';
+import { crisisReply } from '@/lib/server/crisis-reply';
+import { withCrisisActions } from '@/lib/crisis';
 import { matchesLocale, translator } from '@/lib/i18n';
 import { ensureLocale, llmReply, polishMongolian } from '@/lib/server/llm';
 import { requestLocale } from '@/lib/server/locale';
@@ -27,17 +29,21 @@ export async function POST(req: Request) {
   ]);
   const profile = profileRes.data ?? { name: '', hobbies: [], fav_artists: [], chat_mode: 'calm' };
   const entries = (entriesRes.data ?? []).map(normalizeEntry).reverse();
-  // Сүүлийн хэдэн мессеж л: олон хуучин хариулт өгвөл загвар тэр хэв маягийг дууриаж давтагддаг
-  const history = (historyRes.data ?? []).reverse().filter(m => !m.crisis).slice(-6);
+  // Сүүлийн хэдэн мессеж л: олон хуучин хариулт өгвөл загвар тэр хэв маягийг дууриаж давтагддаг.
+  // Хямралын үеийн хариултыг ч оруулна (ярилцлага тасрахгүй). Хуучин хоосон хямралын мөрийг хасна.
+  const history = (historyRes.data ?? []).reverse().filter(m => !(m.crisis && !m.content)).slice(-6);
   const mode = profile.chat_mode as ChatMode;
   const locale = await requestLocale();
 
   await supabase.from('chat_messages').insert({ role: 'user', content: message });
 
-  // 1) Crisis: түлхүүр үг → Moderation ба утгын ангилал. Аль нэг нь илэрвэл хариу бичихгүй, тусламжийн утас харуулна.
+  // 1) Crisis: түлхүүр үг → Moderation ба утгын ангилал. Аль нэг нь илэрвэл товч, халуун хариулт өгч
+  //    (аюулгүй эсэхийг асууж, ярилцлагыг үргэлжлүүлнэ), UI түүний доор тусламжийн утсыг сануулна.
   if (await detectCrisis(message, history.filter(m => m.role === 'user').slice(-2).map(m => m.content))) {
-    await supabase.from('chat_messages').insert({ role: 'assistant', content: '', crisis: true });
-    return NextResponse.json({ crisis: true });
+    // Хариултын доор газардуулах дасгал, тайвшруулах ая, кино (тогтмол), түүний доор тусламжийн утас
+    const reply = withCrisisActions(await crisisReply(message, history, profile.name, locale));
+    await supabase.from('chat_messages').insert({ role: 'assistant', content: reply, crisis: true });
+    return NextResponse.json({ reply, crisis: true });
   }
 
   // 2) LLM. Хэрэглэгчийн хобби, сүүлийн mood, өнөөдрийн тэмдэглэлийг system prompt-д нэмнэ. API key зөвхөн сервер дээр.
